@@ -110,3 +110,8 @@ These are the subtle errors that look like productivity but create problems:
 9. Building without a spec because "it's obvious"
 10. Skipping verification because "it looks right"
 
+
+### GitHub Identity and Permissions
+
+AI development work uses the separate GitHub account `mip-ai-bot`, which is invited to the repository as a collaborator.
+- Treat `mip-ai-bot` as a contributor account, not an owner or administrator. gh auth is scoped to the bot account, not the personal account so you are using it automatically.
