@@ -95,6 +95,15 @@ Your job is surgical precision, not unsolicited renovation.
 
 Every skill includes a verification step. A task is not complete until verification passes. "Seems right" is never sufficient — there must be evidence (passing tests, build output, runtime data).
 
+## Pull Request Format
+
+- Use a short, precise PR title without prefixes such as `[codex]`, `feat:`, or `fix:`.
+- Treat the PR title as the future squash commit message.
+- Write the PR description as a short, flat bullet list of changes.
+- Use one bullet for simple PRs; add more bullets only when the change is complex enough to need them.
+- Do not add subheadings to the PR description.
+- Open PRs as ready for review after local verification passes; use drafts only for unfinished or exploratory work.
+
 ## Failure Modes to Avoid
 
 These are the subtle errors that look like productivity but create problems:
