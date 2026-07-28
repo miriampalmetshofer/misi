@@ -19,6 +19,9 @@ The goal is not to ship every feature at once. The goal is to build a maintainab
    - Every feature should have a clear job, a clear owner or use case, and a simple success criterion.
 
 3. Prefer calm, practical interfaces.
+   - Design and build mobile-first. The primary experience should work well on a phone before expanding to larger screens.
+   - Avoid pixel-exact or screenshot-copy layouts. Prefer fluid layouts, standard spacing/type scales, intrinsic sizing, and responsive constraints unless an exact value is technically necessary.
+   - Keep CSS minimal. After implementation, verify that every custom style is still necessary and remove over-specific styling that does not serve the interface.
    - The app should be easy to scan and fast to use.
    - Avoid marketing-style pages, decorative complexity, or UI that gets in the way of repeated daily use.
 
@@ -95,15 +98,6 @@ Your job is surgical precision, not unsolicited renovation.
 
 Every skill includes a verification step. A task is not complete until verification passes. "Seems right" is never sufficient — there must be evidence (passing tests, build output, runtime data).
 
-## Pull Request Format
-
-- Use a short, precise PR title without prefixes such as `[codex]`, `feat:`, or `fix:`.
-- Treat the PR title as the future squash commit message.
-- Write the PR description as a short, flat bullet list of changes.
-- Use one bullet for simple PRs; add more bullets only when the change is complex enough to need them.
-- Do not add subheadings to the PR description.
-- Open PRs as ready for review after local verification passes; use drafts only for unfinished or exploratory work.
-
 ## Failure Modes to Avoid
 
 These are the subtle errors that look like productivity but create problems:
@@ -124,3 +118,19 @@ These are the subtle errors that look like productivity but create problems:
 
 AI development work uses the separate GitHub account `mip-ai-bot`, which is invited to the repository as a collaborator.
 - Treat `mip-ai-bot` as a contributor account, not an owner or administrator. gh auth is scoped to the bot account, not the personal account so you are using it automatically.
+
+## Pull Requests
+
+### Pull Request Format
+
+- Use a short, precise PR title without prefixes such as `[codex]`, `feat:`, or `fix:`.
+- Treat the PR title as the future squash commit message.
+- Write the PR description as a short, flat bullet list of changes.
+- Use one bullet for simple PRs; add more bullets only when the change is complex enough to need them.
+- Do not add subheadings to the PR description.
+- Open PRs as ready for review after local verification passes; use drafts only for unfinished or exploratory work.
+
+### Pull Request Review Handling
+
+- Always answer questions in PR review comments by replying directly to the GitHub comment thread. Do not treat question comments as resolved until the answer is visible in the thread and the user has had a chance to decide whether it is sufficient.
+- When the user challenges a decision or suggests a change, evaluate it critically instead of accepting it automatically. If the suggestion is right, apply it and acknowledge that in the thread, for example with a reply or reaction. If it is not useful, reply with the reasoning and resolve the thread only after the tradeoff is clearly explained.
