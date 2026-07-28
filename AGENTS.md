@@ -19,6 +19,7 @@ The goal is not to ship every feature at once. The goal is to build a maintainab
    - Every feature should have a clear job, a clear owner or use case, and a simple success criterion.
 
 3. Prefer calm, practical interfaces.
+   - Design and build mobile-first. The primary experience should work well on a phone before expanding to larger screens.
    - The app should be easy to scan and fast to use.
    - Avoid marketing-style pages, decorative complexity, or UI that gets in the way of repeated daily use.
 
