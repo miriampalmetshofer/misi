@@ -32,7 +32,7 @@ Alternatives considered:
 
 ## Database
 
-We plan to use **PostgreSQL**, likely hosted on **Neon**, with a typed query/migration layer such as **Drizzle**.
+We use **PostgreSQL**, hosted on **Neon**, with **Drizzle** for typed queries and migrations.
 
 Why:
 
@@ -44,7 +44,6 @@ Alternatives considered:
 
 - **SQLite**: simpler, but less ideal for hosted multi-device use.
 - **MongoDB**: not a strong fit because the app data is relational.
-- **Prisma**: good developer experience, but a bit more abstract than desired.
 
 ## Hosting
 
@@ -77,11 +76,11 @@ CI
 
 Preview
   App: Vercel preview deployment per PR
-  DB: Neon database branch per PR
+  DB: Neon database branch per PR, migrated before preview deployment
 
 Production
   App: Vercel production deployment from main
-  DB: Neon production branch
+  DB: Neon production branch, migrated before production deployment
 ```
 
 We plan to try **Neon database branching for preview deployments**.
@@ -125,10 +124,12 @@ Example:
 6. After approval and passing checks, GitHub auto-merges the PR.
 7. Vercel deploys `main` to production.
 
+Production deployment creates a short-lived Neon restore branch before running migrations. If a migration damages production data, use that branch or Neon's point-in-time restore workflow to recover the production branch.
+
 CI and preview have different jobs:
 
 - **CI** is automated proof: lint, typecheck, tests, build, migration validation.
-- **Preview** is a clickable deployed app for human review.
+- **Preview** is a clickable deployed app for human review with its own migrated Neon branch.
 
 We are not starting with automated browser tests against preview deployments. AI can verify locally first; preview testing can stay manual until it becomes repetitive.
 
@@ -147,13 +148,17 @@ Security rules:
 - AI must not approve its own PRs.
 - Secrets, `.env` files, database URLs, and real household data must never be committed.
 - PR workflows must not receive production database credentials.
-- Production deploys happen only from `main`.
+- Production deploys happen only from `main`, after production migrations succeed.
 - Destructive database migrations require human attention.
+
+Migration rule:
+
+- Prefer expand/contract changes. A production migration must be compatible with both the currently deployed app and the new app version.
+- Additive migrations can deploy with the code that uses them.
+- Destructive cleanup, such as dropping renamed columns or removing old tables, should happen in a later PR after production code no longer depends on the old shape.
 
 ## Deferred Decisions
 
 - Exact auth provider or library.
-- Exact Drizzle/Prisma decision.
 - Backup and restore process.
-- Production migration automation details.
 - Whether to add a permanent staging environment later.
