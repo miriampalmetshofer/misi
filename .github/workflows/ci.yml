@@ -12,6 +12,8 @@ concurrency:
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
 env:
   DATABASE_URL: postgresql://ci:ci@localhost:5432/misi?sslmode=disable
@@ -47,3 +49,123 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  deploy-preview:
+    name: Deploy preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: checks
+    if: >
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+      NEON_DATABASE_NAME: ${{ vars.NEON_DATABASE_NAME }}
+      NEON_DATABASE_ROLE: ${{ vars.NEON_DATABASE_ROLE }}
+      NEON_PREVIEW_PARENT_BRANCH: ${{ vars.NEON_PREVIEW_PARENT_BRANCH }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+    steps:
+      - name: Validate deployment configuration
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: |
+          missing=0
+          for name in \
+            NEON_PROJECT_ID \
+            NEON_DATABASE_NAME \
+            NEON_DATABASE_ROLE \
+            NEON_PREVIEW_PARENT_BRANCH \
+            VERCEL_ORG_ID \
+            VERCEL_PROJECT_ID \
+            VERCEL_TOKEN \
+            NEON_API_KEY
+          do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub Actions configuration: $name" >&2
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Prepare preview metadata
+        id: preview
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          expires_at="$(date -u --date '+14 days' +'%Y-%m-%dT%H:%M:%SZ')"
+          safe_head_branch="$(printf '%s' "$HEAD_BRANCH" | tr '/[:space:]' '-' | tr -cd '[:alnum:]._-' | cut -c1-40)"
+          branch_name="preview/pr-${PR_NUMBER}-${safe_head_branch}"
+
+          echo "expires_at=$expires_at" >> "$GITHUB_OUTPUT"
+          echo "branch_name=$branch_name" >> "$GITHUB_OUTPUT"
+
+      - name: Create Neon preview branch
+        id: create-branch
+        uses: neondatabase/create-branch-action@v6
+        with:
+          project_id: ${{ env.NEON_PROJECT_ID }}
+          branch_name: ${{ steps.preview.outputs.branch_name }}
+          parent_branch: ${{ env.NEON_PREVIEW_PARENT_BRANCH }}
+          database: ${{ env.NEON_DATABASE_NAME }}
+          role: ${{ env.NEON_DATABASE_ROLE }}
+          expires_at: ${{ steps.preview.outputs.expires_at }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+      - name: Run migrations on Neon preview branch
+        env:
+          DATABASE_URL: ${{ steps.create-branch.outputs.db_url_pooled }}
+          DATABASE_URL_UNPOOLED: ${{ steps.create-branch.outputs.db_url }}
+        run: npm run db:migrate
+
+      - name: Pull Vercel preview environment
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy Vercel preview
+        id: deploy
+        env:
+          DATABASE_URL: ${{ steps.create-branch.outputs.db_url_pooled }}
+          DATABASE_URL_UNPOOLED: ${{ steps.create-branch.outputs.db_url }}
+        run: |
+          url="$(vercel deploy --yes --token=${{ secrets.VERCEL_TOKEN }} \
+            --env DATABASE_URL="$DATABASE_URL" \
+            --env DATABASE_URL_UNPOOLED="$DATABASE_URL_UNPOOLED" \
+            --build-env DATABASE_URL="$DATABASE_URL" \
+            --build-env DATABASE_URL_UNPOOLED="$DATABASE_URL_UNPOOLED")"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Preview deployment: $url" >> "$GITHUB_STEP_SUMMARY"
+          echo "Neon branch: ${{ steps.preview.outputs.branch_name }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment with preview details
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PREVIEW_URL: ${{ steps.deploy.outputs.url }}
+          NEON_BRANCH_NAME: ${{ steps.preview.outputs.branch_name }}
+          NEON_BRANCH_ID: ${{ steps.create-branch.outputs.branch_id }}
+        run: |
+          {
+            echo "Preview deployment: $PREVIEW_URL"
+            echo
+            echo "Neon preview branch: $NEON_BRANCH_NAME"
+            echo "Neon branch ID: $NEON_BRANCH_ID"
+          } > preview-comment.md
+          gh pr comment "$PR_NUMBER" --body-file preview-comment.md

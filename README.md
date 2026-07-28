@@ -80,9 +80,9 @@ CI checks:
 - Drizzle migration validation
 - production build
 
-Deployment runs through Vercel after CI passes:
+Deployment runs through Vercel after automated checks pass:
 
-- Pull requests from this repository create a Neon preview branch, run migrations on that branch, and then create a Vercel preview deployment with that branch's database URLs.
+- Pull requests from this repository run CI checks, then create a Neon preview branch, run migrations on that branch, and create a Vercel preview deployment with that branch's database URLs.
 - Closed pull requests delete their Neon preview branch.
 - Pushes to `main` create a temporary Neon production restore branch, run production migrations, and then create the Vercel production deployment.
 

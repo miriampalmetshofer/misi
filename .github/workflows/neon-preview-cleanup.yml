@@ -32,10 +32,21 @@ jobs:
           done
           exit "$missing"
 
+      - name: Prepare preview metadata
+        id: preview
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          safe_head_branch="$(printf '%s' "$HEAD_BRANCH" | tr '/[:space:]' '-' | tr -cd '[:alnum:]._-' | cut -c1-40)"
+          branch_name="preview/pr-${PR_NUMBER}-${safe_head_branch}"
+
+          echo "branch_name=$branch_name" >> "$GITHUB_OUTPUT"
+
       - name: Delete Neon preview branch
         uses: neondatabase/delete-branch-action@v3
         continue-on-error: true
         with:
           project_id: ${{ env.NEON_PROJECT_ID }}
-          branch: preview/pr-${{ github.event.number }}-${{ github.event.pull_request.head.ref }}
+          branch: ${{ steps.preview.outputs.branch_name }}
           api_key: ${{ secrets.NEON_API_KEY }}
