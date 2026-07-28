@@ -1,20 +1,8 @@
 const modules = [
   {
-    title: "Groceries",
-    description: "Shared shopping list for the house.",
-  },
-  {
-    title: "Chores",
-    description: "Recurring household tasks split between you two.",
-  },
-  {
-    title: "Shared Notes",
-    description: "Quick notes and reminders you both can see.",
-  },
-  {
-    title: "Upcoming",
-    description: "Household to-dos and reminders coming up.",
-  },
+    title: "Einkaufsliste",
+    description: "Gemeinsame Einkaufsliste für den Haushalt.",
+  }
 ];
 
 export default function Home() {
@@ -49,7 +37,7 @@ export default function Home() {
               </div>
 
               <div className="mt-6 inline-flex w-fit whitespace-nowrap rounded-md border-2 border-cyan-300 bg-cyan-50 px-3 py-2 text-xs font-semibold uppercase leading-none tracking-widest text-cyan-800 sm:px-4 sm:text-sm lg:mt-8 lg:text-base">
-                Coming soon
+                Bald verfügbar
               </div>
             </article>
           ))}

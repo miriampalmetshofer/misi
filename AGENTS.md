@@ -22,12 +22,36 @@ The goal is not to ship every feature at once. The goal is to build a maintainab
    - Design and build mobile-first. The primary experience should work well on a phone before expanding to larger screens.
    - Avoid pixel-exact or screenshot-copy layouts. Prefer fluid layouts, standard spacing/type scales, intrinsic sizing, and responsive constraints unless an exact value is technically necessary.
    - Keep CSS minimal. After implementation, verify that every custom style is still necessary and remove over-specific styling that does not serve the interface.
+   - Keep user-facing app text in German unless there is a concrete reason to use another language.
    - The app should be easy to scan and fast to use.
    - Avoid marketing-style pages, decorative complexity, or UI that gets in the way of repeated daily use.
 
 4. Treat privacy as a core product requirement.
    - Household, finance, habit, and planning data can be sensitive.
    - Store only what is useful, expose only what is intended, and make data ownership understandable.
+
+## Technical Project Context
+
+- The app is a Next.js application using TypeScript, Tailwind CSS, Drizzle ORM, PostgreSQL, and Neon.
+- Use `mise` for project-local runtime commands. Prefer `mise exec -- <command>` when running Node/npm tooling so the configured runtime is used.
+
+### Database And Neon
+
+- Neon `production` is the real database branch. Do not use it for local development or experiments.
+- Neon `dev/miriam` is the long-lived local development database branch. Local app development and first-pass migration testing should point here.
+- Future PR preview databases should use short-lived Neon branches named like `preview/pr-123-feature-name`. They are for isolated review environments and should be deleted after the PR is merged or closed.
+- Use the pooled Neon connection string for normal application queries.
+- Use the direct/unpooled Neon connection string for migrations and schema changes.
+- Drizzle migration files are source-controlled. Generate and review migrations before applying them.
+- Never run migrations against `production` unless the user has explicitly confirmed that production migration is intended.
+- The Neon API may be used for project and branch automation, such as listing branches, creating development or preview branches, renaming branches, and fetching connection details. For endpoint details, consult the current official Neon API documentation rather than relying on memory.
+
+### Secrets And Environment
+
+- Never commit real credentials, connection strings, API keys, or tokens.
+- Keep real environment values in gitignored local env files or the shell environment. `.env`, `.env.local`, and `.env*.local` are intended to stay untracked.
+- Do not print secrets, full connection strings, or API keys in terminal output or chat.
+- Tracked env files such as `.env.example` should document variable names with generic placeholder values only.
 
 ## Core Operating Behaviors
 

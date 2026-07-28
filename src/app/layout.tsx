@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Misi",
-  description: "Private household app for shared everyday planning.",
+  description: "Private Haushalts-App für gemeinsame Alltagsplanung.",
 };
 
 export default function RootLayout({
