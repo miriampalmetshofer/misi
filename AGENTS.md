@@ -145,6 +145,7 @@ AI development work uses the separate GitHub account `mip-ai-bot`, which is invi
 - Write the PR description as a short, flat bullet list of changes.
 - Use one bullet for simple PRs; add more bullets only when the change is complex enough to need them.
 - Do not add subheadings to the PR description.
+- Rebase the branch onto the latest `main` before opening a PR.
 - Open PRs as ready for review after local verification passes; use drafts only for unfinished or exploratory work.
 
 ### Pull Request Review Handling
