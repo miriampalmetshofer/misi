@@ -18,6 +18,20 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      - name: Validate cleanup configuration
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: |
+          missing=0
+          for name in NEON_PROJECT_ID NEON_API_KEY
+          do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub Actions configuration: $name" >&2
+              missing=1
+            fi
+          done
+          exit "$missing"
+
       - name: Delete Neon preview branch
         uses: neondatabase/delete-branch-action@v3
         continue-on-error: true

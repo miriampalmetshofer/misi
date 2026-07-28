@@ -16,9 +16,9 @@ permissions:
 
 env:
   NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
-  NEON_DATABASE_NAME: ${{ vars.NEON_DATABASE_NAME || 'misi' }}
-  NEON_DATABASE_ROLE: ${{ vars.NEON_DATABASE_ROLE || 'neondb_owner' }}
-  NEON_PRODUCTION_BRANCH: ${{ vars.NEON_PRODUCTION_BRANCH || 'production' }}
+  NEON_DATABASE_NAME: ${{ vars.NEON_DATABASE_NAME }}
+  NEON_DATABASE_ROLE: ${{ vars.NEON_DATABASE_ROLE }}
+  NEON_PRODUCTION_BRANCH: ${{ vars.NEON_PRODUCTION_BRANCH }}
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
@@ -35,6 +35,33 @@ jobs:
       name: production
 
     steps:
+      - name: Validate deployment configuration
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+        run: |
+          missing=0
+          for name in \
+            NEON_PROJECT_ID \
+            NEON_DATABASE_NAME \
+            NEON_DATABASE_ROLE \
+            NEON_PRODUCTION_BRANCH \
+            VERCEL_ORG_ID \
+            VERCEL_PROJECT_ID \
+            VERCEL_TOKEN \
+            NEON_API_KEY \
+            DATABASE_URL \
+            DATABASE_URL_UNPOOLED
+          do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub Actions configuration: $name" >&2
+              missing=1
+            fi
+          done
+          exit "$missing"
+
       - name: Checkout
         uses: actions/checkout@v6
         with:

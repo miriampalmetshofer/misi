@@ -98,13 +98,10 @@ GitHub repository secrets required:
 GitHub repository variables required:
 
 - `NEON_PROJECT_ID`
-
-Optional GitHub repository variables:
-
-- `NEON_DATABASE_NAME`, defaults to `misi`
-- `NEON_DATABASE_ROLE`, defaults to `neondb_owner`
-- `NEON_PREVIEW_PARENT_BRANCH`, defaults to `production`
-- `NEON_PRODUCTION_BRANCH`, defaults to `production`
+- `NEON_DATABASE_NAME`
+- `NEON_DATABASE_ROLE`
+- `NEON_PREVIEW_PARENT_BRANCH`
+- `NEON_PRODUCTION_BRANCH`
 
 Preview branches and production restore branches expire after 14 days. Production restore branches are created before migrations so the production database can be restored with Neon branch restore or point-in-time recovery if a migration causes data problems.
 
