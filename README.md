@@ -36,7 +36,9 @@ Do not commit real secrets or connection strings.
 ```bash
 npm run dev
 npm run lint
+npm run typecheck
 npm run build
+npm run ci
 ```
 
 ## Database Commands
@@ -66,3 +68,41 @@ npm run db:studio
 ```
 
 Before running `db:migrate`, verify that local environment values point to `dev/miriam`, not `production`.
+
+## CI/CD
+
+GitHub Actions runs CI on pull requests and pushes to `main`.
+
+CI checks:
+
+- lint
+- typecheck
+- Drizzle migration validation
+- production build
+
+Deployment runs through Vercel after automated checks pass:
+
+- Pull requests from this repository run CI checks, then create a Neon preview branch, run migrations on that branch, and create a Vercel preview deployment with that branch's database URLs.
+- Closed pull requests delete their Neon preview branch.
+- Pushes to `main` create a temporary Neon production restore branch, run production migrations, and then create the Vercel production deployment.
+
+GitHub repository secrets required:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+- `NEON_API_KEY`
+- `DATABASE_URL`
+- `DATABASE_URL_UNPOOLED`
+
+GitHub repository variables required:
+
+- `NEON_PROJECT_ID`
+- `NEON_DATABASE_NAME`
+- `NEON_DATABASE_ROLE`
+- `NEON_PREVIEW_PARENT_BRANCH`
+- `NEON_PRODUCTION_BRANCH`
+
+Preview branches and production restore branches expire after 14 days. Production restore branches are created before migrations so the production database can be restored with Neon branch restore or point-in-time recovery if a migration causes data problems.
+
+Schema-changing releases must keep migrations backward compatible with the currently deployed app. Destructive cleanup, such as dropping a column that old production code still reads, should ship in a later PR after the code no longer depends on it.

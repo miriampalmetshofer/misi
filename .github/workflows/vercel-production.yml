@@ -1,0 +1,124 @@
+name: Vercel Production
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+  NEON_DATABASE_NAME: ${{ vars.NEON_DATABASE_NAME }}
+  NEON_DATABASE_ROLE: ${{ vars.NEON_DATABASE_ROLE }}
+  NEON_PRODUCTION_BRANCH: ${{ vars.NEON_PRODUCTION_BRANCH }}
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  deploy:
+    name: Deploy production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+
+    steps:
+      - name: Validate deployment configuration
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+        run: |
+          missing=0
+          for name in \
+            NEON_PROJECT_ID \
+            NEON_DATABASE_NAME \
+            NEON_DATABASE_ROLE \
+            NEON_PRODUCTION_BRANCH \
+            VERCEL_ORG_ID \
+            VERCEL_PROJECT_ID \
+            VERCEL_TOKEN \
+            NEON_API_KEY \
+            DATABASE_URL \
+            DATABASE_URL_UNPOOLED
+          do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub Actions configuration: $name" >&2
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Prepare production restore point
+        id: restore-point
+        run: |
+          timestamp="$(date -u +'%Y%m%dT%H%M%SZ')"
+          expires_at="$(date -u --date '+14 days' +'%Y-%m-%dT%H:%M:%SZ')"
+          branch_name="backup/prod-${GITHUB_SHA:0:12}-${timestamp}"
+
+          echo "branch_name=$branch_name" >> "$GITHUB_OUTPUT"
+          echo "expires_at=$expires_at" >> "$GITHUB_OUTPUT"
+
+      - name: Create Neon pre-migration restore branch
+        id: create-restore-branch
+        uses: neondatabase/create-branch-action@v6
+        with:
+          project_id: ${{ env.NEON_PROJECT_ID }}
+          branch_name: ${{ steps.restore-point.outputs.branch_name }}
+          parent_branch: ${{ env.NEON_PRODUCTION_BRANCH }}
+          database: ${{ env.NEON_DATABASE_NAME }}
+          role: ${{ env.NEON_DATABASE_ROLE }}
+          expires_at: ${{ steps.restore-point.outputs.expires_at }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+      - name: Run production migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+        run: npm run db:migrate
+
+      - name: Pull Vercel production environment
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy Vercel production
+        id: deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+        run: |
+          url="$(vercel deploy --yes --prod --token=${{ secrets.VERCEL_TOKEN }} \
+            --env DATABASE_URL="$DATABASE_URL" \
+            --env DATABASE_URL_UNPOOLED="$DATABASE_URL_UNPOOLED" \
+            --build-env DATABASE_URL="$DATABASE_URL" \
+            --build-env DATABASE_URL_UNPOOLED="$DATABASE_URL_UNPOOLED")"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Production deployment: $url" >> "$GITHUB_STEP_SUMMARY"
+          echo "Pre-migration restore branch: ${{ steps.restore-point.outputs.branch_name }}" >> "$GITHUB_STEP_SUMMARY"
