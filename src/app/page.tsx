@@ -24,10 +24,8 @@ const modules = [
 export default function Home() {
   return (
     <main className="min-h-screen w-full bg-white text-neutral-950">
-      <header className="flex items-center justify-between border-b border-neutral-200 px-5 py-5 sm:px-8 sm:py-6 lg:px-10 lg:py-9">
-        <h1 className="text-3xl font-bold uppercase leading-none tracking-wide sm:text-4xl">
-          Misi
-        </h1>
+      <header className="flex items-center justify-between border-b border-neutral-200 px-5 py-5 sm:px-8 sm:py-6 lg:px-10">
+        <h1 className="text-app-brand">Misi</h1>
 
         <button
           type="button"
@@ -54,10 +52,8 @@ export default function Home() {
               </div>
 
               <div className="mt-6 lg:mt-8">
-                <h2 className="text-2xl font-bold leading-tight tracking-normal lg:text-3xl">
-                  {module.title}
-                </h2>
-                <p className="mt-2 max-w-prose text-lg leading-snug text-neutral-500 sm:text-xl lg:text-2xl">
+                <h2 className="text-card-title">{module.title}</h2>
+                <p className="text-body-muted mt-2 max-w-prose">
                   {module.description}
                 </p>
               </div>
