@@ -46,13 +46,6 @@ The goal is not to ship every feature at once. The goal is to build a maintainab
 - Never run migrations against `production` unless the user has explicitly confirmed that production migration is intended.
 - The Neon API may be used for project and branch automation, such as listing branches, creating development or preview branches, renaming branches, and fetching connection details. For endpoint details, consult the current official Neon API documentation rather than relying on memory.
 
-### Secrets And Environment
-
-- Never commit real credentials, connection strings, API keys, or tokens.
-- Keep real environment values in gitignored local env files or the shell environment. `.env`, `.env.local`, and `.env*.local` are intended to stay untracked.
-- Do not print secrets, full connection strings, or API keys in terminal output or chat.
-- Tracked env files such as `.env.example` should document variable names with generic placeholder values only.
-
 ## Core Operating Behaviors
 
 These behaviors apply at all times, across all skills. They are non-negotiable.
