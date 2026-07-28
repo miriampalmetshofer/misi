@@ -151,3 +151,5 @@ AI development work uses the separate GitHub account `mip-ai-bot`, which is invi
 
 - Always answer questions in PR review comments by replying directly to the GitHub comment thread. Do not treat question comments as resolved until the answer is visible in the thread and the user has had a chance to decide whether it is sufficient.
 - When the user challenges a decision or suggests a change, evaluate it critically instead of accepting it automatically. If the suggestion is right, apply it and acknowledge that in the thread, for example with a reply or reaction. If it is not useful, reply with the reasoning and resolve the thread only after the tradeoff is clearly explained.
+- When pushing follow-up commits after review comments or requested changes, use commit messages that describe the actual change, not generic messages such as `Address PR feedback`.
+- It is fine to use one commit for several small related review comments. For larger or unrelated changes, prefer separate commits per topic so the review history stays understandable.
