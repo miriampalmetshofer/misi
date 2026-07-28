@@ -45,9 +45,7 @@ export default function Home() {
             >
               <div>
                 <h2 className="text-card-title">{module.title}</h2>
-                <p className="text-body-muted mt-2 max-w-prose">
-                  {module.description}
-                </p>
+                <p className="text-body-muted mt-2">{module.description}</p>
               </div>
 
               <div className="mt-6 inline-flex w-fit whitespace-nowrap rounded-md border-2 border-cyan-300 bg-cyan-50 px-3 py-2 text-xs font-semibold uppercase leading-none tracking-widest text-cyan-800 sm:px-4 sm:text-sm lg:mt-8 lg:text-base">
