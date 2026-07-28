@@ -20,6 +20,7 @@ The goal is not to ship every feature at once. The goal is to build a maintainab
 
 3. Prefer calm, practical interfaces.
    - Design and build mobile-first. The primary experience should work well on a phone before expanding to larger screens.
+   - Avoid pixel-exact or screenshot-copy layouts. Prefer fluid layouts, standard spacing/type scales, intrinsic sizing, and responsive constraints unless an exact value is technically necessary.
    - The app should be easy to scan and fast to use.
    - Avoid marketing-style pages, decorative complexity, or UI that gets in the way of repeated daily use.
 
