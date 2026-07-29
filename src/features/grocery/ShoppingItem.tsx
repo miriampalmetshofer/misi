@@ -83,7 +83,7 @@ export function ShoppingItem({
       {isEditing ? (
         <input
           aria-label={`${item.name || "Artikel"} bearbeiten`}
-          className="min-w-0 bg-transparent p-0 text-sm leading-snug text-neutral-800 outline-none sm:text-lg"
+          className="min-w-0 bg-transparent p-0 text-base leading-snug text-neutral-800 outline-none sm:text-lg"
           maxLength={80}
           ref={inputRef}
           value={draft}
@@ -100,7 +100,7 @@ export function ShoppingItem({
       ) : (
         <button
           type="button"
-          className="min-w-0 break-words text-left text-sm leading-snug text-neutral-800 sm:text-lg"
+          className="min-w-0 break-words text-left text-base leading-snug text-neutral-800 sm:text-lg"
           disabled={item.isSyncing}
           onClick={() => {
             setDraft(item.name);
