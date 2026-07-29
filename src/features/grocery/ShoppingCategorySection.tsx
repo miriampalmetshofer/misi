@@ -37,10 +37,10 @@ export function ShoppingCategorySection({
           type="button"
           aria-label={`${category.name} hinzufügen`}
           className="flex size-9 shrink-0 items-center justify-center rounded-full border border-neutral-300 bg-transparent text-neutral-400 transition hover:border-neutral-400 hover:text-neutral-700 sm:size-10"
-          // Keep focus on any open draft input so its onBlur runs *after* this
-          // click; without this, blurring removes a row and the layout shift
-          // swallows the click before onAddDraft fires.
-          onMouseDown={(event) => event.preventDefault()}
+          // Let the click blur any open draft input first, so its onBlur saves
+          // the item before onAddDraft opens a fresh draft. The + lives in the
+          // category header (above the list), so removing a draft row below it
+          // doesn't shift the button — the click still lands.
           onClick={() => onAddDraft(category.id)}
         >
           <svg
