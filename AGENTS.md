@@ -39,6 +39,7 @@ The goal is not to ship every feature at once. The goal is to build a maintainab
 
 - Neon `production` is the real database branch. Do not use it for local development or experiments.
 - Neon `dev/miriam` is the long-lived local development database branch. Local app development and first-pass migration testing should point here.
+- The local `DATABASE_URL_UNPOOLED` value in the checked-out development environment points to `dev/miriam`; it is safe to use for local migration testing unless the environment file is changed.
 - Future PR preview databases should use short-lived Neon branches named like `preview/pr-123-feature-name`. They are for isolated review environments and should be deleted after the PR is merged or closed.
 - Use the pooled Neon connection string for normal application queries.
 - Use the direct/unpooled Neon connection string for migrations and schema changes.

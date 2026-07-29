@@ -1,0 +1,200 @@
+"use client";
+
+import { useOptimistic, useState } from "react";
+
+import {
+  addGroceryItem,
+  deleteGroceryItem,
+  renameGroceryItem,
+  setGroceryItemChecked,
+} from "./actions";
+import { normalizeGroceryItemName } from "./categories";
+import type { ShoppingListCategory, ShoppingListItem } from "./queries";
+import { ShoppingListView } from "./ShoppingListView";
+import { useOptimisticMutation } from "./useOptimisticMutation";
+
+type ShoppingListProps = {
+  categories: ShoppingListCategory[];
+};
+
+type Draft = { id: string; categoryId: string };
+
+type OptimisticAction =
+  | { type: "add"; itemId: string; name: string; categoryId: string }
+  | { type: "rename"; itemId: string; name: string }
+  | { type: "remove"; itemId: string };
+
+export function ShoppingList({ categories }: ShoppingListProps) {
+  const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [optimisticCategories, applyOptimistic] = useOptimistic(
+    categories,
+    reduce,
+  );
+  const { mutate } = useOptimisticMutation(applyOptimistic);
+
+  const categoriesWithDrafts = withDrafts(optimisticCategories, drafts);
+
+  function createDraftItem(categoryId: string) {
+    const draftId = `draft-${crypto.randomUUID()}`;
+    // One draft at a time: replace any pending draft with the new one.
+    // Functional update so it composes with the blur-triggered removeDraft
+    // of the previous (empty) draft, regardless of which runs first.
+    setDrafts(() => [{ id: draftId, categoryId }]);
+    return draftId;
+  }
+
+  function removeDraft(draftId: string) {
+    setDrafts((current) => current.filter((draft) => draft.id !== draftId));
+  }
+
+  function saveDraftItem(draftId: string, name: string, categoryId: string) {
+    removeDraft(draftId);
+
+    const nextName = name.trim();
+    if (!nextName) return;
+
+    const itemId = `pending-${crypto.randomUUID()}`;
+    mutate(
+      addGroceryItem,
+      { name: nextName, categoryId },
+      { type: "add", itemId, name: nextName, categoryId },
+    );
+  }
+
+  function renameItem(itemId: string, name: string) {
+    const nextName = name.trim();
+    if (!nextName) return;
+
+    mutate(
+      renameGroceryItem,
+      { itemId, name: nextName },
+      { type: "rename", itemId, name: nextName },
+    );
+  }
+
+  function checkItem(itemId: string) {
+    mutate(
+      setGroceryItemChecked,
+      { itemId, isChecked: "true" },
+      { type: "remove", itemId },
+    );
+  }
+
+  function deleteItem(itemId: string) {
+    removeDraft(itemId);
+    mutate(deleteGroceryItem, { itemId }, { type: "remove", itemId });
+  }
+
+  return (
+    <ShoppingListView
+      categories={categoriesWithDrafts}
+      onAddDraft={createDraftItem}
+      onCheckItem={checkItem}
+      onDeleteItem={deleteItem}
+      onRenameItem={renameItem}
+      onSaveDraft={saveDraftItem}
+    />
+  );
+}
+
+function withDrafts(
+  categories: ShoppingListCategory[],
+  drafts: Draft[],
+): ShoppingListCategory[] {
+  if (drafts.length === 0) {
+    return categories;
+  }
+
+  return categories.map((category) => {
+    const categoryDrafts = drafts.filter(
+      (draft) => draft.categoryId === category.id,
+    );
+    if (categoryDrafts.length === 0) {
+      return category;
+    }
+
+    return {
+      ...category,
+      items: [
+        ...category.items,
+        ...categoryDrafts.map(
+          (draft): ShoppingListItem => ({
+            id: draft.id,
+            categoryId: draft.categoryId,
+            isChecked: false,
+            isDraft: true,
+            name: "",
+            normalizedName: "",
+          }),
+        ),
+      ],
+    };
+  });
+}
+
+function reduce(
+  categories: ShoppingListCategory[],
+  action: OptimisticAction,
+): ShoppingListCategory[] {
+  switch (action.type) {
+    case "add": {
+      const normalizedName = normalizeGroceryItemName(action.name);
+      return categories.map((category) => {
+        if (category.id !== action.categoryId) {
+          return category;
+        }
+
+        // The server upserts on normalizedName, so re-adding a name already in
+        // this category must update in place — appending would flash a
+        // duplicate row until revalidation collapses it. (A match in another
+        // category is rarer and left for revalidation to reconcile.)
+        const existing = category.items.find(
+          (item) => item.normalizedName === normalizedName,
+        );
+        if (existing) {
+          return {
+            ...category,
+            items: category.items.map((item) =>
+              item === existing
+                ? { ...item, isChecked: false, isSyncing: true }
+                : item,
+            ),
+          };
+        }
+
+        return {
+          ...category,
+          items: [
+            ...category.items,
+            {
+              id: action.itemId,
+              categoryId: action.categoryId,
+              isChecked: false,
+              isSyncing: true,
+              name: action.name,
+              normalizedName,
+            },
+          ],
+        };
+      });
+    }
+    case "rename":
+      return categories.map((category) => ({
+        ...category,
+        items: category.items.map((item) =>
+          item.id === action.itemId
+            ? {
+                ...item,
+                name: action.name,
+                normalizedName: normalizeGroceryItemName(action.name),
+              }
+            : item,
+        ),
+      }));
+    case "remove":
+      return categories.map((category) => ({
+        ...category,
+        items: category.items.filter((item) => item.id !== action.itemId),
+      }));
+  }
+}
