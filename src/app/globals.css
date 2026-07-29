@@ -3,7 +3,7 @@
 body {
   background: #ffffff;
   color: #171717;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
   font-size: 1rem;
   line-height: 1.5;
 }
@@ -23,5 +23,15 @@ button {
 
   .text-body-muted {
     @apply text-base leading-snug text-neutral-500 sm:text-lg;
+  }
+
+  /* Back link in the page header (chevron + label). */
+  .page-back-link {
+    @apply inline-flex items-center gap-1 text-sm text-neutral-600 transition hover:text-neutral-900 sm:text-base;
+  }
+
+  /* Main page headline. */
+  .page-headline {
+    @apply mt-6 text-3xl font-bold leading-tight tracking-normal sm:mt-10 sm:text-5xl;
   }
 }
