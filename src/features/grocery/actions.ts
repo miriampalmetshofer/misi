@@ -4,10 +4,7 @@ import { revalidatePath } from "next/cache";
 import { and, eq, ne, sql } from "drizzle-orm";
 
 import { getDb, schema } from "@/db";
-import {
-  FALLBACK_GROCERY_CATEGORY,
-  normalizeGroceryItemName,
-} from "./categories";
+import { normalizeGroceryItemName } from "./categories";
 import {
   getGroceryCategories,
   getOrCreateHousehold,
@@ -17,33 +14,29 @@ const MAX_ITEM_NAME_LENGTH = 80;
 const SHOPPING_LIST_PATH = "/einkauf";
 
 export async function addGroceryItem(formData: FormData) {
-  const rawName = formData.get("name");
-  const requestedCategoryId = formData.get("categoryId");
-  const name = typeof rawName === "string" ? rawName.trim() : "";
+  const name = getString(formData, "name").trim();
+  const categoryId = getString(formData, "categoryId");
   const normalizedItemName = normalizeGroceryItemName(name);
 
-  if (!name || !normalizedItemName || name.length > MAX_ITEM_NAME_LENGTH) {
+  if (
+    !name ||
+    !categoryId ||
+    !normalizedItemName ||
+    name.length > MAX_ITEM_NAME_LENGTH
+  ) {
     return;
   }
 
   const db = getDb();
   const household = await getOrCreateHousehold();
   const categories = await getGroceryCategories(household.id);
-  const categoryIds = new Set(categories.map((category) => category.id));
-  const explicitCategoryId =
-    typeof requestedCategoryId === "string" &&
-    categoryIds.has(requestedCategoryId)
-      ? requestedCategoryId
-      : null;
 
-  const categoryId =
-    explicitCategoryId ??
-    (await getPreferredCategoryId(household.id, normalizedItemName)) ??
-    categories.find((category) => category.name === FALLBACK_GROCERY_CATEGORY)
-      ?.id ??
-    categories.at(-1)?.id;
-
-  if (!categoryId) {
+  // The UI only ever adds via a category's "+", so the category id should
+  // always belong to this household. If it doesn't, refuse rather than guess.
+  if (!categories.some((category) => category.id === categoryId)) {
+    console.error(
+      `addGroceryItem: category ${categoryId} not found for household ${household.id}`,
+    );
     return;
   }
 
@@ -78,14 +71,6 @@ export async function addGroceryItem(formData: FormData) {
       name: schema.groceryItems.name,
       normalizedName: schema.groceryItems.normalizedName,
     });
-
-  if (explicitCategoryId) {
-    await rememberPreferredCategory(
-      household.id,
-      explicitCategoryId,
-      normalizedItemName,
-    );
-  }
 
   revalidatePath(SHOPPING_LIST_PATH);
   return item;
@@ -162,6 +147,8 @@ export async function renameGroceryItem(formData: FormData) {
   const db = getDb();
   const household = await getOrCreateHousehold();
 
+  // If another item already uses this name, merge into it: keep that item and
+  // drop the one being renamed, so we never end up with two identical entries.
   const [existingItem] = await db
     .select({ id: schema.groceryItems.id })
     .from(schema.groceryItems)
@@ -175,10 +162,30 @@ export async function renameGroceryItem(formData: FormData) {
     .limit(1);
 
   if (existingItem) {
+    await db
+      .update(schema.groceryItems)
+      .set({ isChecked: false, lastCheckedAt: null, updatedAt: new Date() })
+      .where(
+        and(
+          eq(schema.groceryItems.id, existingItem.id),
+          eq(schema.groceryItems.householdId, household.id),
+        ),
+      );
+
+    await db
+      .delete(schema.groceryItems)
+      .where(
+        and(
+          eq(schema.groceryItems.id, itemId),
+          eq(schema.groceryItems.householdId, household.id),
+        ),
+      );
+
+    revalidatePath(SHOPPING_LIST_PATH);
     return;
   }
 
-  const [item] = await db
+  await db
     .update(schema.groceryItems)
     .set({ name, normalizedName: normalizedItemName, updatedAt: new Date() })
     .where(
@@ -186,68 +193,9 @@ export async function renameGroceryItem(formData: FormData) {
         eq(schema.groceryItems.id, itemId),
         eq(schema.groceryItems.householdId, household.id),
       ),
-    )
-    .returning({
-      categoryId: schema.groceryItems.categoryId,
-    });
-
-  if (item?.categoryId) {
-    await rememberPreferredCategory(
-      household.id,
-      item.categoryId,
-      normalizedItemName,
     );
-  }
 
   revalidatePath(SHOPPING_LIST_PATH);
-}
-
-async function getPreferredCategoryId(
-  householdId: string,
-  normalizedItemName: string,
-) {
-  const db = getDb();
-  const [preference] = await db
-    .select({ categoryId: schema.groceryItemCategoryPreferences.categoryId })
-    .from(schema.groceryItemCategoryPreferences)
-    .where(
-      and(
-        eq(schema.groceryItemCategoryPreferences.householdId, householdId),
-        eq(
-          schema.groceryItemCategoryPreferences.normalizedItemName,
-          normalizedItemName,
-        ),
-      ),
-    )
-    .limit(1);
-
-  return preference?.categoryId;
-}
-
-async function rememberPreferredCategory(
-  householdId: string,
-  categoryId: string,
-  normalizedItemName: string,
-) {
-  const db = getDb();
-
-  await db
-    .insert(schema.groceryItemCategoryPreferences)
-    .values({
-      householdId,
-      categoryId,
-      normalizedItemName,
-    })
-    .onConflictDoUpdate({
-      target: [
-        schema.groceryItemCategoryPreferences.householdId,
-        schema.groceryItemCategoryPreferences.normalizedItemName,
-      ],
-      set: {
-        categoryId,
-        updatedAt: new Date(),
-      },
-    });
 }
 
 function getString(formData: FormData, key: string) {
