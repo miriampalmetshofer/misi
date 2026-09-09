@@ -8,8 +8,11 @@ import {
   renameGroceryItem,
   setGroceryItemChecked,
 } from "./actions";
-import { normalizeGroceryItemName } from "./categories";
-import type { ShoppingListCategory, ShoppingListItem } from "./queries";
+import type {
+  OptimisticShoppingListCategory,
+  OptimisticShoppingListItem,
+  ShoppingListCategory,
+} from "./types";
 import { ShoppingListView } from "./ShoppingListView";
 import { useOptimisticMutation } from "./useOptimisticMutation";
 
@@ -98,9 +101,9 @@ export function ShoppingList({ categories }: ShoppingListProps) {
 }
 
 function withDrafts(
-  categories: ShoppingListCategory[],
+  categories: OptimisticShoppingListCategory[],
   drafts: Draft[],
-): ShoppingListCategory[] {
+): OptimisticShoppingListCategory[] {
   if (drafts.length === 0) {
     return categories;
   }
@@ -118,13 +121,12 @@ function withDrafts(
       items: [
         ...category.items,
         ...categoryDrafts.map(
-          (draft): ShoppingListItem => ({
+          (draft): OptimisticShoppingListItem => ({
             id: draft.id,
             categoryId: draft.categoryId,
             isChecked: false,
             isDraft: true,
             name: "",
-            normalizedName: "",
           }),
         ),
       ],
@@ -133,33 +135,14 @@ function withDrafts(
 }
 
 function reduce(
-  categories: ShoppingListCategory[],
+  categories: OptimisticShoppingListCategory[],
   action: OptimisticAction,
-): ShoppingListCategory[] {
+): OptimisticShoppingListCategory[] {
   switch (action.type) {
-    case "add": {
-      const normalizedName = normalizeGroceryItemName(action.name);
+    case "add":
       return categories.map((category) => {
         if (category.id !== action.categoryId) {
           return category;
-        }
-
-        // The server upserts on normalizedName, so re-adding a name already in
-        // this category must update in place — appending would flash a
-        // duplicate row until revalidation collapses it. (A match in another
-        // category is rarer and left for revalidation to reconcile.)
-        const existing = category.items.find(
-          (item) => item.normalizedName === normalizedName,
-        );
-        if (existing) {
-          return {
-            ...category,
-            items: category.items.map((item) =>
-              item === existing
-                ? { ...item, isChecked: false, isSyncing: true }
-                : item,
-            ),
-          };
         }
 
         return {
@@ -172,23 +155,15 @@ function reduce(
               isChecked: false,
               isSyncing: true,
               name: action.name,
-              normalizedName,
             },
           ],
         };
       });
-    }
     case "rename":
       return categories.map((category) => ({
         ...category,
         items: category.items.map((item) =>
-          item.id === action.itemId
-            ? {
-                ...item,
-                name: action.name,
-                normalizedName: normalizeGroceryItemName(action.name),
-              }
-            : item,
+          item.id === action.itemId ? { ...item, name: action.name } : item,
         ),
       }));
     case "remove":

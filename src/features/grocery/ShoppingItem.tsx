@@ -2,10 +2,10 @@
 
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
 
-import type { ShoppingListItem } from "./queries";
+import type { OptimisticShoppingListItem } from "./types";
 
 type ShoppingItemRowProps = {
-  item: ShoppingListItem;
+  item: OptimisticShoppingListItem;
   onCheck: (itemId: string) => void;
   onDelete: (itemId: string) => void;
   onRename: (itemId: string, name: string) => void;

@@ -1,10 +1,10 @@
 "use client";
 
-import type { ShoppingListCategory } from "./queries";
+import type { OptimisticShoppingListCategory } from "./types";
 import { ShoppingItem } from "./ShoppingItem";
 
 type ShoppingCategorySectionProps = {
-  category: ShoppingListCategory;
+  category: OptimisticShoppingListCategory;
   onAddDraft: (categoryId: string) => void;
   onCheckItem: (itemId: string) => void;
   onDeleteItem: (itemId: string) => void;

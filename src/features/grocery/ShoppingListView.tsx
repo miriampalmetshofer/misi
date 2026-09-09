@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 
-import type { ShoppingListCategory } from "./queries";
+import type { OptimisticShoppingListCategory } from "./types";
 import { ShoppingCategorySection } from "./ShoppingCategorySection";
 
 type ShoppingListViewProps = {
-  categories: ShoppingListCategory[];
+  categories: OptimisticShoppingListCategory[];
   onAddDraft: (categoryId: string) => void;
   onCheckItem: (itemId: string) => void;
   onDeleteItem: (itemId: string) => void;
