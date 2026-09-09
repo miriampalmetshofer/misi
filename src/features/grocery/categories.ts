@@ -10,7 +10,3 @@ export const DEFAULT_GROCERY_CATEGORIES = [
   { name: "Gefrorenes", icon: "🧊", sortOrder: 70 },
   { name: "Sonstiges", icon: "📦", sortOrder: 80 },
 ] as const;
-
-export function normalizeGroceryItemName(name: string) {
-  return name.trim().toLocaleLowerCase("de-AT").replace(/\s+/g, " ");
-}

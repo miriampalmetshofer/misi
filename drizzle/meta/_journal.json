@@ -15,6 +15,27 @@
       "when": 1785332357946,
       "tag": "0001_busy_joseph",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786103070965,
+      "tag": "0002_damp_the_stranger",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788961595254,
+      "tag": "0003_rename_tables_to_singular",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788961864487,
+      "tag": "0004_drop_household",
+      "breakpoints": true
     }
   ]
 }
