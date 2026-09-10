@@ -36,9 +36,7 @@ export const groceryItems = pgTable(
       onDelete: "set null",
     }),
     name: varchar("name").notNull(),
-    quantity: varchar("quantity").notNull().default("1"),
     isChecked: boolean("is_checked").notNull().default(false),
-    lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

@@ -53,11 +53,7 @@ export async function setGroceryItemChecked(formData: FormData) {
 
   await db
     .update(schema.groceryItems)
-    .set({
-      isChecked,
-      lastCheckedAt: isChecked ? new Date() : null,
-      updatedAt: new Date(),
-    })
+    .set({ isChecked, updatedAt: new Date() })
     .where(eq(schema.groceryItems.id, itemId));
 
   revalidatePath(SHOPPING_LIST_PATH);

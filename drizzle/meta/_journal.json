@@ -36,6 +36,13 @@
       "when": 1788961864487,
       "tag": "0004_drop_household",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789024666587,
+      "tag": "0005_drop_unused_grocery_item_columns",
+      "breakpoints": true
     }
   ]
 }
