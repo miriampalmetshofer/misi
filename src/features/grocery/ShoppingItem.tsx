@@ -119,7 +119,7 @@ export function ShoppingItem({
         aria-label={`${item.name || "Artikel"} löschen`}
         aria-hidden={!isEditing}
         tabIndex={isEditing ? undefined : -1}
-        className="flex size-8 items-center justify-center rounded-full text-xl leading-none text-neutral-300 transition hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-50 data-[hidden=true]:pointer-events-none data-[hidden=true]:invisible"
+        className="flex size-8 items-center justify-center rounded-full text-xl leading-none text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-50 data-[hidden=true]:pointer-events-none data-[hidden=true]:invisible"
         data-hidden={!isEditing}
         disabled={item.isSyncing}
         onClick={() => onDelete(item.id)}

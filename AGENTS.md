@@ -50,6 +50,14 @@ The goal is not to ship every feature at once. The goal is to build a maintainab
 - A migration that is not backward compatible — renaming or dropping a table or column, tightening a constraint — is therefore fine. Still say so plainly when a change falls into that category, since it means the previous deploy cannot be rolled back to without also reverting the schema.
 - The Neon API may be used for project and branch automation, such as listing branches, creating development or preview branches, renaming branches, and fetching connection details. For endpoint details, consult the current official Neon API documentation rather than relying on memory.
 
+### Tooling For Verification
+
+- Verify UI changes by looking at rendered pixels, not only at markup and computed styles. A control can be present in the DOM, pass every CSS check, and still be invisible to a person — for example because its contrast against the background is too low.
+- Interactive states (hover, focus, edit mode, optimistic/syncing states) must be verified in that state, not inferred from the code that produces them.
+- Preferred tool: the Claude in Chrome browser extension (https://claude.ai/chrome), signed in with the same account as Claude Code. It allows driving the real browser, clicking through states and taking screenshots.
+- Fallback when the extension is unavailable: headless Chrome over the DevTools protocol, which needs no extra install. Note `node --experimental-websocket` is required on Node 20 for a CDP client, and screenshots must actually be looked at, not just captured.
+- If a verification step is blocked by missing tooling, flag it to the user with the concrete name of what is needed and what it would allow, rather than silently downgrading to a weaker check. Say plainly which parts were verified and which were not.
+
 ## Core Operating Behaviors
 
 These behaviors apply at all times, across all skills. They are non-negotiable.
