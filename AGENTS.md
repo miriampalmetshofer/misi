@@ -45,6 +45,9 @@ The goal is not to ship every feature at once. The goal is to build a maintainab
 - Use the direct/unpooled Neon connection string for migrations and schema changes.
 - Drizzle migration files are source-controlled. Generate and review migrations before applying them.
 - Never run migrations against `production` unless the user has explicitly confirmed that production migration is intended.
+- Production migrations and the application deploy ship together as one step, so the schema and the code that expects it change at the same time. The brief downtime this causes is acceptable and is not a reason to design around it.
+- Because of that, `production` sitting behind the migrations on a feature branch is the normal state before a deploy, not drift to warn about. Do not propose backward-compatible or multi-phase migration schemes (expand/contract, temporary dual reads, compatibility shims) to avoid a mid-deploy mismatch unless the user asks for one.
+- A migration that is not backward compatible — renaming or dropping a table or column, tightening a constraint — is therefore fine. Still say so plainly when a change falls into that category, since it means the previous deploy cannot be rolled back to without also reverting the schema.
 - The Neon API may be used for project and branch automation, such as listing branches, creating development or preview branches, renaming branches, and fetching connection details. For endpoint details, consult the current official Neon API documentation rather than relying on memory.
 
 ## Core Operating Behaviors
