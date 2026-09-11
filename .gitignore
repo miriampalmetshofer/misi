@@ -43,3 +43,9 @@ next-env.d.ts
 
 # claude code
 .claude/
+
+# playwright
+/test-results/
+/playwright-report/
+/.playwright-mcp/
+.e2e-database-url

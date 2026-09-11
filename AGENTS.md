@@ -50,6 +50,25 @@ The goal is not to ship every feature at once. The goal is to build a maintainab
 - A migration that is not backward compatible — renaming or dropping a table or column, tightening a constraint — is therefore fine. Still say so plainly when a change falls into that category, since it means the previous deploy cannot be rolled back to without also reverting the schema.
 - The Neon API may be used for project and branch automation, such as listing branches, creating development or preview branches, renaming branches, and fetching connection details. For endpoint details, consult the current official Neon API documentation rather than relying on memory.
 
+### Tests
+
+- `npm test` runs the Vitest suite (happy-dom + Testing Library). It covers the
+  optimistic reducer and the component interactions, mocks the server actions,
+  and needs no database. It is part of `npm run ci`.
+- `npm run test:e2e` runs the Playwright suite. It creates a throwaway Neon
+  branch from `production`, migrates it, builds and starts the app against it,
+  and deletes the branch afterwards. It is deliberately small: it exists to
+  prove that a change survives a reload, i.e. that the server action really
+  wrote to Postgres. Interaction detail belongs in the Vitest layer, which is
+  roughly a thousand times faster.
+- The e2e suite is not part of `npm run ci` because it needs `NEON_API_KEY`.
+- Two selector traps, both load-bearing in the current UI: the delete button is
+  `aria-hidden` until its row is edited, so it must be queried by label rather
+  than by role; and a row in edit mode holds its name in an input value, so a
+  row located by text no longer matches it.
+- An added row renders optimistically before the insert finishes. Reloading
+  right after can beat the write, so wait for `data-syncing` to clear first.
+
 ### Tooling For Verification
 
 - Verify UI changes by looking at rendered pixels, not only at markup and computed styles. A control can be present in the DOM, pass every CSS check, and still be invisible to a person — for example because its contrast against the background is too low.

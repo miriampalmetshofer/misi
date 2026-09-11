@@ -119,7 +119,7 @@ export function ShoppingList({ categories }: ShoppingListProps) {
   );
 }
 
-function withDrafts(
+export function withDrafts(
   categories: OptimisticShoppingListCategory[],
   drafts: Draft[],
 ): OptimisticShoppingListCategory[] {
@@ -153,7 +153,7 @@ function withDrafts(
   });
 }
 
-function reduce(
+export function reduce(
   categories: OptimisticShoppingListCategory[],
   action: OptimisticAction,
 ): OptimisticShoppingListCategory[] {
