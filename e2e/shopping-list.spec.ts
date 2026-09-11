@@ -58,6 +58,24 @@ test("an added item survives a reload", async ({ page }) => {
   await expect(page.getByText(name)).toBeVisible();
 });
 
+test("a draft saved by tapping + survives a reload", async ({ page }) => {
+  const name = uniqueName("Bananen");
+  const section = page.getByRole("region", { name: "Gebäck" });
+  const plus = section.getByRole("button", { name: /hinzufügen/i });
+
+  await plus.click();
+  await section.getByRole("textbox").fill(name);
+  // Tap + instead of pressing Enter: the save rides on the input's blur, and
+  // only a real browser orders that blur against the click. Worth an e2e test
+  // even though the component test covers the same flow.
+  await plus.click();
+
+  await expect(row(page, name)).not.toHaveAttribute("data-syncing", "true");
+  await page.reload();
+
+  await expect(page.getByText(name)).toBeVisible();
+});
+
 test("a renamed item keeps its new name after a reload", async ({ page }) => {
   const name = uniqueName("Apfel");
   const renamed = `${name}-gruen`;

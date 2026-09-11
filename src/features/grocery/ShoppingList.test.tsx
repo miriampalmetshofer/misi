@@ -154,6 +154,30 @@ describe("adding an item", () => {
     expect(actions.deleteGroceryItem).not.toHaveBeenCalled();
   });
 
+  it("saves a typed draft when + is clicked instead of Enter", async () => {
+    const { user } = renderList();
+
+    await user.click(addButton("Gebäck"));
+    await user.keyboard("Bananen");
+    // No Enter: the click on + blurs the input, and that blur-save must run
+    // before the new draft replaces the old row. Losing what was typed here
+    // would be silent data loss on the list's core path.
+    await user.click(addButton("Gebäck"));
+
+    await waitFor(() =>
+      expect(actions.addGroceryItem).toHaveBeenCalledTimes(1),
+    );
+    expect(fieldsOf(actions.addGroceryItem)).toEqual({
+      name: "Bananen",
+      categoryId: "gebaeck",
+    });
+    expect(
+      await within(section("Gebäck")).findByText("Bananen"),
+    ).toBeInTheDocument();
+    // ...and a fresh, empty draft took its place.
+    expect(within(section("Gebäck")).getByRole("textbox")).toHaveValue("");
+  });
+
   it("keeps only one draft open at a time", async () => {
     const { user } = renderList();
 
