@@ -305,7 +305,7 @@ describe("checking an item off", () => {
     const { user } = renderList();
 
     await user.click(
-      screen.getByRole("button", { name: /Äpfel erledigt markieren/ }),
+      screen.getByRole("checkbox", { name: /Äpfel erledigt markieren/ }),
     );
 
     await waitFor(() =>
@@ -329,8 +329,15 @@ describe("checking an item off", () => {
     const row = (await within(section("Gebäck")).findByText("Semmeln")).closest(
       "li",
     )!;
-    expect(
-      within(row).getByRole("button", { name: /erledigt markieren/ }),
-    ).toBeDisabled();
+    // Base UI renders the checkbox as a span, so being disabled shows up as
+    // aria-disabled rather than the native disabled attribute. Click it to
+    // prove that is not just cosmetic.
+    const checkbox = within(row).getByRole("checkbox", {
+      name: /erledigt markieren/,
+    });
+    expect(checkbox).toHaveAttribute("aria-disabled", "true");
+
+    await user.click(checkbox);
+    expect(actions.setGroceryItemChecked).not.toHaveBeenCalled();
   });
 });
