@@ -47,7 +47,7 @@ Alternatives considered:
 
 ### Migrations are kept as generated, not squashed
 
-A feature branch keeps every migration it produced, including ones that add a column an later migration drops again. We do not collapse them into a single migration before merging.
+A feature branch keeps every migration it produced, including ones that add a column a later migration drops again. We do not collapse them into a single migration before merging.
 
 Why:
 
