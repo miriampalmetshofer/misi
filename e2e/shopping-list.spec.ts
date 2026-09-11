@@ -65,9 +65,8 @@ test("a draft saved by tapping + survives a reload", async ({ page }) => {
 
   await plus.click();
   await section.getByRole("textbox").fill(name);
-  // Tap + instead of pressing Enter: the save rides on the input's blur, and
-  // only a real browser orders that blur against the click. Worth an e2e test
-  // even though the component test covers the same flow.
+  // Saving by blur rather than Enter: only a real browser orders that blur
+  // against the click.
   await plus.click();
 
   await expect(row(page, name)).not.toHaveAttribute("data-syncing", "true");

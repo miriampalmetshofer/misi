@@ -159,9 +159,8 @@ describe("adding an item", () => {
 
     await user.click(addButton("Gebäck"));
     await user.keyboard("Bananen");
-    // No Enter: the click on + blurs the input, and that blur-save must run
-    // before the new draft replaces the old row. Losing what was typed here
-    // would be silent data loss on the list's core path.
+    // No Enter: the save rides on the input's blur, which must beat the
+    // re-render that replaces the draft row.
     await user.click(addButton("Gebäck"));
 
     await waitFor(() =>
@@ -174,7 +173,6 @@ describe("adding an item", () => {
     expect(
       await within(section("Gebäck")).findByText("Bananen"),
     ).toBeInTheDocument();
-    // ...and a fresh, empty draft took its place.
     expect(within(section("Gebäck")).getByRole("textbox")).toHaveValue("");
   });
 

@@ -50,10 +50,8 @@ export function ShoppingList({ categories }: ShoppingListProps) {
 
   function createDraftItem(categoryId: string) {
     const draftId = `${DRAFT_ID_PREFIX}${crypto.randomUUID()}`;
-    // One draft at a time: replace any pending draft with the new one.
-    // Functional update so it composes with the blur-triggered removeDraft
-    // of the previous (empty) draft, regardless of which runs first.
-    setDrafts(() => [{ id: draftId, categoryId }]);
+    // One draft at a time: replace any open draft with the new one.
+    setDrafts([{ id: draftId, categoryId }]);
     return draftId;
   }
 
