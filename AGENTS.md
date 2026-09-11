@@ -39,7 +39,8 @@ The goal is not to ship every feature at once. The goal is to build a maintainab
 
 - Neon `production` is the real database branch. Do not use it for local development or experiments.
 - Neon `dev/miriam` is the long-lived local development database branch. Local app development and first-pass migration testing should point here.
-- The local `DATABASE_URL_UNPOOLED` value in the checked-out development environment points to `dev/miriam`; it is safe to use for local migration testing unless the environment file is changed.
+- Local credentials live in `.env`: both `DATABASE_URL`s plus `NEON_API_KEY` and the `NEON_*` settings, so the Neon API is usable locally without asking for a key. `.env.local` is Vercel-generated and holds only an OIDC token — load both files, and do not conclude from an empty `.env.local` that a key is missing. `.env.example` lists every name.
+- The local `DATABASE_URL_UNPOOLED` points to `dev/miriam`; it is safe to use for local migration testing unless `.env` is changed.
 - Future PR preview databases should use short-lived Neon branches named like `preview/pr-123-feature-name`. They are for isolated review environments and should be deleted after the PR is merged or closed.
 - Use the pooled Neon connection string for normal application queries.
 - Use the direct/unpooled Neon connection string for migrations and schema changes.
@@ -155,6 +156,28 @@ Your job is surgical precision, not unsolicited renovation.
 
 Every skill includes a verification step. A task is not complete until verification passes. "Seems right" is never sufficient — there must be evidence (passing tests, build output, runtime data).
 
+### 7. Flag Tooling Friction
+
+The agent loop is a thing we are actively trying to make faster. You are the one
+who can see where it is slow, so say so instead of quietly routing around it.
+
+Flag it when:
+- A tool you do not have would have done the job properly, or much faster.
+- A sandbox command needs approval and waiting on it blocks or slows the work.
+- You cannot read something — a file, a dashboard, a log, a service — that would
+  have answered a question you instead had to infer or probe for.
+- You worked around a limitation. The workaround is exactly the signal: if it
+  was worth building, it was worth mentioning.
+
+Name the concrete thing and what it would have bought, the same way the
+verification rule asks for. "Access to the Vercel deploy logs would have told me
+why the build failed, instead of three local reproductions" is useful. "Better
+tooling would help" is not.
+
+Raise it when it happens, not only in a summary at the end, and keep it to a
+line or two — it is a note to improve the setup, not a complaint. A limitation
+that cost nothing is not worth mentioning.
+
 ## Failure Modes to Avoid
 
 These are the subtle errors that look like productivity but create problems:
@@ -169,6 +192,7 @@ These are the subtle errors that look like productivity but create problems:
 8. Removing things you don't fully understand
 9. Building without a spec because "it's obvious"
 10. Skipping verification because "it looks right"
+11. Silently working around a missing tool or permission instead of flagging it
 
 
 ### GitHub Identity and Permissions
