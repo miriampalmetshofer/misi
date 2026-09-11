@@ -45,6 +45,18 @@ Alternatives considered:
 - **SQLite**: simpler, but less ideal for hosted multi-device use.
 - **MongoDB**: not a strong fit because the app data is relational.
 
+### Migrations are kept as generated, not squashed
+
+A feature branch keeps every migration it produced, including ones that add a column an later migration drops again. We do not collapse them into a single migration before merging.
+
+Why:
+
+- `drizzle-kit generate` cannot produce the collapsed diff. It crashes in `preparePgAlterColumns` when one diff drops a table and also drops the foreign keys referencing it — which is exactly what squashing an exploratory chain asks for. Spreading the work over several files is what makes it generatable at all.
+- Writing the squashed SQL by hand means hand-maintaining the matching snapshot JSON. A wrong snapshot does not fail loudly; it silently corrupts every later `db:generate`.
+- The resulting production schema is identical either way, so the benefit is cosmetic.
+
+Accepted cost: the migration history shows intermediate states the product never had, so it should be read as a build log rather than a product history.
+
 ## Hosting
 
 Planned free-tier setup:
@@ -131,7 +143,9 @@ CI and preview have different jobs:
 - **CI** is automated proof: lint, typecheck, tests, build, migration validation.
 - **Preview** is a clickable deployed app for human review with its own migrated Neon branch.
 
-We are not starting with automated browser tests against preview deployments. AI can verify locally first; preview testing can stay manual until it becomes repetitive.
+There is a small Playwright suite, but it runs locally only, not in CI or against preview deployments. It needs `NEON_API_KEY` and branches from `production` on every run, which is not worth the setup effort yet — worth revisiting once running it by hand becomes repetitive.
+
+CI migrates a throwaway Postgres service container rather than only validating the migration journal, so a broken chain fails on the PR instead of first surfacing in the preview deploy, which is skipped for forks.
 
 Required checks before merge:
 
