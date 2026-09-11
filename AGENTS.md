@@ -55,13 +55,23 @@ The goal is not to ship every feature at once. The goal is to build a maintainab
 - `npm test` runs the Vitest suite (happy-dom + Testing Library). It covers the
   optimistic reducer and the component interactions, mocks the server actions,
   and needs no database. It is part of `npm run ci`.
+- The GitHub `checks` job runs lint, typecheck, `npm test`, `db:check` and
+  `db:migrate`, then builds. `db:migrate` runs against a throwaway Postgres
+  service container, so the whole chain is really applied from scratch on every
+  PR — `db:check` alone only validates the journal. Forks are covered too,
+  which the preview deploy is not.
 - `npm run test:e2e` runs the Playwright suite. It creates a throwaway Neon
   branch from `production`, migrates it, builds and starts the app against it,
   and deletes the branch afterwards. It is deliberately small: it exists to
   prove that a change survives a reload, i.e. that the server action really
   wrote to Postgres. Interaction detail belongs in the Vitest layer, which is
   roughly a thousand times faster.
-- The e2e suite is not part of `npm run ci` because it needs `NEON_API_KEY`.
+- The e2e suite runs locally only, on purpose. It is in neither `npm run ci`
+  nor the GitHub workflow. It needs `NEON_API_KEY` and branches from
+  `production` on every run, which is more cost and blast radius than the
+  coverage is worth on each push. Run it by hand before merging anything that
+  touches a server action or a migration. Do not wire it into CI without
+  asking — the secret being available is not the reason it is excluded.
 - Two selector traps, both load-bearing in the current UI: the delete button is
   `aria-hidden` until its row is edited, so it must be queried by label rather
   than by role; and a row in edit mode holds its name in an input value, so a
