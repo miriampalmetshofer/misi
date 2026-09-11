@@ -62,9 +62,6 @@ export async function getShoppingListData(): Promise<ShoppingListData> {
 
 export async function getGroceryCategories() {
   const db = getDb();
-  // The DB is the source of truth: sortOrder is seeded from
-  // DEFAULT_GROCERY_CATEGORIES, so the SQL ORDER BY is already the intended
-  // order, and every stored category is returned (no default-name filter).
   const existing = await selectGroceryCategories();
 
   if (existing.length > 0) {
