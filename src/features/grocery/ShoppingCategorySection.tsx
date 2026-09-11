@@ -36,9 +36,12 @@ export function ShoppingCategorySection({
         <button
           type="button"
           aria-label={`${category.name} hinzufügen`}
-          className="flex size-9 shrink-0 items-center justify-center rounded-full border border-neutral-300 bg-transparent text-neutral-400 transition hover:border-neutral-400 hover:text-neutral-700 sm:size-10"
-          // Let the click blur any open draft input first, so its onBlur saves
-          // the item before onAddDraft opens a fresh draft. The + lives in the
+          // Pushed to the trailing edge so its position does not shift with the
+          // category label's length, which left the buttons in a ragged column.
+          className="ml-auto flex size-9 shrink-0 items-center justify-center rounded-full border border-neutral-300 bg-transparent text-neutral-400 transition hover:border-neutral-400 hover:text-neutral-700 sm:size-10"
+          // Clicking here first blurs any open draft input, and the resulting
+          // onBlur save runs before this click handler, so the typed item is
+          // committed before onAddDraft opens a fresh draft. The + lives in the
           // category header (above the list), so removing a draft row below it
           // doesn't shift the button — the click still lands.
           onClick={() => onAddDraft(category.id)}
