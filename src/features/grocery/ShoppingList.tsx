@@ -22,6 +22,17 @@ type ShoppingListProps = {
 
 type Draft = { id: string; categoryId: string };
 
+// Ids the client makes up for rows the database does not have yet: an open
+// draft row, and an added item still waiting for its server-assigned uuid.
+const DRAFT_ID_PREFIX = "draft-";
+const PENDING_ID_PREFIX = "pending-";
+
+function isClientOnlyId(itemId: string) {
+  return (
+    itemId.startsWith(DRAFT_ID_PREFIX) || itemId.startsWith(PENDING_ID_PREFIX)
+  );
+}
+
 type OptimisticAction =
   | { type: "add"; itemId: string; name: string; categoryId: string }
   | { type: "rename"; itemId: string; name: string }
@@ -38,7 +49,7 @@ export function ShoppingList({ categories }: ShoppingListProps) {
   const categoriesWithDrafts = withDrafts(optimisticCategories, drafts);
 
   function createDraftItem(categoryId: string) {
-    const draftId = `draft-${crypto.randomUUID()}`;
+    const draftId = `${DRAFT_ID_PREFIX}${crypto.randomUUID()}`;
     // One draft at a time: replace any pending draft with the new one.
     // Functional update so it composes with the blur-triggered removeDraft
     // of the previous (empty) draft, regardless of which runs first.
@@ -56,7 +67,7 @@ export function ShoppingList({ categories }: ShoppingListProps) {
     const nextName = name.trim();
     if (!nextName) return;
 
-    const itemId = `pending-${crypto.randomUUID()}`;
+    const itemId = `${PENDING_ID_PREFIX}${crypto.randomUUID()}`;
     mutate(
       addGroceryItem,
       { name: nextName, categoryId },
@@ -66,7 +77,7 @@ export function ShoppingList({ categories }: ShoppingListProps) {
 
   function renameItem(itemId: string, name: string) {
     const nextName = name.trim();
-    if (!nextName) return;
+    if (!nextName || isClientOnlyId(itemId)) return;
 
     mutate(
       renameGroceryItem,
@@ -85,6 +96,14 @@ export function ShoppingList({ categories }: ShoppingListProps) {
 
   function deleteItem(itemId: string) {
     removeDraft(itemId);
+
+    // Drafts and not-yet-saved items only exist on the client, so their ids
+    // are not the uuids the database stores. Dropping the local row is the
+    // whole deletion; sending the id on would fail the uuid cast.
+    if (isClientOnlyId(itemId)) {
+      return;
+    }
+
     mutate(deleteGroceryItem, { itemId }, { type: "remove", itemId });
   }
 
