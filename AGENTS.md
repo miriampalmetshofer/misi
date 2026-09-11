@@ -66,12 +66,11 @@ The goal is not to ship every feature at once. The goal is to build a maintainab
   prove that a change survives a reload, i.e. that the server action really
   wrote to Postgres. Interaction detail belongs in the Vitest layer, which is
   roughly a thousand times faster.
-- The e2e suite runs locally only, on purpose. It is in neither `npm run ci`
-  nor the GitHub workflow. It needs `NEON_API_KEY` and branches from
-  `production` on every run, which is more cost and blast radius than the
-  coverage is worth on each push. Run it by hand before merging anything that
-  touches a server action or a migration. Do not wire it into CI without
-  asking — the secret being available is not the reason it is excluded.
+- The e2e suite runs locally only for now. It is in neither `npm run ci` nor
+  the GitHub workflow: it needs `NEON_API_KEY` and branches from `production`
+  on every run, which is not worth the setup effort yet. Running it in CI may
+  well be worth revisiting later. For now, run it by hand before merging
+  anything that touches a server action or a migration.
 - Two selector traps, both load-bearing in the current UI: the delete button is
   `aria-hidden` until its row is edited, so it must be queried by label rather
   than by role; and a row in edit mode holds its name in an input value, so a
