@@ -119,12 +119,26 @@ export function ShoppingItem({
         aria-label={`${item.name || "Artikel"} löschen`}
         aria-hidden={!isEditing}
         tabIndex={isEditing ? undefined : -1}
-        className="flex size-8 items-center justify-center rounded-full text-xl leading-none text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-50 data-[hidden=true]:pointer-events-none data-[hidden=true]:invisible"
+        className="flex size-8 items-center justify-center rounded-full text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-50 data-[hidden=true]:pointer-events-none data-[hidden=true]:invisible"
         data-hidden={!isEditing}
         disabled={item.isSyncing}
+        // Keep the input focused on mousedown: blurring it would run save(),
+        // leave edit mode and hide this button before the click could land.
+        onMouseDown={(event) => event.preventDefault()}
         onClick={() => onDelete(item.id)}
       >
-        ×
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="size-4"
+        >
+          <path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3" />
+        </svg>
       </button>
     </li>
   );
