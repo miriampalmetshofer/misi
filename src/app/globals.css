@@ -18,7 +18,7 @@ button {
   }
 
   .text-body-muted {
-    @apply text-base leading-snug text-neutral-500 sm:text-lg;
+    @apply text-base leading-snug text-muted-foreground sm:text-lg;
   }
 }
 
