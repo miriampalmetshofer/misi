@@ -1,0 +1,22 @@
+import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
+import { fileURLToPath } from "node:url";
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+      "server-only": fileURLToPath(
+        new URL("./test/server-only-stub.ts", import.meta.url),
+      ),
+    },
+  },
+  test: {
+    environment: "happy-dom",
+    globals: true,
+    setupFiles: ["./vitest.setup.ts"],
+    // The Playwright suite lives in e2e/ and is run by `npm run test:e2e`.
+    include: ["src/**/*.test.{ts,tsx}"],
+  },
+});

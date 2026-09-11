@@ -39,12 +39,49 @@ The goal is not to ship every feature at once. The goal is to build a maintainab
 
 - Neon `production` is the real database branch. Do not use it for local development or experiments.
 - Neon `dev/miriam` is the long-lived local development database branch. Local app development and first-pass migration testing should point here.
+- Local credentials live in `.env`: both `DATABASE_URL`s plus `NEON_API_KEY` and the `NEON_*` settings, so the Neon API is usable locally without asking for a key. `.env.local` is Vercel-generated and holds only an OIDC token — load both files, and do not conclude from an empty `.env.local` that a key is missing. `.env.example` lists every name.
+- The local `DATABASE_URL_UNPOOLED` points to `dev/miriam`; it is safe to use for local migration testing unless `.env` is changed.
 - Future PR preview databases should use short-lived Neon branches named like `preview/pr-123-feature-name`. They are for isolated review environments and should be deleted after the PR is merged or closed.
 - Use the pooled Neon connection string for normal application queries.
 - Use the direct/unpooled Neon connection string for migrations and schema changes.
 - Drizzle migration files are source-controlled. Generate and review migrations before applying them.
 - Never run migrations against `production` unless the user has explicitly confirmed that production migration is intended.
+- Production migrations and the application deploy ship together as one step, so the schema and the code that expects it change at the same time. The brief downtime this causes is acceptable and is not a reason to design around it.
+- Because of that, `production` sitting behind the migrations on a feature branch is the normal state before a deploy, not drift to warn about. Do not propose backward-compatible or multi-phase migration schemes (expand/contract, temporary dual reads, compatibility shims) to avoid a mid-deploy mismatch unless the user asks for one.
+- A migration that is not backward compatible — renaming or dropping a table or column, tightening a constraint — is therefore fine. Still say so plainly when a change falls into that category, since it means the previous deploy cannot be rolled back to without also reverting the schema.
 - The Neon API may be used for project and branch automation, such as listing branches, creating development or preview branches, renaming branches, and fetching connection details. For endpoint details, consult the current official Neon API documentation rather than relying on memory.
+
+### Tests
+
+- `npm test` runs the Vitest suite (happy-dom + Testing Library). It covers the
+  optimistic reducer and the component interactions, mocks the server actions,
+  and needs no database. It is part of `npm run ci`.
+- The GitHub `checks` job runs lint, typecheck, `npm test`, `db:check` and
+  `db:migrate`, then builds. `db:migrate` runs against a throwaway Postgres
+  service container, so the chain is really applied from scratch on every PR.
+- `npm run test:e2e` runs the Playwright suite. It creates a throwaway Neon
+  branch from `production`, migrates it, builds and starts the app against it,
+  and deletes the branch afterwards. It is deliberately small: it exists to
+  prove that a change survives a reload, i.e. that the server action really
+  wrote to Postgres. Interaction detail belongs in the Vitest layer, which is
+  roughly a thousand times faster.
+- The e2e suite runs locally only, in neither `npm run ci` nor the GitHub
+  workflow (see `docs/architecture.md`). Run it by hand before merging anything
+  that touches a server action or a migration.
+- Two selector traps, both load-bearing in the current UI: the delete button is
+  `aria-hidden` until its row is edited, so it must be queried by label rather
+  than by role; and a row in edit mode holds its name in an input value, so a
+  row located by text no longer matches it.
+- An added row renders optimistically before the insert finishes. Reloading
+  right after can beat the write, so wait for `data-syncing` to clear first.
+
+### Tooling For Verification
+
+- Verify UI changes by looking at rendered pixels, not only at markup and computed styles. A control can be present in the DOM, pass every CSS check, and still be invisible to a person — for example because its contrast against the background is too low.
+- Interactive states (hover, focus, edit mode, optimistic/syncing states) must be verified in that state, not inferred from the code that produces them.
+- Preferred tool: the Claude in Chrome browser extension (https://claude.ai/chrome), signed in with the same account as Claude Code. It allows driving the real browser, clicking through states and taking screenshots.
+- Fallback when the extension is unavailable: headless Chrome over the DevTools protocol, which needs no extra install. Note `node --experimental-websocket` is required on Node 20 for a CDP client, and screenshots must actually be looked at, not just captured.
+- If a verification step is blocked by missing tooling, flag it to the user with the concrete name of what is needed and what it would allow, rather than silently downgrading to a weaker check. Say plainly which parts were verified and which were not.
 
 ## Core Operating Behaviors
 
@@ -115,6 +152,28 @@ Your job is surgical precision, not unsolicited renovation.
 
 Every skill includes a verification step. A task is not complete until verification passes. "Seems right" is never sufficient — there must be evidence (passing tests, build output, runtime data).
 
+### 7. Flag Tooling Friction
+
+The agent loop is a thing we are actively trying to make faster. You are the one
+who can see where it is slow, so say so instead of quietly routing around it.
+
+Flag it when:
+- A tool you do not have would have done the job properly, or much faster.
+- A sandbox command needs approval and waiting on it blocks or slows the work.
+- You cannot read something — a file, a dashboard, a log, a service — that would
+  have answered a question you instead had to infer or probe for.
+- You worked around a limitation. The workaround is exactly the signal: if it
+  was worth building, it was worth mentioning.
+
+Name the concrete thing and what it would have bought, the same way the
+verification rule asks for. "Access to the Vercel deploy logs would have told me
+why the build failed, instead of three local reproductions" is useful. "Better
+tooling would help" is not.
+
+Raise it when it happens, not only in a summary at the end, and keep it to a
+line or two — it is a note to improve the setup, not a complaint. A limitation
+that cost nothing is not worth mentioning.
+
 ## Failure Modes to Avoid
 
 These are the subtle errors that look like productivity but create problems:
@@ -129,6 +188,7 @@ These are the subtle errors that look like productivity but create problems:
 8. Removing things you don't fully understand
 9. Building without a spec because "it's obvious"
 10. Skipping verification because "it looks right"
+11. Silently working around a missing tool or permission instead of flagging it
 
 
 ### GitHub Identity and Permissions

@@ -21,9 +21,26 @@ env:
 
 jobs:
   checks:
-    name: Lint, typecheck, migrations, build
+    name: Lint, typecheck, test, migrations, build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
+    # Throwaway Postgres so the migrations are really executed, not just
+    # checked for journal consistency. Matches the DATABASE_URL above.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: misi
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout
@@ -44,8 +61,17 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Test
+        run: npm test
+
       - name: Validate Drizzle migrations
         run: npm run db:check
+
+      # Applies the whole chain from scratch, so a migration that is broken or
+      # out of order fails here rather than in the preview deploy — which is
+      # skipped for forks and so cannot be the first place this is caught.
+      - name: Run Drizzle migrations
+        run: npm run db:migrate
 
       - name: Build
         run: npm run build

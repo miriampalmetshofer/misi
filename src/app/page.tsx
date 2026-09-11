@@ -1,48 +1,29 @@
-const modules = [
-  {
-    title: "Einkaufsliste",
-    description: "Gemeinsame Einkaufsliste für den Haushalt.",
-  }
-];
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="min-h-screen w-full bg-white text-neutral-950">
-      <header className="flex items-center justify-between border-b border-neutral-200 px-5 py-5 sm:px-8 sm:py-6 lg:px-10">
-        <h1 className="text-app-brand">Misi</h1>
+    <main className="min-h-screen bg-stone-50 px-5 py-6 text-neutral-950 sm:px-8">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
+        <header className="border-b border-neutral-200 pb-5">
+          <h1 className="text-2xl font-bold uppercase leading-none sm:text-3xl">
+            Misi
+          </h1>
+        </header>
 
-        <button
-          type="button"
-          aria-label="Open menu"
-          className="flex size-12 shrink-0 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 sm:size-14"
-        >
-          <span className="flex flex-col gap-1" aria-hidden="true">
-            <span className="block h-0.5 w-5 bg-current sm:w-6" />
-            <span className="block h-0.5 w-5 bg-current sm:w-6" />
-            <span className="block h-0.5 w-5 bg-current sm:w-6" />
-          </span>
-        </button>
-      </header>
-
-      <section className="px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-12">
-        <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-2 lg:gap-6">
-          {modules.map((module) => (
-            <article
-              className="flex flex-col rounded-2xl border border-neutral-200 bg-white p-5 sm:p-7 lg:p-9"
-              key={module.title}
+        <section>
+          <h2 className="text-xl font-bold leading-tight sm:text-2xl">
+            Zuhause
+          </h2>
+          <div className="mt-4">
+            <Link
+              className="block rounded-lg border border-neutral-200 bg-white p-4 text-base font-semibold text-neutral-900 transition hover:border-neutral-300 hover:bg-neutral-50 sm:text-lg"
+              href="/einkauf"
             >
-              <div>
-                <h2 className="text-card-title">{module.title}</h2>
-                <p className="text-body-muted mt-2">{module.description}</p>
-              </div>
-
-              <div className="mt-6 inline-flex w-fit whitespace-nowrap rounded-md border-2 border-cyan-300 bg-cyan-50 px-3 py-2 text-xs font-semibold uppercase leading-none tracking-widest text-cyan-800 sm:px-4 sm:text-sm lg:mt-8 lg:text-base">
-                Bald verfügbar
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+              Einkaufsliste
+            </Link>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

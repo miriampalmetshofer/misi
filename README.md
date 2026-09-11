@@ -101,4 +101,4 @@ GitHub repository variables required:
 
 Preview branches and production restore branches expire after 14 days. Production restore branches are created before migrations so the production database can be restored with Neon branch restore or point-in-time recovery if a migration causes data problems.
 
-Schema-changing releases must keep migrations backwards compatible with the currently deployed app (otherwise there will be downtime). Destructive cleanup, such as dropping a column that old production code still reads, should ship in a later PR after the code no longer depends on it.
+Production migrations and the application deploy ship together as one step, so the schema and the code that expects it change at the same time. Migrations therefore do not need to be backwards compatible with the previously deployed app, and destructive changes such as dropping a column may ship in the same PR as the code that stops using it. The brief downtime this causes is acceptable. Note that such a release cannot be rolled back without also reverting the schema.
