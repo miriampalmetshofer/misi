@@ -52,10 +52,10 @@ export function ShoppingCategorySection({
 
       <Button
         variant="outline"
-        // h-11 meets the 44px touch minimum; the sized variants top out at 36.
+        size="sm"
         // The default border-input is ~1.3:1 here, too faint for the only
         // affordance an empty category has.
-        className="mt-2 h-11 rounded-full border-muted-foreground px-4"
+        className="mt-2 rounded-full border-muted-foreground"
         // Keep this outside the list: an open draft's blur must fire before
         // this click for the draft to be saved or dropped first.
         onClick={() => onAddDraft(category.id)}
