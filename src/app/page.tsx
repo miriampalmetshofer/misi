@@ -1,29 +1,41 @@
 import Link from "next/link";
+import { Menu } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+
+const modules = [
+  {
+    title: "Einkaufsliste",
+    description: "Gemeinsame Einkaufsliste für den Haushalt.",
+    href: "/einkauf",
+  },
+];
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-stone-50 px-5 py-6 text-neutral-950 sm:px-8">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
-        <header className="border-b border-neutral-200 pb-5">
-          <h1 className="text-2xl font-bold uppercase leading-none sm:text-3xl">
-            Misi
-          </h1>
-        </header>
+    <main className="min-h-screen w-full bg-background text-foreground">
+      <header className="flex items-center justify-between border-b px-5 py-5 sm:px-8 sm:py-6 lg:px-10">
+        <h1 className="text-app-brand">Misi</h1>
 
-        <section>
-          <h2 className="text-xl font-bold leading-tight sm:text-2xl">
-            Zuhause
-          </h2>
-          <div className="mt-4">
+        <Button variant="outline" size="icon-lg" aria-label="Menü öffnen">
+          <Menu />
+        </Button>
+      </header>
+
+      <section className="px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-12">
+        <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-2 lg:gap-6">
+          {modules.map((module) => (
             <Link
-              className="block rounded-lg border border-neutral-200 bg-white p-4 text-base font-semibold text-neutral-900 transition hover:border-neutral-300 hover:bg-neutral-50 sm:text-lg"
-              href="/einkauf"
+              className="flex flex-col rounded-2xl border bg-card p-5 text-card-foreground transition-colors hover:bg-accent hover:text-accent-foreground sm:p-7 lg:p-9"
+              href={module.href}
+              key={module.title}
             >
-              Einkaufsliste
+              <h2 className="text-card-title">{module.title}</h2>
+              <p className="text-body-muted mt-2">{module.description}</p>
             </Link>
-          </div>
-        </section>
-      </div>
+          ))}
+        </div>
+      </section>
     </main>
   );
 }

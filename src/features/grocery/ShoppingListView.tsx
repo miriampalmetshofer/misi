@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 
 import type { OptimisticShoppingListCategory } from "./types";
 import { ShoppingCategorySection } from "./ShoppingCategorySection";
@@ -23,21 +24,10 @@ export function ShoppingListView({
   onSaveDraft,
 }: ShoppingListViewProps) {
   return (
-    <div className="min-h-screen bg-stone-50 text-base text-neutral-950">
+    <div className="min-h-screen bg-background text-base text-foreground">
       <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-5 pb-16 pt-6 sm:px-8 sm:pt-10">
         <Link href="/" className="page-back-link">
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="size-4"
-          >
-            <path d="m15 18-6-6 6-6" />
-          </svg>
+          <ChevronLeft aria-hidden="true" className="size-4" />
           <span>Home</span>
         </Link>
 
