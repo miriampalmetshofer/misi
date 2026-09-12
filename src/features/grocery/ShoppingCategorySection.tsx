@@ -56,11 +56,7 @@ export function ShoppingCategorySection({
       <Button
         variant="outline"
         size="sm"
-        // The default border-input is ~1.3:1 here, too faint for the only
-        // affordance an empty category has.
         className="mt-2 rounded-full border-muted-foreground"
-        // Keep focus on the draft input so removing an empty draft cannot move
-        // this button out from under the click before onClick runs.
         onPointerDown={(event) => event.preventDefault()}
         onClick={() => onAddDraft(category.id)}
       >
