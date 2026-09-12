@@ -186,24 +186,25 @@ describe("adding an item", () => {
     expect(within(section("Gebäck")).getByRole("textbox")).toBeInTheDocument();
   });
 
-  it("ignores a second press while an empty draft is open", async () => {
+  it("keeps an empty draft open when its add button is pressed again", async () => {
     const { user } = renderList();
 
     await user.click(addButton("Gebäck"));
     await user.click(addButton("Gebäck"));
 
-    expect(within(section("Gebäck")).queryByRole("textbox")).toBeNull();
+    expect(within(section("Gebäck")).getByRole("textbox")).toHaveValue("");
     expect(actions.addGroceryItem).not.toHaveBeenCalled();
   });
 
-  it("opens a fresh draft again after an empty one was dismissed", async () => {
+  it("moves an empty draft when another category's add button is pressed", async () => {
     const { user } = renderList();
 
     await user.click(addButton("Gebäck"));
-    await user.click(addButton("Gebäck"));
-    await user.click(addButton("Gebäck"));
+    await user.click(addButton("Obst"));
 
-    expect(within(section("Gebäck")).getByRole("textbox")).toBeInTheDocument();
+    expect(within(section("Gebäck")).queryByRole("textbox")).toBeNull();
+    expect(within(section("Obst")).getByRole("textbox")).toHaveValue("");
+    expect(actions.addGroceryItem).not.toHaveBeenCalled();
   });
 });
 

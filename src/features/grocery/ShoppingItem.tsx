@@ -14,6 +14,7 @@ type ShoppingItemRowProps = {
   onDelete: (itemId: string) => void;
   onRename: (itemId: string, name: string) => void;
   onSaveDraft: (draftId: string, name: string, categoryId: string) => void;
+  onUpdateDraft: (draftId: string, name: string) => void;
 };
 
 export function ShoppingItem({
@@ -22,6 +23,7 @@ export function ShoppingItem({
   onDelete,
   onRename,
   onSaveDraft,
+  onUpdateDraft,
 }: ShoppingItemRowProps) {
   const [isEditing, setIsEditing] = useState(item.isDraft ?? false);
   const [draft, setDraft] = useState(item.name);
@@ -95,7 +97,13 @@ export function ShoppingItem({
           ref={inputRef}
           value={draft}
           onBlur={save}
-          onChange={(event) => setDraft(event.target.value)}
+          onChange={(event) => {
+            setDraft(event.target.value);
+
+            if (item.isDraft) {
+              onUpdateDraft(item.id, event.target.value);
+            }
+          }}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.currentTarget.blur();

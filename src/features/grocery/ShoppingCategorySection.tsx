@@ -13,6 +13,7 @@ type ShoppingCategorySectionProps = {
   onDeleteItem: (itemId: string) => void;
   onRenameItem: (itemId: string, name: string) => void;
   onSaveDraft: (draftId: string, name: string, categoryId: string) => void;
+  onUpdateDraft: (draftId: string, name: string) => void;
 };
 
 export function ShoppingCategorySection({
@@ -22,6 +23,7 @@ export function ShoppingCategorySection({
   onDeleteItem,
   onRenameItem,
   onSaveDraft,
+  onUpdateDraft,
 }: ShoppingCategorySectionProps) {
   return (
     <section aria-labelledby={`category-${category.id}`}>
@@ -45,6 +47,7 @@ export function ShoppingCategorySection({
               onDelete={onDeleteItem}
               onRename={onRenameItem}
               onSaveDraft={onSaveDraft}
+              onUpdateDraft={onUpdateDraft}
             />
           ))}
         </ul>
@@ -56,8 +59,9 @@ export function ShoppingCategorySection({
         // The default border-input is ~1.3:1 here, too faint for the only
         // affordance an empty category has.
         className="mt-2 rounded-full border-muted-foreground"
-        // Keep this outside the list: an open draft's blur must fire before
-        // this click for the draft to be saved or dropped first.
+        // Keep focus on the draft input so removing an empty draft cannot move
+        // this button out from under the click before onClick runs.
+        onPointerDown={(event) => event.preventDefault()}
         onClick={() => onAddDraft(category.id)}
       >
         <Plus aria-hidden="true" />

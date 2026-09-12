@@ -83,7 +83,7 @@ describe("withDrafts", () => {
 
   it("appends an empty draft row to the drafting category", () => {
     const next = withDrafts(categories(), [
-      { id: "draft-1", categoryId: "gebaeck" },
+      { id: "draft-1", categoryId: "gebaeck", name: "" },
     ]);
 
     expect(next[0].items).toHaveLength(1);
@@ -96,5 +96,13 @@ describe("withDrafts", () => {
         name: "",
       },
     ]);
+  });
+
+  it("keeps the draft row's typed name", () => {
+    const next = withDrafts(categories(), [
+      { id: "draft-1", categoryId: "gebaeck", name: "Semmeln" },
+    ]);
+
+    expect(next[1].items[0].name).toBe("Semmeln");
   });
 });
