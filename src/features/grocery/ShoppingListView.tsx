@@ -27,6 +27,12 @@ export function ShoppingListView({
   onSaveDraft,
   onUpdateDraft,
 }: ShoppingListViewProps) {
+  const openItemCount = categories.reduce(
+    (total, category) =>
+      total + category.items.filter((item) => !item.isDraft).length,
+    0,
+  );
+
   return (
     <div className="min-h-screen bg-background text-base text-foreground">
       <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-5 pb-16 pt-6 sm:px-8 sm:pt-10">
@@ -36,6 +42,15 @@ export function ShoppingListView({
         </Link>
 
         <h1 className="page-headline">Einkaufsliste</h1>
+
+        {/* Checked items are filtered out server-side (see queries.ts), so a
+            "done of total" pair would always read zero. This counts what is
+            still to buy. */}
+        <p className="mt-2 text-sm text-muted-foreground">
+          {openItemCount === 0
+            ? "Nichts offen"
+            : `${openItemCount} Artikel offen`}
+        </p>
 
         <div className="mt-8 space-y-3 sm:mt-12 sm:space-y-4">
           {categories.map((category) => (

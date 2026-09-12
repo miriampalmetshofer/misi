@@ -386,6 +386,39 @@ describe("deleting an item", () => {
   });
 });
 
+describe("the open-item total", () => {
+  it("counts the items still to buy", () => {
+    renderList();
+
+    // The fixture holds Äpfel and Bananen, both unchecked.
+    expect(screen.getByText("2 Artikel offen")).toBeInTheDocument();
+  });
+
+  it("drops as items are checked off", async () => {
+    const { user } = renderList();
+
+    await user.click(
+      screen.getByRole("checkbox", { name: /Äpfel erledigt markieren/ }),
+    );
+
+    expect(await screen.findByText("1 Artikel offen")).toBeInTheDocument();
+  });
+
+  it("says so when nothing is left", () => {
+    render(<ShoppingList categories={[]} />);
+
+    expect(screen.getByText("Nichts offen")).toBeInTheDocument();
+  });
+
+  it("ignores a draft that has no name yet", async () => {
+    const { user } = renderList();
+
+    await user.click(addButton("Gebäck"));
+
+    expect(screen.getByText("2 Artikel offen")).toBeInTheDocument();
+  });
+});
+
 describe("checking an item off", () => {
   it("removes it from the list and tells the server", async () => {
     const { user } = renderList();
