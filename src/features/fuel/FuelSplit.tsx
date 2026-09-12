@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { calculateTanken, type OffsetMode } from "./calculate";
+import { parseNumber } from "./parseNumber";
 
 const MODE_LABELS: Record<OffsetMode, string> = {
   proportional: "Proportional",
@@ -51,12 +52,6 @@ const percent = new Intl.NumberFormat("de-DE", {
   maximumFractionDigits: 1,
 });
 
-/** Accepts both "256,4" and "256.4", since phone keyboards offer either. */
-function toNumber(value: string) {
-  const parsed = Number(value.replace(",", "."));
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
 /** Today as yyyy-mm-dd in local time, which is what <input type="date"> wants. */
 function today() {
   const now = new Date();
@@ -72,16 +67,36 @@ export function FuelSplit() {
   const [datum, setDatum] = useState(today);
   const [isHintOpen, setIsHintOpen] = useState(false);
 
+  const parsed = {
+    kmMiriam: parseNumber(form.kmMiriam),
+    kmSimon: parseNumber(form.kmSimon),
+    kmBeide: parseNumber(form.kmBeide),
+    kmAuto: parseNumber(form.kmAuto),
+    bezahlt: parseNumber(form.bezahlt),
+  };
+
+  // A field is invalid only once something unreadable is in it; empty just
+  // means "not filled in yet" and must not light up the whole form in red.
+  const invalidFields = (Object.keys(parsed) as FieldName[]).filter(
+    (name) => form[name].trim() !== "" && parsed[name] === null,
+  );
+
   const input = {
-    kmMiriam: toNumber(form.kmMiriam),
-    kmSimon: toNumber(form.kmSimon),
-    kmBeide: toNumber(form.kmBeide),
-    kmAuto: toNumber(form.kmAuto),
-    bezahlt: toNumber(form.bezahlt),
+    kmMiriam: parsed.kmMiriam ?? 0,
+    kmSimon: parsed.kmSimon ?? 0,
+    kmBeide: parsed.kmBeide ?? 0,
+    kmAuto: parsed.kmAuto ?? 0,
+    bezahlt: parsed.bezahlt ?? 0,
   };
 
   const result = calculateTanken(input, mode);
-  const hasKilometres = result.summeGeraet > 0;
+
+  // `beide` divides by the car reading, `proportional` by the device sum, so
+  // the readiness gate has to follow the basis the active mode actually uses.
+  // Otherwise a missing car reading yields a confident "0,00 €" split.
+  const basis = mode === "beide" ? input.kmAuto : result.summeGeraet;
+  const canCalculate =
+    basis > 0 && invalidFields.length === 0 && !result.isInconsistent;
 
   function update(name: FieldName, value: string) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -121,6 +136,7 @@ export function FuelSplit() {
                 name={field.name}
                 unit="km"
                 value={form[field.name]}
+                isInvalid={invalidFields.includes(field.name)}
                 onChange={update}
               />
             ))}
@@ -138,13 +154,14 @@ export function FuelSplit() {
               name="kmAuto"
               unit="km"
               value={form.kmAuto}
+              isInvalid={invalidFields.includes("kmAuto")}
               onChange={update}
             />
 
             <Summary
               label="Differenz"
               value={`${km.format(result.differenz)} km${
-                hasKilometres && input.kmAuto > 0
+                result.summeGeraet > 0 && input.kmAuto > 0
                   ? ` (${percent.format(result.differenzAnteil)})`
                   : ""
               }`}
@@ -161,6 +178,7 @@ export function FuelSplit() {
               name="bezahlt"
               unit="€"
               value={form.bezahlt}
+              isInvalid={invalidFields.includes("bezahlt")}
               onChange={update}
             />
           </section>
@@ -184,24 +202,34 @@ export function FuelSplit() {
               </Button>
             </div>
 
-            <div
-              aria-labelledby="modus"
-              className="grid grid-cols-2 gap-2"
-              role="radiogroup"
-            >
+            {/* Native radios rather than buttons with role="radio": arrow-key
+                selection and the single tab stop come from the browser, which
+                hand-rolled roving tabindex would otherwise have to reproduce.
+                The input is visually hidden and its label carries the styling. */}
+            <fieldset className="grid grid-cols-2 gap-2">
+              <legend className="sr-only">Differenz verteilen</legend>
+
               {(Object.keys(MODE_LABELS) as OffsetMode[]).map((value) => (
-                <Button
+                <label
                   key={value}
-                  role="radio"
-                  aria-checked={mode === value}
-                  variant={mode === value ? "default" : "outline"}
-                  size="lg"
-                  onClick={() => setMode(value)}
+                  className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-border bg-background text-sm font-medium transition-all select-none has-checked:border-transparent has-checked:bg-primary has-checked:text-primary-foreground has-focus-visible:border-ring has-focus-visible:ring-3 has-focus-visible:ring-ring/50 dark:border-input dark:bg-input/30 dark:has-checked:bg-primary"
                 >
+                  <input
+                    // The visible text sits in the wrapping label, but naming
+                    // the input directly keeps it independent of how the
+                    // accessible name is computed through sr-only content.
+                    aria-label={MODE_LABELS[value]}
+                    checked={mode === value}
+                    className="sr-only"
+                    name="modus"
+                    type="radio"
+                    value={value}
+                    onChange={() => setMode(value)}
+                  />
                   {MODE_LABELS[value]}
-                </Button>
+                </label>
               ))}
-            </div>
+            </fieldset>
 
             {isHintOpen ? (
               <dl
@@ -232,32 +260,28 @@ export function FuelSplit() {
               Zu zahlen
             </h2>
 
-            {hasKilometres ? (
-              <>
-                {/* The note below is about the list as a whole, so it stays
-                    outside the <dl>, which may only hold dt/dd groups. */}
-                <dl className="mt-4 flex flex-col gap-3">
-                  <Share
-                    label="Miriam"
-                    share={result.anteilMiriam}
-                    amount={result.zahltMiriam}
-                  />
-                  <Share
-                    label="Simon"
-                    share={result.anteilSimon}
-                    amount={result.zahltSimon}
-                  />
-                </dl>
-
-                <p className="mt-3 border-t pt-3 text-sm text-muted-foreground">
-                  Enthält die gemeinsamen{" "}
-                  {percent.format(result.anteilBeide)}, je zur Hälfte auf beide
-                  aufgeteilt.
-                </p>
-              </>
+            {canCalculate ? (
+              <dl className="mt-4 flex flex-col gap-3">
+                <Share
+                  label="Miriam"
+                  share={result.anteilMiriam}
+                  amount={result.zahltMiriam}
+                />
+                <Share
+                  label="Simon"
+                  share={result.anteilSimon}
+                  amount={result.zahltSimon}
+                />
+              </dl>
             ) : (
               <p className="text-body-muted mt-4">
-                Kilometer eintragen, dann erscheint hier die Aufteilung.
+                {invalidFields.length > 0
+                  ? "Bitte nur Zahlen eintragen, dann erscheint hier die Aufteilung."
+                  : result.isInconsistent
+                    ? "Das Gerät zählt mehr Kilometer als das Auto. Bitte die Eingaben prüfen."
+                    : mode === "beide"
+                    ? "Kilometer und Tachostand eintragen, dann erscheint hier die Aufteilung."
+                    : "Kilometer eintragen, dann erscheint hier die Aufteilung."}
               </p>
             )}
           </section>
@@ -305,12 +329,14 @@ function NumberField({
   name,
   unit,
   value,
+  isInvalid,
   onChange,
 }: {
   label: string;
   name: FieldName;
   unit: string;
   value: string;
+  isInvalid: boolean;
   onChange: (name: FieldName, value: string) => void;
 }) {
   return (
@@ -321,6 +347,9 @@ function NumberField({
           // The label element also holds the unit, so name the input directly
           // rather than letting the unit leak into its accessible name.
           aria-label={label}
+          // Input already styles aria-invalid, so the bad field is marked where
+          // it is rather than only in the result panel.
+          aria-invalid={isInvalid}
           className="w-28 text-right tabular-nums sm:w-32"
           // `decimal` gives phones a comma/period keypad; `type=text` keeps the
           // raw string so a half-typed "256," is not discarded by the browser.

@@ -97,6 +97,80 @@ describe("FuelSplit", () => {
     }
   });
 
+  it("rejects a thousands separator rather than guessing at it", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit />);
+
+    // There is no grouping separator, so "1.256,4" is not a number. Saying so
+    // beats silently picking one of the two plausible readings.
+    await user.type(screen.getByLabelText("Miriam"), "1.256,4");
+    await user.type(screen.getByLabelText("Simon"), "100");
+    await user.type(screen.getByLabelText("Betrag"), "50");
+
+    expect(screen.getByText(/nur Zahlen eintragen/)).toBeInTheDocument();
+  });
+
+  it("asks for numbers instead of calculating from unreadable input", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit />);
+
+    await user.type(screen.getByLabelText("Miriam"), "hundert");
+    await user.type(screen.getByLabelText("Simon"), "100");
+    await user.type(screen.getByLabelText("Betrag"), "50");
+
+    expect(screen.getByText(/nur Zahlen eintragen/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Miriam")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(screen.getByLabelText("Simon")).toHaveAttribute(
+      "aria-invalid",
+      "false",
+    );
+  });
+
+  it("prompts for the car reading in 50/50 mode instead of showing 0,00 €", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit />);
+
+    await user.type(screen.getByLabelText("Miriam"), "100");
+    await user.type(screen.getByLabelText("Simon"), "100");
+    await user.type(screen.getByLabelText("Betrag"), "50");
+    await user.click(screen.getByRole("radio", { name: "50/50" }));
+
+    // 50/50 divides by the car reading, so without one there is nothing to
+    // divide by — that must read as "not ready", not as a 0,00 € split.
+    expect(screen.getByText(/Tachostand eintragen/)).toBeInTheDocument();
+    expect(result().queryByText("0,00 €")).not.toBeInTheDocument();
+  });
+
+  it("refuses to split when the device counted more than the car", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit />);
+
+    await user.type(screen.getByLabelText("Miriam"), "100");
+    await user.type(screen.getByLabelText("Simon"), "100");
+    await user.type(screen.getByLabelText("Beide"), "100");
+    await user.type(screen.getByLabelText("Gesamt"), "150");
+    await user.type(screen.getByLabelText("Betrag"), "90");
+
+    // This used to render shares of 66,7 % / 66,7 % / -33,3 %.
+    expect(screen.getByText(/mehr Kilometer als das Auto/)).toBeInTheDocument();
+  });
+
+  it("gives the mode radios real radio-group keyboard behaviour", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit />);
+
+    const [proportional, fiftyFifty] = screen.getAllByRole("radio");
+
+    proportional.focus();
+    await user.keyboard("{ArrowRight}");
+
+    expect(fiftyFifty).toBeChecked();
+    expect(proportional).not.toBeChecked();
+  });
+
   it("explains both modes behind the info toggle", async () => {
     const user = userEvent.setup();
     render(<FuelSplit />);

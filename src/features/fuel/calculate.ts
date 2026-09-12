@@ -27,6 +27,12 @@ export type TankenResult = {
   /** Euro amounts, unrounded. */
   zahltMiriam: number;
   zahltSimon: number;
+  /**
+   * True when the device recorded more kilometres than the car did. The split
+   * is then not meaningful: in `beide` mode the shared bucket absorbs the
+   * negative gap and the personal shares exceed 100 %.
+   */
+  isInconsistent: boolean;
 };
 
 /**
@@ -56,6 +62,10 @@ export function calculateTanken(
   // are the same ratio, and using the device sum keeps it exact.
   const basis = mode === "beide" ? kmAuto : summeGeraet;
 
+  // Only meaningful once a car reading exists; the device cannot legitimately
+  // record more distance than the car it sits in.
+  const isInconsistent = kmAuto > 0 && kmAuto < summeGeraet;
+
   if (basis <= 0) {
     return {
       summeGeraet,
@@ -66,6 +76,7 @@ export function calculateTanken(
       anteilBeide: 0,
       zahltMiriam: 0,
       zahltSimon: 0,
+      isInconsistent,
     };
   }
 
@@ -85,5 +96,6 @@ export function calculateTanken(
     anteilBeide,
     zahltMiriam: bezahlt * (anteilMiriam + anteilBeide / 2),
     zahltSimon: bezahlt * (anteilSimon + anteilBeide / 2),
+    isInconsistent,
   };
 }
