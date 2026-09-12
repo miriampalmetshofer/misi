@@ -4,20 +4,10 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { useState } from "react";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { calculateTanken, type OffsetMode } from "./calculate";
+import { calculateFuelSplit, type OffsetMode } from "./calculate";
 import { parseNumber } from "./parseNumber";
-
-const MODE_LABELS: Record<OffsetMode, string> = {
-  proportional: "Proportional",
-  beide: "50/50",
-};
-
-const MODE_HINTS: Record<OffsetMode, string> = {
-  proportional:
-    "Die Differenz wird nach gefahrenen Kilometern verteilt: Wer mehr gefahren ist, übernimmt mehr davon.",
-  beide: "Die Differenz zählt komplett zu „Beide“ und wird halbe-halbe geteilt.",
-};
 
 const FIELDS = [
   { name: "kmMiriam", label: "Miriam" },
@@ -60,10 +50,11 @@ function today() {
 
 export function FuelSplit() {
   const [form, setForm] = useState(EMPTY_FORM);
-  const [mode, setMode] = useState<OffsetMode>("proportional");
+  const [useFiftyFifty, setUseFiftyFifty] = useState(false);
   // Initialised lazily so the date comes from the browser's clock rather than
   // the server's, and stays put if the component re-renders around midnight.
   const [datum, setDatum] = useState(today);
+  const mode: OffsetMode = useFiftyFifty ? "shared" : "proportional";
 
   const parsed = {
     kmMiriam: parseNumber(form.kmMiriam),
@@ -80,18 +71,15 @@ export function FuelSplit() {
   );
 
   const input = {
-    kmMiriam: parsed.kmMiriam ?? 0,
-    kmSimon: parsed.kmSimon ?? 0,
-    kmBeide: parsed.kmBeide ?? 0,
-    kmAuto: parsed.kmAuto ?? 0,
-    bezahlt: parsed.bezahlt ?? 0,
+    miriamKm: parsed.kmMiriam ?? 0,
+    simonKm: parsed.kmSimon ?? 0,
+    sharedKm: parsed.kmBeide ?? 0,
+    carKm: parsed.kmAuto ?? 0,
+    paidAmount: parsed.bezahlt ?? 0,
   };
 
-  const result = calculateTanken(input, mode);
+  const result = calculateFuelSplit(input, mode);
 
-  // `beide` divides by the car reading, `proportional` by the device sum, so
-  // the readiness gate has to follow the basis the active mode actually uses.
-  // Otherwise a missing car reading yields a confident "0,00 €" split.
   // A summary that silently treats an unreadable field as 0 is not a partial
   // result, it is a wrong one — "Summe Gerät 626,0 km" looks just as settled
   // as the correct number. Each summary suppresses on its own inputs only.
@@ -101,11 +89,24 @@ export function FuelSplit() {
   const hasInvalidDistance =
     hasInvalidDeviceKm || invalidFields.includes("kmAuto");
 
-  const basis = mode === "beide" ? input.kmAuto : result.summeGeraet;
-  const canCalculate = basis > 0 && invalidFields.length === 0;
+  // 50/50 divides by the car reading, `proportional` by the device sum, so the
+  // readiness gate has to follow the basis the active mode actually uses.
+  // Otherwise a missing car reading yields a confident "0,00 €" split.
+  const basis = mode === "shared" ? input.carKm : result.deviceKmTotal;
+  const adjustedSharedKm = input.sharedKm + result.distanceOffset;
+  // The car reading has to be there before the offset means anything: without
+  // it the whole device sum reads as a negative offset, which is a missing
+  // entry rather than an impossible 50/50 split.
+  const hasImpossibleFiftyFifty =
+    mode === "shared" && input.carKm > 0 && adjustedSharedKm < 0;
+  const canCalculate =
+    basis > 0 && invalidFields.length === 0 && !hasImpossibleFiftyFifty;
 
   function update(name: FieldName, value: string) {
-    setForm((current) => ({ ...current, [name]: value }));
+    // The comma is the decimal separator, but some phone keypads only offer a
+    // dot. Turn it into a comma as it is typed, so the field shows the one
+    // separator the app accepts instead of silently refusing the entry.
+    setForm((current) => ({ ...current, [name]: value.replace(".", ",") }));
   }
 
   return (
@@ -150,7 +151,7 @@ export function FuelSplit() {
             <Summary
               label="Summe Gerät"
               value={
-                hasInvalidDeviceKm ? "—" : `${km.format(result.summeGeraet)} km`
+                hasInvalidDeviceKm ? "—" : `${km.format(result.deviceKmTotal)} km`
               }
             />
           </section>
@@ -174,9 +175,11 @@ export function FuelSplit() {
               value={
                 hasInvalidDistance
                   ? "—"
-                  : `${km.format(result.differenz)} km${
-                      result.summeGeraet > 0 && input.kmAuto > 0
-                        ? ` (${percent.format(result.differenzAnteil)})`
+                  : `${km.format(result.distanceOffset)} km${
+                      // The share is relative to the car reading, so without
+                      // one there is no percentage to show — only a "0,0 %".
+                      input.carKm > 0
+                        ? ` (${percent.format(result.distanceOffsetShare)})`
                         : ""
                     }`
               }
@@ -203,39 +206,19 @@ export function FuelSplit() {
               Differenz verteilen
             </h2>
 
-            {/* Native radios rather than buttons with role="radio": arrow-key
-                selection and the single tab stop come from the browser, which
-                hand-rolled roving tabindex would otherwise have to reproduce.
-                The input is visually hidden and its label carries the styling. */}
-            <fieldset className="grid grid-cols-2 gap-2">
-              <legend className="sr-only">Differenz verteilen</legend>
+            <label className="flex cursor-pointer items-center gap-3">
+              <Checkbox
+                checked={useFiftyFifty}
+                className="size-5 border-muted-foreground"
+                onCheckedChange={(checked) => setUseFiftyFifty(!!checked)}
+              />
+              <span>50/50-Modus verwenden</span>
+            </label>
 
-              {(Object.keys(MODE_LABELS) as OffsetMode[]).map((value) => (
-                <label
-                  key={value}
-                  className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-border bg-background text-sm font-medium transition-all select-none has-checked:border-transparent has-checked:bg-primary has-checked:text-primary-foreground has-focus-visible:border-ring has-focus-visible:ring-3 has-focus-visible:ring-ring/50 dark:border-input dark:bg-input/30 dark:has-checked:bg-primary"
-                >
-                  <input
-                    // The visible text sits in the wrapping label, but naming
-                    // the input directly keeps it independent of how the
-                    // accessible name is computed through sr-only content.
-                    aria-label={MODE_LABELS[value]}
-                    checked={mode === value}
-                    className="sr-only"
-                    name="modus"
-                    type="radio"
-                    value={value}
-                    onChange={() => setMode(value)}
-                  />
-                  {MODE_LABELS[value]}
-                </label>
-              ))}
-            </fieldset>
-
-            {/* The selected mode explains itself here, which is why there is
-                no separate info toggle listing both. */}
             <p className="text-sm leading-snug text-muted-foreground">
-              {MODE_HINTS[mode]}
+              Standard: proportional nach Geräte-Kilometern. Im 50/50-Modus
+              wird die Differenz zwischen Auto und Gerät komplett zu „Beide“
+              gerechnet und halbiert.
             </p>
           </section>
 
@@ -254,22 +237,24 @@ export function FuelSplit() {
                     not match the euro amount beside it. */}
                 <Share
                   label="Miriam"
-                  share={result.zahlAnteilMiriam}
-                  amount={result.zahltMiriam}
+                  share={result.miriamBillShare}
+                  amount={result.miriamAmount}
                 />
                 <Share
                   label="Simon"
-                  share={result.zahlAnteilSimon}
-                  amount={result.zahltSimon}
+                  share={result.simonBillShare}
+                  amount={result.simonAmount}
                 />
               </dl>
             ) : (
               <p className="text-body-muted mt-4">
                 {invalidFields.length > 0
                   ? "Bitte nur Zahlen eintragen, dann erscheint hier die Aufteilung."
-                  : mode === "beide"
-                    ? "Kilometer und Tachostand eintragen, dann erscheint hier die Aufteilung."
-                    : "Kilometer eintragen, dann erscheint hier die Aufteilung."}
+                  : hasImpossibleFiftyFifty
+                    ? "Die Differenz ist größer als die gemeinsamen Kilometer. 50/50 passt hier nicht; proportional funktioniert weiterhin."
+                    : mode === "shared"
+                      ? "Kilometer und Tachostand eintragen, dann erscheint hier die Aufteilung."
+                      : "Kilometer eintragen, dann erscheint hier die Aufteilung."}
               </p>
             )}
           </section>

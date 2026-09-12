@@ -55,7 +55,9 @@ describe("FuelSplit", () => {
     render(<FuelSplit />);
 
     await fillSheetExample(user);
-    await user.click(screen.getByRole("radio", { name: "50/50" }));
+    await user.click(
+      screen.getByRole("checkbox", { name: "50/50-Modus verwenden" }),
+    );
 
     expect(result().getByText("46,36 €")).toBeInTheDocument();
     expect(result().getByText("55,64 €")).toBeInTheDocument();
@@ -88,14 +90,19 @@ describe("FuelSplit", () => {
     expect(screen.getByText("170,0 km (16,2 %)")).toBeInTheDocument();
   });
 
-  it("accepts a period as the decimal separator", async () => {
+  it("turns a typed period into the comma it accepts", async () => {
     const user = userEvent.setup();
     render(<FuelSplit />);
 
-    await user.type(screen.getByLabelText("Miriam"), "100.5");
+    const miriam = screen.getByLabelText("Miriam");
+    await user.type(miriam, "100.5");
     await user.type(screen.getByLabelText("Simon"), "100.5");
     await user.type(screen.getByLabelText("Betrag"), "50");
 
+    // Phone keypads offer whichever separator they like, so a dot has to work.
+    // It is rewritten in place rather than accepted quietly, so the field shows
+    // the separator the app actually uses.
+    expect(miriam).toHaveValue("100,5");
     expect(result().getAllByText("25,00 €")).toHaveLength(2);
   });
 
@@ -114,13 +121,13 @@ describe("FuelSplit", () => {
     }
   });
 
-  it("rejects a thousands separator rather than guessing at it", async () => {
+  it("rejects ambiguous grouped-looking numbers rather than guessing", async () => {
     const user = userEvent.setup();
     render(<FuelSplit />);
 
-    // There is no grouping separator, so "1.256,4" is not a number. Saying so
-    // beats silently picking one of the two plausible readings.
-    await user.type(screen.getByLabelText("Miriam"), "1.256,4");
+    // "1.234" normalises to "1,234", which is a thousands separator to one
+    // reader and three decimals to another. Saying so beats guessing.
+    await user.type(screen.getByLabelText("Miriam"), "1.234");
     await user.type(screen.getByLabelText("Simon"), "100");
     await user.type(screen.getByLabelText("Betrag"), "50");
 
@@ -131,7 +138,7 @@ describe("FuelSplit", () => {
     const user = userEvent.setup();
     render(<FuelSplit />);
 
-    await user.type(screen.getByLabelText("Miriam"), "1.256,4");
+    await user.type(screen.getByLabelText("Miriam"), "1.234");
     await user.type(screen.getByLabelText("Simon"), "352,2");
     await user.type(screen.getByLabelText("Beide"), "273,8");
     await user.type(screen.getByLabelText("Gesamt"), "1052,4");
@@ -168,7 +175,9 @@ describe("FuelSplit", () => {
     await user.type(screen.getByLabelText("Miriam"), "100");
     await user.type(screen.getByLabelText("Simon"), "100");
     await user.type(screen.getByLabelText("Betrag"), "50");
-    await user.click(screen.getByRole("radio", { name: "50/50" }));
+    await user.click(
+      screen.getByRole("checkbox", { name: "50/50-Modus verwenden" }),
+    );
 
     // 50/50 divides by the car reading, so without one there is nothing to
     // divide by — that must read as "not ready", not as a 0,00 € split.
@@ -190,33 +199,39 @@ describe("FuelSplit", () => {
     expect(result().getAllByText("45,00 €")).toHaveLength(2);
   });
 
-  it("gives the mode radios real radio-group keyboard behaviour", async () => {
+  it("keeps impossible negative shared kilometres out of 50/50 mode", async () => {
     const user = userEvent.setup();
     render(<FuelSplit />);
 
-    const [proportional, fiftyFifty] = screen.getAllByRole("radio");
+    await user.type(screen.getByLabelText("Miriam"), "100");
+    await user.type(screen.getByLabelText("Simon"), "100");
+    await user.type(screen.getByLabelText("Beide"), "100");
+    await user.type(screen.getByLabelText("Gesamt"), "150");
+    await user.type(screen.getByLabelText("Betrag"), "90");
 
-    proportional.focus();
-    await user.keyboard("{ArrowRight}");
+    expect(result().getAllByText("45,00 €")).toHaveLength(2);
 
-    expect(fiftyFifty).toBeChecked();
-    expect(proportional).not.toBeChecked();
+    await user.click(
+      screen.getByRole("checkbox", { name: "50/50-Modus verwenden" }),
+    );
+
+    expect(screen.getByText(/50\/50 passt/)).toBeInTheDocument();
+    expect(result().queryByText("45,00 €")).not.toBeInTheDocument();
   });
 
-  it("explains the selected mode and swaps the text when it changes", async () => {
+  it("offers 50/50 as an explicit optional mode", async () => {
     const user = userEvent.setup();
     render(<FuelSplit />);
+    const toggle = screen.getByRole("checkbox", {
+      name: "50/50-Modus verwenden",
+    });
 
-    expect(
-      screen.getByText(/nach gefahrenen Kilometern verteilt/),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/komplett zu „Beide“/)).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole("radio", { name: "50/50" }));
-
+    expect(toggle).not.toBeChecked();
+    expect(screen.getByText(/Standard: proportional/)).toBeInTheDocument();
     expect(screen.getByText(/komplett zu „Beide“/)).toBeInTheDocument();
-    expect(
-      screen.queryByText(/nach gefahrenen Kilometern verteilt/),
-    ).not.toBeInTheDocument();
+
+    await user.click(toggle);
+
+    expect(toggle).toBeChecked();
   });
 });

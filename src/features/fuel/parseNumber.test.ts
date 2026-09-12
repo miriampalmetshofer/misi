@@ -3,21 +3,17 @@ import { describe, expect, it } from "vitest";
 import { parseNumber } from "./parseNumber";
 
 describe("parseNumber", () => {
-  it("reads both decimal separators", () => {
+  it("reads the comma as the decimal separator", () => {
     expect(parseNumber("256,4")).toBe(256.4);
-    expect(parseNumber("256.4")).toBe(256.4);
+    expect(parseNumber("102,50")).toBe(102.5);
     expect(parseNumber("1234")).toBe(1234);
   });
 
-  it("has no thousands separator, so a dot is always a decimal point", () => {
-    // The old implementation read "1.234" as 1.234 by accident. It now does so
-    // by decision: with no grouping separator the input is unambiguous, and a
-    // mistyped odometer reading cannot silently become a 1000x error.
-    expect(parseNumber("1.234")).toBe(1.234);
-    expect(parseNumber("1,234")).toBe(1.234);
-  });
-
   it("returns null for input it cannot read", () => {
+    // The form turns a typed dot into a comma, so a dot arriving here is junk.
+    expect(parseNumber("256.4")).toBeNull();
+    expect(parseNumber("1.234")).toBeNull();
+    expect(parseNumber("1,234")).toBeNull();
     expect(parseNumber("1.256,4")).toBeNull();
     expect(parseNumber("12,34,56")).toBeNull();
     expect(parseNumber("1 000")).toBeNull();
