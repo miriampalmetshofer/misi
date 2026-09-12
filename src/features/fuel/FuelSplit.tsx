@@ -15,9 +15,8 @@ const MODE_LABELS: Record<OffsetMode, string> = {
 
 const MODE_HINTS: Record<OffsetMode, string> = {
   proportional:
-    "Die Differenz wird nach gefahrenen Kilometern verteilt: Wer mehr gefahren ist, übernimmt mehr davon. Der Tachostand ändert dabei nur die Kilometer, nicht den Betrag.",
-  beide:
-    "Die Differenz zählt komplett zu „Beide“ und wird damit halbe-halbe geteilt. So hat es die Tabelle gerechnet.",
+    "Die Differenz wird nach gefahrenen Kilometern verteilt: Wer mehr gefahren ist, übernimmt mehr davon.",
+  beide: "Die Differenz zählt komplett zu „Beide“ und wird halbe-halbe geteilt.",
 };
 
 const FIELDS = [
@@ -65,7 +64,7 @@ function today() {
   return new Date(now.getTime() - offset).toISOString().slice(0, 10);
 }
 
-export function TankenRechner() {
+export function FuelSplit() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [mode, setMode] = useState<OffsetMode>("proportional");
   // Initialised lazily so the date comes from the browser's clock rather than
@@ -234,22 +233,28 @@ export function TankenRechner() {
             </h2>
 
             {hasKilometres ? (
-              <dl className="mt-4 flex flex-col gap-3">
-                <Share
-                  label="Miriam"
-                  share={result.anteilMiriam}
-                  amount={result.zahltMiriam}
-                />
-                <Share
-                  label="Simon"
-                  share={result.anteilSimon}
-                  amount={result.zahltSimon}
-                />
-                <p className="border-t pt-3 text-sm text-muted-foreground">
-                  Beide: {percent.format(result.anteilBeide)} — je zur Hälfte
-                  gerechnet.
+              <>
+                {/* The note below is about the list as a whole, so it stays
+                    outside the <dl>, which may only hold dt/dd groups. */}
+                <dl className="mt-4 flex flex-col gap-3">
+                  <Share
+                    label="Miriam"
+                    share={result.anteilMiriam}
+                    amount={result.zahltMiriam}
+                  />
+                  <Share
+                    label="Simon"
+                    share={result.anteilSimon}
+                    amount={result.zahltSimon}
+                  />
+                </dl>
+
+                <p className="mt-3 border-t pt-3 text-sm text-muted-foreground">
+                  Enthält die gemeinsamen{" "}
+                  {percent.format(result.anteilBeide)}, je zur Hälfte auf beide
+                  aufgeteilt.
                 </p>
-              </dl>
+              </>
             ) : (
               <p className="text-body-muted mt-4">
                 Kilometer eintragen, dann erscheint hier die Aufteilung.

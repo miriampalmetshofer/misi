@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
-import { TankenRechner } from "./TankenRechner";
+import { FuelSplit } from "./FuelSplit";
 
 async function fillSheetExample(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("Miriam"), "256,4");
@@ -16,10 +16,10 @@ function result() {
   return within(screen.getByRole("region", { name: "Zu zahlen" }));
 }
 
-describe("TankenRechner", () => {
+describe("FuelSplit", () => {
   it("prefills the date with today but leaves it editable", async () => {
     const user = userEvent.setup();
-    render(<TankenRechner />);
+    render(<FuelSplit />);
 
     const datum = screen.getByLabelText("Datum") as HTMLInputElement;
     const today = new Date();
@@ -33,7 +33,7 @@ describe("TankenRechner", () => {
   });
 
   it("prompts for kilometres before anything is entered", () => {
-    render(<TankenRechner />);
+    render(<FuelSplit />);
 
     expect(
       screen.getByText(/Kilometer eintragen/),
@@ -42,7 +42,7 @@ describe("TankenRechner", () => {
 
   it("splits the amount proportionally by default", async () => {
     const user = userEvent.setup();
-    render(<TankenRechner />);
+    render(<FuelSplit />);
 
     await fillSheetExample(user);
 
@@ -52,7 +52,7 @@ describe("TankenRechner", () => {
 
   it("switches to the spreadsheet's 50/50 split on demand", async () => {
     const user = userEvent.setup();
-    render(<TankenRechner />);
+    render(<FuelSplit />);
 
     await fillSheetExample(user);
     await user.click(screen.getByRole("radio", { name: "50/50" }));
@@ -63,7 +63,7 @@ describe("TankenRechner", () => {
 
   it("shows the device shortfall against the car reading", async () => {
     const user = userEvent.setup();
-    render(<TankenRechner />);
+    render(<FuelSplit />);
 
     await fillSheetExample(user);
 
@@ -73,7 +73,7 @@ describe("TankenRechner", () => {
 
   it("accepts a period as the decimal separator", async () => {
     const user = userEvent.setup();
-    render(<TankenRechner />);
+    render(<FuelSplit />);
 
     await user.type(screen.getByLabelText("Miriam"), "100.5");
     await user.type(screen.getByLabelText("Simon"), "100.5");
@@ -82,9 +82,24 @@ describe("TankenRechner", () => {
     expect(result().getAllByText("25,00 €")).toHaveLength(2);
   });
 
+  it("keeps the result list a valid dt/dd structure", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<FuelSplit />);
+
+    await fillSheetExample(user);
+
+    // axe flags a <dl> holding anything other than dt/dd groups, so the
+    // explanatory note must not be a direct child of the list.
+    for (const list of container.querySelectorAll("dl")) {
+      for (const child of list.children) {
+        expect(["DIV", "DT", "DD"]).toContain(child.tagName);
+      }
+    }
+  });
+
   it("explains both modes behind the info toggle", async () => {
     const user = userEvent.setup();
-    render(<TankenRechner />);
+    render(<FuelSplit />);
 
     const info = screen.getByRole("button", {
       name: "Erklärung der Modi anzeigen",
