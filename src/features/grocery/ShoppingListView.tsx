@@ -13,6 +13,7 @@ type ShoppingListViewProps = {
   onDeleteItem: (itemId: string) => void;
   onRenameItem: (itemId: string, name: string) => void;
   onSaveDraft: (draftId: string, name: string, categoryId: string) => void;
+  onUpdateDraft: (draftId: string, name: string) => void;
 };
 
 export function ShoppingListView({
@@ -22,6 +23,7 @@ export function ShoppingListView({
   onDeleteItem,
   onRenameItem,
   onSaveDraft,
+  onUpdateDraft,
 }: ShoppingListViewProps) {
   return (
     <div className="min-h-screen bg-background text-base text-foreground">
@@ -43,6 +45,7 @@ export function ShoppingListView({
               onDeleteItem={onDeleteItem}
               onRenameItem={onRenameItem}
               onSaveDraft={onSaveDraft}
+              onUpdateDraft={onUpdateDraft}
             />
           ))}
         </div>

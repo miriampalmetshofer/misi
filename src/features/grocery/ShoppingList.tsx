@@ -20,7 +20,7 @@ type ShoppingListProps = {
   categories: ShoppingListCategory[];
 };
 
-type Draft = { id: string; categoryId: string };
+type Draft = { id: string; categoryId: string; name: string };
 
 // Ids the client makes up for rows the database does not have yet: an open
 // draft row, and an added item still waiting for its server-assigned uuid.
@@ -49,9 +49,21 @@ export function ShoppingList({ categories }: ShoppingListProps) {
   const categoriesWithDrafts = withDrafts(optimisticCategories, drafts);
 
   function createDraftItem(categoryId: string) {
+    const currentDraft = drafts[0];
+
+    if (currentDraft) {
+      const nextName = currentDraft.name.trim();
+
+      if (nextName) {
+        addItem(nextName, currentDraft.categoryId);
+      } else if (currentDraft.categoryId === categoryId) {
+        return currentDraft.id;
+      }
+    }
+
     const draftId = `${DRAFT_ID_PREFIX}${crypto.randomUUID()}`;
     // One draft at a time: replace any open draft with the new one.
-    setDrafts([{ id: draftId, categoryId }]);
+    setDrafts([{ id: draftId, categoryId, name: "" }]);
     return draftId;
   }
 
@@ -59,18 +71,32 @@ export function ShoppingList({ categories }: ShoppingListProps) {
     setDrafts((current) => current.filter((draft) => draft.id !== draftId));
   }
 
+  function updateDraft(draftId: string, name: string) {
+    setDrafts((current) =>
+      current.map((draft) =>
+        draft.id === draftId ? { ...draft, name } : draft,
+      ),
+    );
+  }
+
+  function addItem(name: string, categoryId: string) {
+    const itemId = `${PENDING_ID_PREFIX}${crypto.randomUUID()}`;
+    mutate(
+      addGroceryItem,
+      { name, categoryId },
+      { type: "add", itemId, name, categoryId },
+    );
+  }
+
   function saveDraftItem(draftId: string, name: string, categoryId: string) {
     removeDraft(draftId);
 
     const nextName = name.trim();
-    if (!nextName) return;
+    if (!nextName) {
+      return;
+    }
 
-    const itemId = `${PENDING_ID_PREFIX}${crypto.randomUUID()}`;
-    mutate(
-      addGroceryItem,
-      { name: nextName, categoryId },
-      { type: "add", itemId, name: nextName, categoryId },
-    );
+    addItem(nextName, categoryId);
   }
 
   function renameItem(itemId: string, name: string) {
@@ -113,6 +139,7 @@ export function ShoppingList({ categories }: ShoppingListProps) {
       onDeleteItem={deleteItem}
       onRenameItem={renameItem}
       onSaveDraft={saveDraftItem}
+      onUpdateDraft={updateDraft}
     />
   );
 }
@@ -143,7 +170,7 @@ export function withDrafts(
             categoryId: draft.categoryId,
             isChecked: false,
             isDraft: true,
-            name: "",
+            name: draft.name,
           }),
         ),
       ],
