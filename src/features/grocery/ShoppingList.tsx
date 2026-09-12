@@ -67,6 +67,21 @@ export function ShoppingList({ categories }: ShoppingListProps) {
     return draftId;
   }
 
+  function quickAddItem(name: string, categoryId: string) {
+    const currentDraft = drafts[0];
+
+    if (currentDraft) {
+      setDrafts([]);
+
+      const nextName = currentDraft.name.trim();
+      if (nextName) {
+        addItem(nextName, currentDraft.categoryId);
+      }
+    }
+
+    addItem(name, categoryId);
+  }
+
   function removeDraft(draftId: string) {
     setDrafts((current) => current.filter((draft) => draft.id !== draftId));
   }
@@ -137,6 +152,7 @@ export function ShoppingList({ categories }: ShoppingListProps) {
       onAddDraft={createDraftItem}
       onCheckItem={checkItem}
       onDeleteItem={deleteItem}
+      onQuickAddItem={quickAddItem}
       onRenameItem={renameItem}
       onSaveDraft={saveDraftItem}
       onUpdateDraft={updateDraft}

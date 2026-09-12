@@ -49,6 +49,12 @@ function categories(): ShoppingListCategory[] {
       icon: "🍎",
       items: [
         { id: "apfel", name: "Äpfel", isChecked: false, categoryId: "obst" },
+        {
+          id: "bananen",
+          name: "Bananen",
+          isChecked: false,
+          categoryId: "obst",
+        },
       ],
     },
     { id: "gebaeck", name: "Gebäck", icon: "🥐", items: [] },
@@ -67,6 +73,10 @@ function fieldsOf(mock: { mock: { calls: unknown[][] } }) {
   return Object.fromEntries(mock.mock.calls[0][0] as FormData);
 }
 
+function fieldsOfCall(mock: { mock: { calls: unknown[][] } }, index: number) {
+  return Object.fromEntries(mock.mock.calls[index][0] as FormData);
+}
+
 function section(name: string) {
   return screen
     .getByRole("heading", { name: new RegExp(name) })
@@ -75,7 +85,7 @@ function section(name: string) {
 
 function addButton(categoryName: string) {
   return within(section(categoryName)).getByRole("button", {
-    name: /hinzufügen/i,
+    name: "Eigener Artikel",
   });
 }
 
@@ -85,6 +95,61 @@ beforeEach(() => {
 });
 
 describe("adding an item", () => {
+  it("adds a suggested item with one click", async () => {
+    const { user } = renderList();
+
+    await user.click(
+      within(section("Obst")).getByRole("button", {
+        name: "Nektarinen schnell hinzufügen",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(actions.addGroceryItem).toHaveBeenCalledTimes(1),
+    );
+    expect(fieldsOf(actions.addGroceryItem)).toEqual({
+      name: "Nektarinen",
+      categoryId: "obst",
+    });
+    expect(
+      await within(section("Obst")).findByText("Nektarinen"),
+    ).toBeInTheDocument();
+  });
+
+  it("hides suggested items that are already on the list", () => {
+    renderList();
+
+    expect(
+      within(section("Obst")).queryByRole("button", {
+        name: "Bananen schnell hinzufügen",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("saves an open draft before adding a suggested item", async () => {
+    const { user } = renderList();
+
+    await user.click(addButton("Obst"));
+    await user.keyboard("Mangos");
+    await user.click(
+      within(section("Obst")).getByRole("button", {
+        name: "Nektarinen schnell hinzufügen",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(actions.addGroceryItem).toHaveBeenCalledTimes(2),
+    );
+    expect(fieldsOfCall(actions.addGroceryItem, 0)).toEqual({
+      name: "Mangos",
+      categoryId: "obst",
+    });
+    expect(fieldsOfCall(actions.addGroceryItem, 1)).toEqual({
+      name: "Nektarinen",
+      categoryId: "obst",
+    });
+  });
+
   it("saves a typed name and sends it to the server", async () => {
     const { user } = renderList();
 
@@ -298,7 +363,7 @@ describe("deleting an item", () => {
     );
     expect(fieldsOf(actions.deleteGroceryItem)).toEqual({ itemId: "apfel" });
     await waitFor(() =>
-      expect(screen.queryByText("Äpfel")).not.toBeInTheDocument(),
+      expect(screen.queryByRole("button", { name: "Äpfel" })).toBeNull(),
     );
   });
 
@@ -321,6 +386,38 @@ describe("deleting an item", () => {
   });
 });
 
+describe("the open-item total", () => {
+  it("counts the items still to buy", () => {
+    renderList();
+
+    expect(screen.getByText("2 Artikel offen")).toBeInTheDocument();
+  });
+
+  it("drops as items are checked off", async () => {
+    const { user } = renderList();
+
+    await user.click(
+      screen.getByRole("checkbox", { name: /Äpfel erledigt markieren/ }),
+    );
+
+    expect(await screen.findByText("1 Artikel offen")).toBeInTheDocument();
+  });
+
+  it("says so when nothing is left", () => {
+    render(<ShoppingList categories={[]} />);
+
+    expect(screen.getByText("Nichts offen")).toBeInTheDocument();
+  });
+
+  it("ignores a draft that has no name yet", async () => {
+    const { user } = renderList();
+
+    await user.click(addButton("Gebäck"));
+
+    expect(screen.getByText("2 Artikel offen")).toBeInTheDocument();
+  });
+});
+
 describe("checking an item off", () => {
   it("removes it from the list and tells the server", async () => {
     const { user } = renderList();
@@ -337,7 +434,7 @@ describe("checking an item off", () => {
       isChecked: "true",
     });
     await waitFor(() =>
-      expect(screen.queryByText("Äpfel")).not.toBeInTheDocument(),
+      expect(screen.queryByRole("button", { name: "Äpfel" })).toBeNull(),
     );
   });
 
