@@ -28,7 +28,7 @@ export function ShoppingCategorySection({
   return (
     <section aria-labelledby={`category-${category.id}`}>
       <h2
-        className="flex min-w-0 items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground sm:text-base"
+        className="section-label flex min-w-0 items-center gap-2"
         id={`category-${category.id}`}
       >
         <span aria-hidden="true" className="text-base sm:text-xl">
