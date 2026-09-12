@@ -110,6 +110,31 @@ describe("FuelSplit", () => {
     expect(screen.getByText(/nur Zahlen eintragen/)).toBeInTheDocument();
   });
 
+  it("does not show a summary computed from an unreadable field", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit />);
+
+    await user.type(screen.getByLabelText("Miriam"), "1.256,4");
+    await user.type(screen.getByLabelText("Simon"), "352,2");
+    await user.type(screen.getByLabelText("Beide"), "273,8");
+    await user.type(screen.getByLabelText("Gesamt"), "1052,4");
+
+    // Counting the unreadable field as 0 would report a confident "626,0 km",
+    // which reads as settled rather than as missing input.
+    expect(screen.queryByText("626,0 km")).not.toBeInTheDocument();
+    expect(screen.getAllByText("—")).toHaveLength(2);
+  });
+
+  it("still shows the summaries once every field reads as a number", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit />);
+
+    await fillSheetExample(user);
+
+    expect(screen.getByText("882,4 km")).toBeInTheDocument();
+    expect(screen.getByText("170,0 km (16,2 %)")).toBeInTheDocument();
+  });
+
   it("asks for numbers instead of calculating from unreadable input", async () => {
     const user = userEvent.setup();
     render(<FuelSplit />);

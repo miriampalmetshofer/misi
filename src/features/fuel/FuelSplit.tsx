@@ -94,6 +94,15 @@ export function FuelSplit() {
   // `beide` divides by the car reading, `proportional` by the device sum, so
   // the readiness gate has to follow the basis the active mode actually uses.
   // Otherwise a missing car reading yields a confident "0,00 €" split.
+  // A summary that silently treats an unreadable field as 0 is not a partial
+  // result, it is a wrong one — "Summe Gerät 626,0 km" looks just as settled
+  // as the correct number. Each summary suppresses on its own inputs only.
+  const hasInvalidDeviceKm = FIELDS.some((field) =>
+    invalidFields.includes(field.name),
+  );
+  const hasInvalidDistance =
+    hasInvalidDeviceKm || invalidFields.includes("kmAuto");
+
   const basis = mode === "beide" ? input.kmAuto : result.summeGeraet;
   const canCalculate =
     basis > 0 && invalidFields.length === 0 && !result.isInconsistent;
@@ -141,7 +150,12 @@ export function FuelSplit() {
               />
             ))}
 
-            <Summary label="Summe Gerät" value={`${km.format(result.summeGeraet)} km`} />
+            <Summary
+              label="Summe Gerät"
+              value={
+                hasInvalidDeviceKm ? "—" : `${km.format(result.summeGeraet)} km`
+              }
+            />
           </section>
 
           <section aria-labelledby="auto" className="flex flex-col gap-3">
@@ -160,11 +174,15 @@ export function FuelSplit() {
 
             <Summary
               label="Differenz"
-              value={`${km.format(result.differenz)} km${
-                result.summeGeraet > 0 && input.kmAuto > 0
-                  ? ` (${percent.format(result.differenzAnteil)})`
-                  : ""
-              }`}
+              value={
+                hasInvalidDistance
+                  ? "—"
+                  : `${km.format(result.differenz)} km${
+                      result.summeGeraet > 0 && input.kmAuto > 0
+                        ? ` (${percent.format(result.differenzAnteil)})`
+                        : ""
+                    }`
+              }
             />
           </section>
 
