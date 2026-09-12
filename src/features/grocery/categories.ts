@@ -13,11 +13,9 @@ export const DEFAULT_GROCERY_CATEGORIES = [
 
 export const QUICK_ADD_GROCERY_ITEMS: Record<string, string[]> = {
   Obst: ["Äpfel", "Bananen", "Beeren", "Zitronen"],
-  Gemüse: ["Tomaten", "Gurken", "Paprika", "Karotten", "Zwiebeln"],
-  Gebäck: ["Brot", "Semmeln", "Toast", "Wraps"],
-  Haushalt: ["Küchenrolle", "Klopapier", "Spülmittel", "Müllsäcke"],
-  "Mehl, Nudeln, Trockenwaren": ["Nudeln", "Reis", "Mehl", "Haferflocken"],
-  Kühlregal: ["Milch", "Joghurt", "Butter", "Käse", "Eier"],
-  Gefrorenes: ["Spinat", "Pizza", "Beeren", "Gemüse-Mix"],
+  Gemüse: ["Tomaten", "Avocados"],
+  "Mehl, Nudeln, Trockenwaren": ["Nudeln"],
+  Kühlregal: ["Milch", "Eier", "Skyr", "Oatly"],
+  Gefrorenes: ["Erdbeeren", "Mango", "Heidelbeeren", "Himbeeren"],
   Sonstiges: ["Kaffee", "Tee", "Schokolade", "Haferdrink"],
 };

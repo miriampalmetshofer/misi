@@ -93,8 +93,8 @@ describe("adding an item", () => {
     const { user } = renderList();
 
     await user.click(
-      within(section("Gebäck")).getByRole("button", {
-        name: "Semmeln schnell hinzufügen",
+      within(section("Obst")).getByRole("button", {
+        name: "Bananen schnell hinzufügen",
       }),
     );
 
@@ -102,11 +102,11 @@ describe("adding an item", () => {
       expect(actions.addGroceryItem).toHaveBeenCalledTimes(1),
     );
     expect(fieldsOf(actions.addGroceryItem)).toEqual({
-      name: "Semmeln",
-      categoryId: "gebaeck",
+      name: "Bananen",
+      categoryId: "obst",
     });
     expect(
-      await within(section("Gebäck")).findByText("Semmeln"),
+      await within(section("Obst")).findByText("Bananen"),
     ).toBeInTheDocument();
   });
 
@@ -123,11 +123,11 @@ describe("adding an item", () => {
   it("saves an open draft before adding a suggested item", async () => {
     const { user } = renderList();
 
-    await user.click(addButton("Gebäck"));
-    await user.keyboard("Croissants");
+    await user.click(addButton("Obst"));
+    await user.keyboard("Mangos");
     await user.click(
-      within(section("Gebäck")).getByRole("button", {
-        name: "Semmeln schnell hinzufügen",
+      within(section("Obst")).getByRole("button", {
+        name: "Bananen schnell hinzufügen",
       }),
     );
 
@@ -135,12 +135,12 @@ describe("adding an item", () => {
       expect(actions.addGroceryItem).toHaveBeenCalledTimes(2),
     );
     expect(fieldsOfCall(actions.addGroceryItem, 0)).toEqual({
-      name: "Croissants",
-      categoryId: "gebaeck",
+      name: "Mangos",
+      categoryId: "obst",
     });
     expect(fieldsOfCall(actions.addGroceryItem, 1)).toEqual({
-      name: "Semmeln",
-      categoryId: "gebaeck",
+      name: "Bananen",
+      categoryId: "obst",
     });
   });
 
