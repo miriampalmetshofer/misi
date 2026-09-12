@@ -3,7 +3,11 @@
 import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { QUICK_ADD_GROCERY_ITEMS } from "./categories";
+import {
+  CATEGORY_HEADER_STYLES,
+  FALLBACK_CATEGORY_HEADER_STYLE,
+  QUICK_ADD_GROCERY_ITEMS,
+} from "./categories";
 import type { OptimisticShoppingListCategory } from "./types";
 import { ShoppingItem } from "./ShoppingItem";
 
@@ -35,20 +39,44 @@ export function ShoppingCategorySection({
     (itemName) => !existingItemNames.has(normalizeItemName(itemName)),
   );
 
+  // A draft has no name yet, so counting it would move the total while the
+  // user is still typing. Checked items are filtered out server-side (see
+  // queries.ts), so this is how many are still to buy — a "done/total" pair
+  // could only ever read 0/n.
+  const openItemCount = category.items.filter((item) => !item.isDraft).length;
+
+  const headerStyle =
+    CATEGORY_HEADER_STYLES[category.name] ?? FALLBACK_CATEGORY_HEADER_STYLE;
+
   return (
-    <section aria-labelledby={`category-${category.id}`}>
-      <h2
-        className="section-label flex min-w-0 items-center gap-2"
-        id={`category-${category.id}`}
-      >
-        <span aria-hidden="true" className="text-base sm:text-xl">
+    <section
+      aria-labelledby={`category-${category.id}`}
+      className="overflow-hidden rounded-xl border bg-card"
+    >
+      <div className={`flex items-center gap-3 px-3 py-2.5 ${headerStyle}`}>
+        <span
+          aria-hidden="true"
+          className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background/70 text-lg"
+        >
           {category.icon}
         </span>
-        <span className="min-w-0 break-words">{category.name}</span>
-      </h2>
+
+        <h2
+          className="min-w-0 flex-1 text-sm font-bold uppercase tracking-wider break-words"
+          id={`category-${category.id}`}
+        >
+          {category.name}
+        </h2>
+
+        {openItemCount > 0 && (
+          <span className="shrink-0 rounded-full border bg-background/70 px-2 py-0.5 text-xs tabular-nums text-muted-foreground">
+            {openItemCount}
+          </span>
+        )}
+      </div>
 
       {category.items.length > 0 && (
-        <ul className="mt-3 space-y-0">
+        <ul className="divide-y border-b">
           {category.items.map((item) => (
             <ShoppingItem
               item={item}
@@ -63,41 +91,44 @@ export function ShoppingCategorySection({
         </ul>
       )}
 
-      {/* Suggestions and the custom-item button are one control group: same
-          shape, same row. They answer the same question ("what do I add?"),
-          so splitting them across two rows made the rarer custom action look
-          like the primary one. */}
-      <div
-        aria-label={`${category.name} hinzufügen`}
-        className="mt-3 flex flex-wrap gap-2"
-      >
-        {/* Leads the row, but stays the quieter of the two: suggestions are
-            the common path. Once they are all used up this is the category's
-            only way to add anything, so it takes over the filled style rather
-            than being left as the faintest thing in the section. */}
+      <div className="px-3 py-2">
         <Button
-          variant={quickAddItems.length > 0 ? "ghost" : "secondary"}
-          className="rounded-full border-0 px-3 font-normal shadow-none hover:bg-accent hover:text-foreground data-[muted=true]:text-muted-foreground"
-          data-muted={quickAddItems.length > 0}
+          variant="ghost"
+          className="h-9 w-full justify-start px-2 font-normal text-muted-foreground hover:text-foreground"
           onPointerDown={(event) => event.preventDefault()}
           onClick={() => onAddDraft(category.id)}
         >
           <Plus aria-hidden="true" />
           Eigener Artikel
         </Button>
-        {quickAddItems.map((itemName) => (
-          <Button
-            variant="secondary"
-            aria-label={`${itemName} schnell hinzufügen`}
-            className="rounded-full border-0 bg-muted px-3 font-normal text-foreground shadow-none hover:bg-accent"
-            key={itemName}
-            onPointerDown={(event) => event.preventDefault()}
-            onClick={() => onQuickAddItem(itemName, category.id)}
-          >
-            <Plus aria-hidden="true" />
-            {itemName}
-          </Button>
-        ))}
+
+        {quickAddItems.length > 0 && (
+          <div className="mt-3 px-2 pb-1">
+            <p className="section-label">Vorschläge</p>
+
+            {/* Dashed outline marks these as "not on the list yet", which is
+                what tells them apart from the solid item rows above. */}
+            <div
+              aria-label={`${category.name} schnell hinzufügen`}
+              className="mt-2 flex flex-wrap gap-2"
+            >
+              {quickAddItems.map((itemName) => (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-label={`${itemName} schnell hinzufügen`}
+                  className="h-9 rounded-lg border-dashed px-3 font-normal text-muted-foreground shadow-none hover:text-foreground"
+                  key={itemName}
+                  onPointerDown={(event) => event.preventDefault()}
+                  onClick={() => onQuickAddItem(itemName, category.id)}
+                >
+                  <Plus aria-hidden="true" />
+                  {itemName}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

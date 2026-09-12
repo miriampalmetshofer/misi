@@ -75,7 +75,7 @@ export function ShoppingItem({
 
   return (
     <li
-      className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-lg py-1 data-[syncing=true]:opacity-70"
+      className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-1 data-[syncing=true]:opacity-70"
       data-syncing={item.isSyncing}
     >
       <Checkbox

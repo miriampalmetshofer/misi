@@ -37,7 +37,7 @@ export function ShoppingListView({
 
         <h1 className="page-headline">Einkaufsliste</h1>
 
-        <div className="mt-8 space-y-5 sm:mt-12 sm:space-y-8">
+        <div className="mt-8 space-y-3 sm:mt-12 sm:space-y-4">
           {categories.map((category) => (
             <ShoppingCategorySection
               category={category}
