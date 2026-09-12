@@ -16,19 +16,30 @@ export type CategoryRect = {
  * order. Only the vertical axis is kept: the sections span the full list width,
  * so horizontal position never decides the target, and ignoring it means a
  * sideways drag still drops where the finger is vertically.
+ *
+ * Bands are stored in document coordinates, not viewport ones. The page scrolls
+ * during a drag — by hand, and by the edge auto-scroll — and viewport-relative
+ * bounds measured at pickup would point at the wrong category the moment it did.
  */
-export function measureCategoryRects(root: ParentNode): CategoryRect[] {
+export function measureCategoryRects(
+  root: ParentNode,
+  scrollY: number,
+): CategoryRect[] {
   return [...root.querySelectorAll<HTMLElement>("[data-category-id]")]
     .map((section) => {
       const { top, bottom } = section.getBoundingClientRect();
-      return { categoryId: section.dataset.categoryId ?? "", top, bottom };
+      return {
+        categoryId: section.dataset.categoryId ?? "",
+        top: top + scrollY,
+        bottom: bottom + scrollY,
+      };
     })
     .filter((rect) => rect.categoryId !== "")
     .sort((a, b) => a.top - b.top);
 }
 
 /**
- * Resolve the category under a point. Sections are separated by margins, so a
+ * Resolve the category under a document-space Y. Sections are separated by margins, so a
  * finger in the gap between two of them matches neither band; rather than
  * dropping the gesture, snap to the nearest edge. Anything above the first or
  * below the last section stays unresolved, so a drop there is a no-op.
