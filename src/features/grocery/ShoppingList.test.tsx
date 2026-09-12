@@ -49,6 +49,12 @@ function categories(): ShoppingListCategory[] {
       icon: "🍎",
       items: [
         { id: "apfel", name: "Äpfel", isChecked: false, categoryId: "obst" },
+        {
+          id: "bananen",
+          name: "Bananen",
+          isChecked: false,
+          categoryId: "obst",
+        },
       ],
     },
     { id: "gebaeck", name: "Gebäck", icon: "🥐", items: [] },
@@ -94,7 +100,7 @@ describe("adding an item", () => {
 
     await user.click(
       within(section("Obst")).getByRole("button", {
-        name: "Bananen schnell hinzufügen",
+        name: "Nektarinen schnell hinzufügen",
       }),
     );
 
@@ -102,11 +108,11 @@ describe("adding an item", () => {
       expect(actions.addGroceryItem).toHaveBeenCalledTimes(1),
     );
     expect(fieldsOf(actions.addGroceryItem)).toEqual({
-      name: "Bananen",
+      name: "Nektarinen",
       categoryId: "obst",
     });
     expect(
-      await within(section("Obst")).findByText("Bananen"),
+      await within(section("Obst")).findByText("Nektarinen"),
     ).toBeInTheDocument();
   });
 
@@ -115,7 +121,7 @@ describe("adding an item", () => {
 
     expect(
       within(section("Obst")).queryByRole("button", {
-        name: "Äpfel schnell hinzufügen",
+        name: "Bananen schnell hinzufügen",
       }),
     ).not.toBeInTheDocument();
   });
@@ -127,7 +133,7 @@ describe("adding an item", () => {
     await user.keyboard("Mangos");
     await user.click(
       within(section("Obst")).getByRole("button", {
-        name: "Bananen schnell hinzufügen",
+        name: "Nektarinen schnell hinzufügen",
       }),
     );
 
@@ -139,7 +145,7 @@ describe("adding an item", () => {
       categoryId: "obst",
     });
     expect(fieldsOfCall(actions.addGroceryItem, 1)).toEqual({
-      name: "Bananen",
+      name: "Nektarinen",
       categoryId: "obst",
     });
   });

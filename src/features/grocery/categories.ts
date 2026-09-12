@@ -12,10 +12,9 @@ export const DEFAULT_GROCERY_CATEGORIES = [
 ] as const;
 
 export const QUICK_ADD_GROCERY_ITEMS: Record<string, string[]> = {
-  Obst: ["Äpfel", "Bananen", "Beeren", "Zitronen"],
+  Obst: ["Bananen", "Nektarinen"],
   Gemüse: ["Tomaten", "Avocados"],
   "Mehl, Nudeln, Trockenwaren": ["Nudeln"],
   Kühlregal: ["Milch", "Eier", "Skyr", "Oatly"],
   Gefrorenes: ["Erdbeeren", "Mango", "Heidelbeeren", "Himbeeren"],
-  Sonstiges: ["Kaffee", "Tee", "Schokolade", "Haferdrink"],
 };
