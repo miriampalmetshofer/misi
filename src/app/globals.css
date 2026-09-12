@@ -23,9 +23,6 @@ button {
     @apply mt-6 text-3xl font-bold leading-tight tracking-normal sm:mt-10 sm:text-5xl;
   }
 
-  /* Small uppercase heading above a group of fields or list items. Uppercase
-     alone marks it as a label, so it stays at one size and a medium weight
-     rather than competing with the values underneath it. */
   .section-label {
     @apply text-xs font-medium uppercase tracking-wide text-muted-foreground;
   }

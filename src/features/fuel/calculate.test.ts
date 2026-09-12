@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { calculateFuelSplit, type FuelSplitInput } from "./calculate";
 
-// The 12.12.2025 fill-up from the original spreadsheet, used as the reference
-// case so the `shared` mode stays bug-compatible with the sheet's history.
 const sheetFillUp: FuelSplitInput = {
   miriamKm: 256.4,
   simonKm: 352.2,

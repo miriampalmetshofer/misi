@@ -2,11 +2,14 @@ export const OFFSET_MODES = ["proportional", "shared"] as const;
 
 export type OffsetMode = (typeof OFFSET_MODES)[number];
 
-export type FuelSplitInput = {
-  /** Kilometres the tracking device attributes to each driver. */
+/** Kilometres the tracking device attributes to each driver. */
+export type DeviceKm = {
   miriamKm: number;
   simonKm: number;
   sharedKm: number;
+};
+
+export type FuelSplitInput = DeviceKm & {
   /** Kilometres the car itself reports for the same period. */
   carKm: number;
   /** Amount paid at the pump, in euros. */
@@ -21,10 +24,10 @@ export type FuelSplitResult = {
   /** Share of the offset relative to the car reading, 0–1. */
   distanceOffsetShare: number;
   /**
-   * Shares of the distance, 0–1. The two personal shares plus the shared one
-   * sum to 1, so a personal share on its own is NOT what someone pays — half
-   * of `sharedDistanceShare` belongs to each of them on top. Use `*BillShare`
-   * to describe a person's part of the bill.
+   * Shares of the distance, 0–1. All three sum to 1 in either mode, so a
+   * personal share on its own is NOT what someone pays — half of
+   * `sharedDistanceShare` is added to each of them on top, again in either
+   * mode. Use `*BillShare` for a person's part of the bill.
    */
   miriamDistanceShare: number;
   simonDistanceShare: number;
@@ -43,17 +46,20 @@ export type FuelSplitResult = {
 /**
  * Splits a fill-up between the two drivers.
  *
- * Both modes give each driver their own kilometres plus half of the shared
- * ("Beide") kilometres. They differ only in where the gap between the device
- * sum and the car's own reading goes:
+ * The tracking device misses trips the car itself counted, so its three
+ * readings usually add up to less than the car's own reading. Those missing
+ * kilometres were still driven and still cost fuel, so somebody has to pay for
+ * them. The mode decides who:
  *
- * - `proportional` distributes the gap across all three buckets by size, so
- *   everyone absorbs it in the ratio they drove. Because the scale factor is
- *   the same for every bucket it cancels out of the shares entirely — in this
- *   mode `carKm` changes the displayed kilometres but not the euro split.
- * - `shared` assigns the whole gap to the shared bucket, which is then halved.
+ * - `proportional` shares the gap out in the ratio everyone drove. It scales
+ *   all three readings by the same factor, so the factor cancels out and the
+ *   euro split is unchanged — here `carKm` only moves the displayed kilometres.
+ * - `shared` puts the whole gap on the shared bucket, which is then halved.
  *   This is what the original spreadsheet did, so it keeps historical fill-ups
  *   comparable.
+ *
+ * Either way each driver pays for their own kilometres plus half the shared
+ * ones.
  */
 export function calculateFuelSplit(
   input: FuelSplitInput,
