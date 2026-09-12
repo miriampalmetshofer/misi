@@ -2,6 +2,11 @@ export const OFFSET_MODES = ["proportional", "shared"] as const;
 
 export type OffsetMode = (typeof OFFSET_MODES)[number];
 
+/** Narrows a stored or submitted string to a mode the calculator knows. */
+export function isOffsetMode(value: string): value is OffsetMode {
+  return (OFFSET_MODES as readonly string[]).includes(value);
+}
+
 /** Kilometres the tracking device attributes to each driver. */
 export type DeviceKm = {
   miriamKm: number;

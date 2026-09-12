@@ -14,7 +14,7 @@ import type {
   ShoppingListCategory,
 } from "./types";
 import { ShoppingListView } from "./ShoppingListView";
-import { useOptimisticMutation } from "./useOptimisticMutation";
+import { useOptimisticMutation } from "@/lib/useOptimisticMutation";
 
 type ShoppingListProps = {
   categories: ShoppingListCategory[];

@@ -68,19 +68,23 @@ The goal is not to ship every feature at once. The goal is to build a maintainab
 - The e2e suite runs locally only, in neither `npm run ci` nor the GitHub
   workflow (see `docs/architecture.md`). Run it by hand before merging anything
   that touches a server action or a migration.
-- Two selector traps, both load-bearing in the current UI: the delete button is
-  `aria-hidden` until its row is edited, so it must be queried by label rather
-  than by role; and a row in edit mode holds its name in an input value, so a
-  row located by text no longer matches it.
+- Two selector traps in the shopping list: the delete button is `aria-hidden`
+  until its row is edited, so it must be queried by label rather than by role;
+  and a row in edit mode holds its name in an input value, so a row located by
+  text no longer matches it.
 - An added row renders optimistically before the insert finishes. Reloading
   right after can beat the write, so wait for `data-syncing` to clear first.
+- `e2e/shopping-list.spec.ts` "an item checked off …" already fails on `main`.
+  Pre-existing bug, not flake — don't let it block an unrelated branch.
 
 ### Tooling For Verification
 
 - Verify UI changes by looking at rendered pixels, not only at markup and computed styles. A control can be present in the DOM, pass every CSS check, and still be invisible to a person — for example because its contrast against the background is too low.
 - Interactive states (hover, focus, edit mode, optimistic/syncing states) must be verified in that state, not inferred from the code that produces them.
-- Preferred tool: the Claude in Chrome browser extension (https://claude.ai/chrome), signed in with the same account as Claude Code. It allows driving the real browser, clicking through states and taking screenshots.
-- Fallback when the extension is unavailable: headless Chrome over the DevTools protocol, which needs no extra install. Note `node --experimental-websocket` is required on Node 20 for a CDP client, and screenshots must actually be looked at, not just captured.
+- To fill or click through a form: a throwaway Playwright spec in `e2e/` that screenshots the states. It waits for actionability, so keystrokes land where aimed. Delete it once the screenshots have been looked at.
+- The Claude in Chrome extension (https://claude.ai/chrome) is fine for reading a page or inspecting a state already on screen, but races the re-render on controlled React forms — typed values land in the wrong fields. Switch to Playwright instead of retrying.
+- Screenshots must actually be looked at, not just captured.
+- Wait for CSS transitions to settle before screenshotting or reading computed styles. `transition-all` on the shared Button means an enabled button caught mid-fade looks disabled — don't report that as a bug.
 - If a verification step is blocked by missing tooling, flag it to the user with the concrete name of what is needed and what it would allow, rather than silently downgrading to a weaker check. Say plainly which parts were verified and which were not.
 
 ## Core Operating Behaviors
