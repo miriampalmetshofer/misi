@@ -152,6 +152,8 @@ Your job is surgical precision, not unsolicited renovation.
 
 Every skill includes a verification step. A task is not complete until verification passes. "Seems right" is never sufficient — there must be evidence (passing tests, build output, runtime data).
 
+Verification serves the architecture, never the other way round. If you are about to change production code so a test is easier to write, less flaky or less laggy, stop: the test is wrong, not the design. Playwright is the usual culprit — a script clicking frozen coordinates is not a user, and a layout is not broken because a test harness fails to follow it.
+
 ### 7. Flag Tooling Friction
 
 The agent loop is a thing we are actively trying to make faster. You are the one
