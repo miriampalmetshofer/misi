@@ -26,6 +26,13 @@ type ActiveSession = DragSession & {
   rects: CategoryRect[];
   /** Page scroll when the drag started, to keep the row under the finger. */
   originScrollY: number;
+  /**
+   * Furthest the page may scroll during this drag: enough to bring the last
+   * category fully into view, and no further. The dragged row is translated
+   * out of its slot and lengthens the document as it goes, so the browser's own
+   * scroll limit keeps receding and cannot be used as the stop.
+   */
+  maxScrollY: number;
   frame: number | null;
   pendingX: number;
   pendingY: number;
@@ -106,13 +113,18 @@ export function useDragController(
       }
 
       const before = window.scrollY;
-      window.scrollBy(0, session.edgeSpeed);
+      const next = Math.min(
+        Math.max(0, before + session.edgeSpeed),
+        session.maxScrollY,
+      );
 
-      // Hitting the end of the page means there is nothing left to reveal.
-      if (window.scrollY === before) {
+      // Already at the end of the list: there is nothing left to reveal.
+      if (next === before) {
         stopEdgeScroll(session);
         return;
       }
+
+      window.scrollTo(0, next);
 
       schedulePaint(session);
       refreshTarget(session);
@@ -190,11 +202,13 @@ export function useDragController(
   const start = useCallback((session: DragSession) => {
     const scrollY = window.scrollY;
     const rects = measureCategoryRects(document, scrollY);
+    const listBottom = rects.at(-1)?.bottom ?? scrollY;
 
     sessionRef.current = {
       ...session,
       rects,
       originScrollY: scrollY,
+      maxScrollY: Math.max(0, listBottom - window.innerHeight + EDGE_ZONE_PX),
       frame: null,
       pendingX: 0,
       pendingY: 0,

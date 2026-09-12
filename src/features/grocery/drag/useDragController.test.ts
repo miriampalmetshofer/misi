@@ -162,25 +162,63 @@ describe("useDragController", () => {
       frames.push(callback);
       return frames.length;
     });
-    const scrollBy = vi.fn((_x: number, y: number) => {
-      scrollPageTo(window.scrollY + y);
-    });
-    vi.stubGlobal("scrollBy", scrollBy);
+    const scrollTo = vi.fn((_x: number, y: number) => scrollPageTo(y));
+    vi.stubGlobal("scrollTo", scrollTo);
+    // A short viewport against the 200px-tall stub list, so there is genuinely
+    // something below the fold to scroll to.
     Object.defineProperty(window, "innerHeight", {
       configurable: true,
-      value: 800,
+      value: 120,
     });
 
     const { result } = renderHook(() => useDragController(vi.fn()));
     act(() => result.current.start(startedSession(row)));
 
-    // Finger parked 10px from the bottom: a category below the fold has to be
+    // Finger parked at the bottom edge: a category below the fold has to be
     // reachable without letting go.
-    act(() => result.current.move(0, 790));
-    act(() => frames.forEach((frame) => frame(0)));
+    act(() => result.current.move(0, 115));
+    // The loop is scheduled on a frame; run the ones that were queued.
+    act(() => frames.splice(0).forEach((frame) => frame(0)));
 
-    expect(scrollBy).toHaveBeenCalled();
-    expect(scrollBy.mock.calls[0][1]).toBeGreaterThan(0);
+    expect(scrollTo).toHaveBeenCalled();
+    expect(scrollTo.mock.calls[0][1]).toBeGreaterThan(0);
+
+    act(() => result.current.cancel());
+    scrollPageTo(0);
+    vi.unstubAllGlobals();
+  });
+
+
+  it("stops scrolling at the end of the list instead of running on forever", () => {
+    setUpSections();
+    scrollPageTo(0);
+    const row = makeRow();
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    vi.stubGlobal("scrollTo", (_x: number, y: number) => scrollPageTo(y));
+    Object.defineProperty(window, "innerHeight", {
+      configurable: true,
+      value: 120,
+    });
+
+    const { result } = renderHook(() => useDragController(vi.fn()));
+    act(() => result.current.start(startedSession(row)));
+    act(() => result.current.move(0, 115));
+
+    // Let the loop run far longer than it would take to reach the bottom. The
+    // dragged row lengthens the document as it travels, so without a limit of
+    // its own this would keep finding new room and never stop.
+    for (let tick = 0; tick < 200; tick += 1) {
+      act(() => frames.splice(0).forEach((frame) => frame(0)));
+    }
+
+    // The last section ends at document 200, so the page never needs to go
+    // beyond bringing that into a 120px viewport.
+    expect(window.scrollY).toBeLessThanOrEqual(152);
+    expect(frames).toHaveLength(0);
 
     act(() => result.current.cancel());
     scrollPageTo(0);
@@ -191,18 +229,18 @@ describe("useDragController", () => {
     setUpSections();
     scrollPageTo(0);
     const row = makeRow();
-    const scrollBy = vi.fn();
-    vi.stubGlobal("scrollBy", scrollBy);
+    const scrollTo = vi.fn();
+    vi.stubGlobal("scrollTo", scrollTo);
     Object.defineProperty(window, "innerHeight", {
       configurable: true,
-      value: 800,
+      value: 120,
     });
 
     const { result } = renderHook(() => useDragController(vi.fn()));
     act(() => result.current.start(startedSession(row)));
-    act(() => result.current.move(0, 400));
+    act(() => result.current.move(0, 60));
 
-    expect(scrollBy).not.toHaveBeenCalled();
+    expect(scrollTo).not.toHaveBeenCalled();
 
     act(() => result.current.cancel());
     vi.unstubAllGlobals();
