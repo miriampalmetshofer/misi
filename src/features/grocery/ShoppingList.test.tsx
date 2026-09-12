@@ -67,6 +67,10 @@ function fieldsOf(mock: { mock: { calls: unknown[][] } }) {
   return Object.fromEntries(mock.mock.calls[0][0] as FormData);
 }
 
+function fieldsOfCall(mock: { mock: { calls: unknown[][] } }, index: number) {
+  return Object.fromEntries(mock.mock.calls[index][0] as FormData);
+}
+
 function section(name: string) {
   return screen
     .getByRole("heading", { name: new RegExp(name) })
@@ -75,7 +79,7 @@ function section(name: string) {
 
 function addButton(categoryName: string) {
   return within(section(categoryName)).getByRole("button", {
-    name: /hinzufügen/i,
+    name: "Eigener Artikel",
   });
 }
 
@@ -85,6 +89,61 @@ beforeEach(() => {
 });
 
 describe("adding an item", () => {
+  it("adds a suggested item with one click", async () => {
+    const { user } = renderList();
+
+    await user.click(
+      within(section("Gebäck")).getByRole("button", {
+        name: "Semmeln schnell hinzufügen",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(actions.addGroceryItem).toHaveBeenCalledTimes(1),
+    );
+    expect(fieldsOf(actions.addGroceryItem)).toEqual({
+      name: "Semmeln",
+      categoryId: "gebaeck",
+    });
+    expect(
+      await within(section("Gebäck")).findByText("Semmeln"),
+    ).toBeInTheDocument();
+  });
+
+  it("hides suggested items that are already on the list", () => {
+    renderList();
+
+    expect(
+      within(section("Obst")).queryByRole("button", {
+        name: "Äpfel schnell hinzufügen",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("saves an open draft before adding a suggested item", async () => {
+    const { user } = renderList();
+
+    await user.click(addButton("Gebäck"));
+    await user.keyboard("Croissants");
+    await user.click(
+      within(section("Gebäck")).getByRole("button", {
+        name: "Semmeln schnell hinzufügen",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(actions.addGroceryItem).toHaveBeenCalledTimes(2),
+    );
+    expect(fieldsOfCall(actions.addGroceryItem, 0)).toEqual({
+      name: "Croissants",
+      categoryId: "gebaeck",
+    });
+    expect(fieldsOfCall(actions.addGroceryItem, 1)).toEqual({
+      name: "Semmeln",
+      categoryId: "gebaeck",
+    });
+  });
+
   it("saves a typed name and sends it to the server", async () => {
     const { user } = renderList();
 
@@ -298,7 +357,7 @@ describe("deleting an item", () => {
     );
     expect(fieldsOf(actions.deleteGroceryItem)).toEqual({ itemId: "apfel" });
     await waitFor(() =>
-      expect(screen.queryByText("Äpfel")).not.toBeInTheDocument(),
+      expect(screen.queryByRole("button", { name: "Äpfel" })).toBeNull(),
     );
   });
 
@@ -337,7 +396,7 @@ describe("checking an item off", () => {
       isChecked: "true",
     });
     await waitFor(() =>
-      expect(screen.queryByText("Äpfel")).not.toBeInTheDocument(),
+      expect(screen.queryByRole("button", { name: "Äpfel" })).toBeNull(),
     );
   });
 

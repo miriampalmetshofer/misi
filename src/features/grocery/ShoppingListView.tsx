@@ -11,6 +11,7 @@ type ShoppingListViewProps = {
   onAddDraft: (categoryId: string) => void;
   onCheckItem: (itemId: string) => void;
   onDeleteItem: (itemId: string) => void;
+  onQuickAddItem: (name: string, categoryId: string) => void;
   onRenameItem: (itemId: string, name: string) => void;
   onSaveDraft: (draftId: string, name: string, categoryId: string) => void;
   onUpdateDraft: (draftId: string, name: string) => void;
@@ -21,6 +22,7 @@ export function ShoppingListView({
   onAddDraft,
   onCheckItem,
   onDeleteItem,
+  onQuickAddItem,
   onRenameItem,
   onSaveDraft,
   onUpdateDraft,
@@ -43,6 +45,7 @@ export function ShoppingListView({
               onAddDraft={onAddDraft}
               onCheckItem={onCheckItem}
               onDeleteItem={onDeleteItem}
+              onQuickAddItem={onQuickAddItem}
               onRenameItem={onRenameItem}
               onSaveDraft={onSaveDraft}
               onUpdateDraft={onUpdateDraft}

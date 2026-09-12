@@ -10,3 +10,14 @@ export const DEFAULT_GROCERY_CATEGORIES = [
   { name: "Gefrorenes", icon: "🧊", sortOrder: 70 },
   { name: "Sonstiges", icon: "📦", sortOrder: 80 },
 ] as const;
+
+export const QUICK_ADD_GROCERY_ITEMS: Record<string, string[]> = {
+  Obst: ["Äpfel", "Bananen", "Beeren", "Zitronen"],
+  Gemüse: ["Tomaten", "Gurken", "Paprika", "Karotten", "Zwiebeln"],
+  Gebäck: ["Brot", "Semmeln", "Toast", "Wraps"],
+  Haushalt: ["Küchenrolle", "Klopapier", "Spülmittel", "Müllsäcke"],
+  "Mehl, Nudeln, Trockenwaren": ["Nudeln", "Reis", "Mehl", "Haferflocken"],
+  Kühlregal: ["Milch", "Joghurt", "Butter", "Käse", "Eier"],
+  Gefrorenes: ["Spinat", "Pizza", "Beeren", "Gemüse-Mix"],
+  Sonstiges: ["Kaffee", "Tee", "Schokolade", "Haferdrink"],
+};
