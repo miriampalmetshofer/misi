@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronLeft, Info } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { calculateTanken, type OffsetMode } from "./calculate";
 import { parseNumber } from "./parseNumber";
@@ -65,7 +64,6 @@ export function FuelSplit() {
   // Initialised lazily so the date comes from the browser's clock rather than
   // the server's, and stays put if the component re-renders around midnight.
   const [datum, setDatum] = useState(today);
-  const [isHintOpen, setIsHintOpen] = useState(false);
 
   const parsed = {
     kmMiriam: parseNumber(form.kmMiriam),
@@ -202,23 +200,9 @@ export function FuelSplit() {
           </section>
 
           <section aria-labelledby="modus" className="flex flex-col gap-3">
-            <div className="flex items-center gap-1.5">
-              <h2 className="section-label" id="modus">
-                Differenz verteilen
-              </h2>
-
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                aria-controls="modus-info"
-                aria-expanded={isHintOpen}
-                aria-label="Erklärung der Modi anzeigen"
-                className="rounded-full text-muted-foreground"
-                onClick={() => setIsHintOpen((open) => !open)}
-              >
-                <Info aria-hidden="true" />
-              </Button>
-            </div>
+            <h2 className="section-label" id="modus">
+              Differenz verteilen
+            </h2>
 
             {/* Native radios rather than buttons with role="radio": arrow-key
                 selection and the single tab stop come from the browser, which
@@ -249,25 +233,11 @@ export function FuelSplit() {
               ))}
             </fieldset>
 
-            {isHintOpen ? (
-              <dl
-                className="flex flex-col gap-3 rounded-2xl border bg-card p-4 text-sm leading-snug text-muted-foreground"
-                id="modus-info"
-              >
-                {(Object.keys(MODE_LABELS) as OffsetMode[]).map((value) => (
-                  <div key={value}>
-                    <dt className="font-semibold text-card-foreground">
-                      {MODE_LABELS[value]}
-                    </dt>
-                    <dd>{MODE_HINTS[value]}</dd>
-                  </div>
-                ))}
-              </dl>
-            ) : (
-              <p className="text-sm leading-snug text-muted-foreground">
-                {MODE_HINTS[mode]}
-              </p>
-            )}
+            {/* The selected mode explains itself here, which is why there is
+                no separate info toggle listing both. */}
+            <p className="text-sm leading-snug text-muted-foreground">
+              {MODE_HINTS[mode]}
+            </p>
           </section>
 
           <section

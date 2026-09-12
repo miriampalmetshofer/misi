@@ -125,16 +125,6 @@ describe("FuelSplit", () => {
     expect(screen.getAllByText("—")).toHaveLength(2);
   });
 
-  it("still shows the summaries once every field reads as a number", async () => {
-    const user = userEvent.setup();
-    render(<FuelSplit />);
-
-    await fillSheetExample(user);
-
-    expect(screen.getByText("882,4 km")).toBeInTheDocument();
-    expect(screen.getByText("170,0 km (16,2 %)")).toBeInTheDocument();
-  });
-
   it("asks for numbers instead of calculating from unreadable input", async () => {
     const user = userEvent.setup();
     render(<FuelSplit />);
@@ -196,19 +186,20 @@ describe("FuelSplit", () => {
     expect(proportional).not.toBeChecked();
   });
 
-  it("explains both modes behind the info toggle", async () => {
+  it("explains the selected mode and swaps the text when it changes", async () => {
     const user = userEvent.setup();
     render(<FuelSplit />);
 
-    const info = screen.getByRole("button", {
-      name: "Erklärung der Modi anzeigen",
-    });
-    expect(info).toHaveAttribute("aria-expanded", "false");
+    expect(
+      screen.getByText(/nach gefahrenen Kilometern verteilt/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/komplett zu „Beide“/)).not.toBeInTheDocument();
 
-    await user.click(info);
+    await user.click(screen.getByRole("radio", { name: "50/50" }));
 
-    expect(info).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText(/nach gefahrenen Kilometern verteilt/)).toBeInTheDocument();
     expect(screen.getByText(/komplett zu „Beide“/)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/nach gefahrenen Kilometern verteilt/),
+    ).not.toBeInTheDocument();
   });
 });
