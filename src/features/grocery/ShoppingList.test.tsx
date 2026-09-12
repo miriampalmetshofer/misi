@@ -390,7 +390,6 @@ describe("the open-item total", () => {
   it("counts the items still to buy", () => {
     renderList();
 
-    // The fixture holds Äpfel and Bananen, both unchecked.
     expect(screen.getByText("2 Artikel offen")).toBeInTheDocument();
   });
 

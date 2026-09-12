@@ -39,10 +39,8 @@ export function ShoppingCategorySection({
     (itemName) => !existingItemNames.has(normalizeItemName(itemName)),
   );
 
-  // A draft has no name yet, so counting it would move the total while the
-  // user is still typing. Checked items are filtered out server-side (see
-  // queries.ts), so this is how many are still to buy — a "done/total" pair
-  // could only ever read 0/n.
+  // Checked items never reach the client (queries.ts), so this is what is
+  // left to buy. Drafts have no name yet and would move the count while typing.
   const openItemCount = category.items.filter((item) => !item.isDraft).length;
 
   const headerStyle =
@@ -106,8 +104,6 @@ export function ShoppingCategorySection({
           <div className="mt-3 px-2 pb-1">
             <p className="section-label">Vorschläge</p>
 
-            {/* Dashed outline marks these as "not on the list yet", which is
-                what tells them apart from the solid item rows above. */}
             <div
               aria-label={`${category.name} schnell hinzufügen`}
               className="mt-2 flex flex-wrap gap-2"

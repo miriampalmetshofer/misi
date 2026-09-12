@@ -19,11 +19,7 @@ export const QUICK_ADD_GROCERY_ITEMS: Record<string, string[]> = {
   Gefrorenes: ["Erdbeeren", "Mango", "Heidelbeeren", "Himbeeren"],
 };
 
-/**
- * Header tint per category. Tailwind needs to see whole class names to emit
- * them, so these are literals rather than composed from a colour name.
- * `Sonstiges` and anything unknown fall back to the neutral set.
- */
+/** Header tint per category. */
 export const CATEGORY_HEADER_STYLES: Record<string, string> = {
   Obst: "bg-rose-50 dark:bg-rose-950/30",
   Gemüse: "bg-green-50 dark:bg-green-950/30",

@@ -43,9 +43,8 @@ export function ShoppingListView({
 
         <h1 className="page-headline">Einkaufsliste</h1>
 
-        {/* Checked items are filtered out server-side (see queries.ts), so a
-            "done of total" pair would always read zero. This counts what is
-            still to buy. */}
+        {/* Checked items never reach the client (queries.ts), so a
+            "done of total" pair would always read zero. */}
         <p className="mt-2 text-sm text-muted-foreground">
           {openItemCount === 0
             ? "Nichts offen"
