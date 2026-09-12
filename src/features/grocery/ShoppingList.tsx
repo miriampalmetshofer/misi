@@ -5,6 +5,7 @@ import { useOptimistic, useState } from "react";
 import {
   addGroceryItem,
   deleteGroceryItem,
+  moveGroceryItem,
   renameGroceryItem,
   setGroceryItemChecked,
 } from "./actions";
@@ -35,6 +36,7 @@ function isClientOnlyId(itemId: string) {
 
 type OptimisticAction =
   | { type: "add"; itemId: string; name: string; categoryId: string }
+  | { type: "move"; itemId: string; categoryId: string }
   | { type: "rename"; itemId: string; name: string }
   | { type: "remove"; itemId: string };
 
@@ -125,6 +127,16 @@ export function ShoppingList({ categories }: ShoppingListProps) {
     );
   }
 
+  function moveItem(itemId: string, categoryId: string) {
+    if (isClientOnlyId(itemId)) return;
+
+    mutate(
+      moveGroceryItem,
+      { itemId, categoryId },
+      { type: "move", itemId, categoryId },
+    );
+  }
+
   function checkItem(itemId: string) {
     mutate(
       setGroceryItemChecked,
@@ -152,6 +164,7 @@ export function ShoppingList({ categories }: ShoppingListProps) {
       onAddDraft={createDraftItem}
       onCheckItem={checkItem}
       onDeleteItem={deleteItem}
+      onMoveItem={moveItem}
       onQuickAddItem={quickAddItem}
       onRenameItem={renameItem}
       onSaveDraft={saveDraftItem}
@@ -226,6 +239,44 @@ export function reduce(
           item.id === action.itemId ? { ...item, name: action.name } : item,
         ),
       }));
+    case "move": {
+      const targetCategoryExists = categories.some(
+        (category) => category.id === action.categoryId,
+      );
+
+      if (!targetCategoryExists) {
+        return categories;
+      }
+
+      const movedItem = categories
+        .flatMap((category) => category.items)
+        .find((item) => item.id === action.itemId);
+
+      if (!movedItem || movedItem.categoryId === action.categoryId) {
+        return categories;
+      }
+
+      return categories.map((category) => {
+        if (category.id === action.categoryId) {
+          return {
+            ...category,
+            items: [
+              ...category.items,
+              {
+                ...movedItem,
+                categoryId: action.categoryId,
+                isSyncing: true,
+              },
+            ],
+          };
+        }
+
+        return {
+          ...category,
+          items: category.items.filter((item) => item.id !== action.itemId),
+        };
+      });
+    }
     case "remove":
       return categories.map((category) => ({
         ...category,

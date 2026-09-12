@@ -93,6 +93,31 @@ export async function renameGroceryItem(formData: FormData) {
   revalidatePath(SHOPPING_LIST_PATH);
 }
 
+export async function moveGroceryItem(formData: FormData) {
+  const itemId = getString(formData, "itemId");
+  const categoryId = getString(formData, "categoryId");
+
+  if (!itemId || !categoryId) {
+    return;
+  }
+
+  const categories = await getGroceryCategories();
+
+  if (!categories.some((category) => category.id === categoryId)) {
+    console.error(`moveGroceryItem: category ${categoryId} not found`);
+    return;
+  }
+
+  const db = getDb();
+
+  await db
+    .update(schema.groceryItems)
+    .set({ categoryId, updatedAt: new Date() })
+    .where(eq(schema.groceryItems.id, itemId));
+
+  revalidatePath(SHOPPING_LIST_PATH);
+}
+
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value : "";

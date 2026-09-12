@@ -1,0 +1,191 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { MouseEvent, PointerEvent } from "react";
+
+import { useDrag } from "./DragContext";
+
+// 400ms is roughly the native long-press feel; the previous 550ms read as the
+// list ignoring you.
+const HOLD_MS = 400;
+// A finger resting on a phone drifts. Movement inside this radius is still a
+// hold, not a scroll: at the previous 8px, ~17px of ordinary drift meant the
+// drag never started at all.
+const SLOP_PX = 10;
+
+type PendingPress = {
+  pointerId: number;
+  sourceCategoryId: string;
+  startX: number;
+  startY: number;
+  timer: ReturnType<typeof setTimeout>;
+  dragging: boolean;
+};
+
+type DraggableItemOptions = {
+  canDrag: boolean;
+  itemId: string;
+  sourceCategoryId: string | null;
+};
+
+export function useDraggableItem({
+  canDrag,
+  itemId,
+  sourceCategoryId,
+}: DraggableItemOptions) {
+  const { draggedItemId, start, move, drop, cancel } = useDrag();
+  const pressRef = useRef<PendingPress | null>(null);
+  const [suppressClick, setSuppressClick] = useState(false);
+  const isDragging = draggedItemId === itemId;
+
+  const clearPress = useCallback(() => {
+    if (pressRef.current) {
+      clearTimeout(pressRef.current.timer);
+      pressRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => clearPress, [clearPress]);
+
+  // While a row is lifted, the page itself must not scroll or select under it.
+  useEffect(() => {
+    if (!isDragging) {
+      return;
+    }
+
+    const previousUserSelect = document.body.style.userSelect;
+    const blockScroll = (event: TouchEvent) => event.preventDefault();
+
+    document.body.style.userSelect = "none";
+    document.addEventListener("touchmove", blockScroll, { passive: false });
+
+    return () => {
+      document.body.style.userSelect = previousUserSelect;
+      document.removeEventListener("touchmove", blockScroll);
+    };
+  }, [isDragging]);
+
+  function handlePointerDown(event: PointerEvent<HTMLLIElement>) {
+    if (!canDrag || event.button !== 0 || !sourceCategoryId) {
+      return;
+    }
+
+    const element = event.currentTarget;
+    const { pointerId, clientX, clientY } = event;
+
+    const timer = setTimeout(() => {
+      const press = pressRef.current;
+
+      if (!press) {
+        return;
+      }
+
+      press.dragging = true;
+
+      // Capture keeps the gesture on this row even when the finger leaves it.
+      // It throws if the pointer is already gone (a fast tap, or the row
+      // re-rendered underneath us) — the drag is still valid without it.
+      try {
+        element.setPointerCapture(pointerId);
+      } catch {
+        // ignore: no active pointer to capture
+      }
+
+      setSuppressClick(true);
+      navigator.vibrate?.(10);
+
+      start({
+        itemId,
+        sourceCategoryId: press.sourceCategoryId,
+        element,
+        pointerId,
+        originX: press.startX,
+        originY: press.startY,
+      });
+    }, HOLD_MS);
+
+    pressRef.current = {
+      pointerId,
+      sourceCategoryId,
+      startX: clientX,
+      startY: clientY,
+      timer,
+      dragging: false,
+    };
+  }
+
+  function handlePointerMove(event: PointerEvent<HTMLLIElement>) {
+    const press = pressRef.current;
+
+    if (!press || press.pointerId !== event.pointerId) {
+      return;
+    }
+
+    if (press.dragging) {
+      move(event.clientX, event.clientY);
+      return;
+    }
+
+    const dx = event.clientX - press.startX;
+    const dy = event.clientY - press.startY;
+
+    if (Math.hypot(dx, dy) <= SLOP_PX) {
+      return;
+    }
+
+    // Past the slop radius and the hold has not fired yet. Vertical movement is
+    // the page scrolling, so give the gesture up. Horizontal movement is not —
+    // the list only scrolls vertically — so let the hold keep running.
+    if (Math.abs(dy) > Math.abs(dx)) {
+      clearPress();
+    }
+  }
+
+  function handlePointerUp(event: PointerEvent<HTMLLIElement>) {
+    const press = pressRef.current;
+    clearPress();
+
+    if (!press?.dragging) {
+      return;
+    }
+
+    drop(event.clientY);
+    // Let the click that follows this pointerup be swallowed, then re-arm.
+    setTimeout(() => setSuppressClick(false), 0);
+  }
+
+  function handlePointerCancel() {
+    const press = pressRef.current;
+    clearPress();
+
+    if (!press?.dragging) {
+      return;
+    }
+
+    cancel();
+    setTimeout(() => setSuppressClick(false), 0);
+  }
+
+  // A drag ends over some row's text; without this the drop would also open
+  // that row's editor.
+  function handleClickCapture(event: MouseEvent<HTMLLIElement>) {
+    if (!suppressClick) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    setSuppressClick(false);
+  }
+
+  return {
+    isDragging,
+    dragProps: {
+      onClickCapture: handleClickCapture,
+      onPointerCancel: handlePointerCancel,
+      onPointerDown: handlePointerDown,
+      onPointerMove: handlePointerMove,
+      onPointerUp: handlePointerUp,
+    },
+  };
+}

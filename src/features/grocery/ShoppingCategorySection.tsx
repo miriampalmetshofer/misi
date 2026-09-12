@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import { cn } from "cn";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -10,12 +11,15 @@ import {
 } from "./categories";
 import type { OptimisticShoppingListCategory } from "./types";
 import { ShoppingItem } from "./ShoppingItem";
+import { useDrag } from "./drag/DragContext";
 
 type ShoppingCategorySectionProps = {
+  categories: OptimisticShoppingListCategory[];
   category: OptimisticShoppingListCategory;
   onAddDraft: (categoryId: string) => void;
   onCheckItem: (itemId: string) => void;
   onDeleteItem: (itemId: string) => void;
+  onMoveItem: (itemId: string, categoryId: string) => void;
   onQuickAddItem: (name: string, categoryId: string) => void;
   onRenameItem: (itemId: string, name: string) => void;
   onSaveDraft: (draftId: string, name: string, categoryId: string) => void;
@@ -23,15 +27,25 @@ type ShoppingCategorySectionProps = {
 };
 
 export function ShoppingCategorySection({
+  categories,
   category,
   onAddDraft,
   onCheckItem,
   onDeleteItem,
+  onMoveItem,
   onQuickAddItem,
   onRenameItem,
   onSaveDraft,
   onUpdateDraft,
 }: ShoppingCategorySectionProps) {
+  const { draggedItemId, dropCategoryId } = useDrag();
+  // Highlighting the category the item already sits in would tell the user a
+  // drop there does something; it does not.
+  const isDropTarget =
+    draggedItemId !== null &&
+    dropCategoryId === category.id &&
+    !category.items.some((item) => item.id === draggedItemId);
+
   const existingItemNames = new Set(
     category.items.map((item) => normalizeItemName(item.name)),
   );
@@ -49,7 +63,13 @@ export function ShoppingCategorySection({
   return (
     <section
       aria-labelledby={`category-${category.id}`}
-      className="overflow-hidden rounded-xl border bg-card"
+      className={cn(
+        "overflow-hidden rounded-xl border bg-card transition-colors",
+        // Inset, so the highlight never draws a line through a row's checkbox.
+        isDropTarget && "bg-muted ring-1 ring-inset ring-ring/40",
+      )}
+      data-category-id={category.id}
+      data-drop-target={isDropTarget || undefined}
     >
       <div className={`flex items-center gap-3 px-3 py-2.5 ${headerStyle}`}>
         <span
@@ -77,10 +97,12 @@ export function ShoppingCategorySection({
         <ul className="divide-y border-b">
           {category.items.map((item) => (
             <ShoppingItem
+              categories={categories}
               item={item}
               key={item.id}
               onCheck={onCheckItem}
               onDelete={onDeleteItem}
+              onMove={onMoveItem}
               onRename={onRenameItem}
               onSaveDraft={onSaveDraft}
               onUpdateDraft={onUpdateDraft}

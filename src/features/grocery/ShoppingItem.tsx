@@ -2,25 +2,35 @@
 
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
+import { cn } from "cn";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import type { OptimisticShoppingListItem } from "./types";
+import type {
+  OptimisticShoppingListCategory,
+  OptimisticShoppingListItem,
+} from "./types";
+import { useDrag } from "./drag/DragContext";
+import { useDraggableItem } from "./drag/useDraggableItem";
 
 type ShoppingItemRowProps = {
+  categories: OptimisticShoppingListCategory[];
   item: OptimisticShoppingListItem;
   onCheck: (itemId: string) => void;
   onDelete: (itemId: string) => void;
+  onMove: (itemId: string, categoryId: string) => void;
   onRename: (itemId: string, name: string) => void;
   onSaveDraft: (draftId: string, name: string, categoryId: string) => void;
   onUpdateDraft: (draftId: string, name: string) => void;
 };
 
 export function ShoppingItem({
+  categories,
   item,
   onCheck,
   onDelete,
+  onMove,
   onRename,
   onSaveDraft,
   onUpdateDraft,
@@ -28,6 +38,13 @@ export function ShoppingItem({
   const [isEditing, setIsEditing] = useState(item.isDraft ?? false);
   const [draft, setDraft] = useState(item.name);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { draggedItemId } = useDrag();
+  const isPersisted = !item.isDraft && !item.isSyncing;
+  const { dragProps, isDragging } = useDraggableItem({
+    canDrag: isPersisted && !isEditing && draggedItemId === null,
+    itemId: item.id,
+    sourceCategoryId: item.categoryId,
+  });
 
   useEffect(() => {
     if (!isEditing || !inputRef.current) {
@@ -75,8 +92,22 @@ export function ShoppingItem({
 
   return (
     <li
-      className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-1 data-[syncing=true]:opacity-70"
+      className={cn(
+        "relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-1 data-[syncing=true]:opacity-70",
+        // Never transition transform: it would lag behind the per-frame
+        // position writes the drag controller makes.
+        "transition-[box-shadow,opacity,scale,background-color]",
+        isPersisted && "touch-pan-y",
+        // Elevation rather than a ring, so nothing is drawn through the
+        // checkbox at the start of the row.
+        isDragging && "z-20 scale-[1.02] rounded-xl bg-background shadow-lg",
+        // Everything else recedes so the lifted row reads as the thing in hand.
+        draggedItemId !== null && !isDragging && "opacity-50",
+      )}
+      data-dragging={isDragging || undefined}
+      data-draggable={isPersisted || undefined}
       data-syncing={item.isSyncing}
+      {...dragProps}
     >
       <Checkbox
         aria-label={`${item.name || "Artikel"} erledigt markieren`}
@@ -128,25 +159,54 @@ export function ShoppingItem({
         </Button>
       )}
 
-      {/* Always render the delete button so its grid column keeps a constant
-          width and height; hide it when not editing to avoid a layout shift
-          (the row was reflowing as this column appeared/disappeared). */}
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={`${item.name || "Artikel"} löschen`}
-        aria-hidden={!isEditing}
-        tabIndex={isEditing ? undefined : -1}
-        className="rounded-full text-muted-foreground data-[hidden=true]:pointer-events-none data-[hidden=true]:invisible"
+      {/* Always render the trailing controls so their grid column keeps a
+          constant width and height; hide them when not editing to avoid a
+          layout shift (the row was reflowing as this column appeared). */}
+      <div
+        className="flex items-center gap-1 data-[hidden=true]:pointer-events-none data-[hidden=true]:invisible"
         data-hidden={!isEditing}
-        disabled={item.isSyncing}
-        // Keep the input focused on mousedown: blurring it would run save(),
-        // leave edit mode and hide this button before the click could land.
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={() => onDelete(item.id)}
       >
-        <Trash2 aria-hidden="true" />
-      </Button>
+        {/* Long-press drag is pointer-only. This is the same move, reachable by
+            keyboard and screen reader. */}
+        {isPersisted && (
+          <select
+            aria-label={`${item.name || "Artikel"} in andere Kategorie verschieben`}
+            className="h-9 max-w-28 rounded-md border border-input bg-transparent px-2 text-sm text-muted-foreground"
+            value={item.categoryId ?? ""}
+            tabIndex={isEditing ? undefined : -1}
+            // The row starts drags on pointerdown; keep the select's own
+            // press from reaching it.
+            onPointerDown={(event) => event.stopPropagation()}
+            onChange={(event) => {
+              if (event.target.value !== item.categoryId) {
+                onMove(item.id, event.target.value);
+              }
+            }}
+          >
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        )}
+
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={`${item.name || "Artikel"} löschen`}
+          aria-hidden={!isEditing}
+          tabIndex={isEditing ? undefined : -1}
+          className="rounded-full text-muted-foreground"
+          disabled={item.isSyncing}
+          // Keep the input focused on mousedown: blurring it would run save(),
+          // leave edit mode and hide this button before the click could land.
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => onDelete(item.id)}
+        >
+          <Trash2 aria-hidden="true" />
+        </Button>
+      </div>
     </li>
   );
 }

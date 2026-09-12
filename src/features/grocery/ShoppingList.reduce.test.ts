@@ -64,12 +64,42 @@ describe("reduce", () => {
     expect(next[0].items).toEqual([]);
   });
 
+  it("moves the matching item to another category", () => {
+    const next = reduce(categories(), {
+      type: "move",
+      itemId: "apfel",
+      categoryId: "gebaeck",
+    });
+
+    expect(next[0].items).toEqual([]);
+    expect(next[1].items).toEqual([
+      {
+        id: "apfel",
+        name: "Äpfel",
+        isChecked: false,
+        categoryId: "gebaeck",
+        isSyncing: true,
+      },
+    ]);
+  });
+
+  it("ignores moves to the current category", () => {
+    const before = categories();
+
+    expect(
+      reduce(before, { type: "move", itemId: "apfel", categoryId: "obst" }),
+    ).toEqual(before);
+  });
+
   it("ignores actions for unknown ids", () => {
     const before = categories();
 
     expect(reduce(before, { type: "remove", itemId: "nope" })).toEqual(before);
     expect(
       reduce(before, { type: "rename", itemId: "nope", name: "X" }),
+    ).toEqual(before);
+    expect(
+      reduce(before, { type: "move", itemId: "nope", categoryId: "gebaeck" }),
     ).toEqual(before);
   });
 });
