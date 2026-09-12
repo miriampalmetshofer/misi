@@ -124,7 +124,7 @@ describe("calculateTanken", () => {
     expect(result.anteilBeide).toBe(0);
   });
 
-  it("handles a car reading below the device sum without going negative", () => {
+  it("keeps a negative difference when the device sum is above the car reading", () => {
     const result = calculateTanken(
       { kmMiriam: 100, kmSimon: 100, kmBeide: 100, kmAuto: 280, bezahlt: 90 },
       "beide",

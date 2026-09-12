@@ -176,7 +176,7 @@ describe("FuelSplit", () => {
     expect(result().queryByText("0,00 €")).not.toBeInTheDocument();
   });
 
-  it("refuses to split when the device counted more than the car", async () => {
+  it("still splits when the device counted more than the car", async () => {
     const user = userEvent.setup();
     render(<FuelSplit />);
 
@@ -186,8 +186,8 @@ describe("FuelSplit", () => {
     await user.type(screen.getByLabelText("Gesamt"), "150");
     await user.type(screen.getByLabelText("Betrag"), "90");
 
-    // This used to render shares of 66,7 % / 66,7 % / -33,3 %.
-    expect(screen.getByText(/mehr Kilometer als das Auto/)).toBeInTheDocument();
+    expect(screen.getByText("-150,0 km (-100,0 %)")).toBeInTheDocument();
+    expect(result().getAllByText("45,00 €")).toHaveLength(2);
   });
 
   it("gives the mode radios real radio-group keyboard behaviour", async () => {

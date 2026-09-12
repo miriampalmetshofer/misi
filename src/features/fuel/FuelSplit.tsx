@@ -102,8 +102,7 @@ export function FuelSplit() {
     hasInvalidDeviceKm || invalidFields.includes("kmAuto");
 
   const basis = mode === "beide" ? input.kmAuto : result.summeGeraet;
-  const canCalculate =
-    basis > 0 && invalidFields.length === 0 && !result.isInconsistent;
+  const canCalculate = basis > 0 && invalidFields.length === 0;
 
   function update(name: FieldName, value: string) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -268,9 +267,7 @@ export function FuelSplit() {
               <p className="text-body-muted mt-4">
                 {invalidFields.length > 0
                   ? "Bitte nur Zahlen eintragen, dann erscheint hier die Aufteilung."
-                  : result.isInconsistent
-                    ? "Das Gerät zählt mehr Kilometer als das Auto. Bitte die Eingaben prüfen."
-                    : mode === "beide"
+                  : mode === "beide"
                     ? "Kilometer und Tachostand eintragen, dann erscheint hier die Aufteilung."
                     : "Kilometer eintragen, dann erscheint hier die Aufteilung."}
               </p>
