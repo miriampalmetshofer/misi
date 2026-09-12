@@ -121,13 +121,13 @@ describe("FuelSplit", () => {
     }
   });
 
-  it("rejects ambiguous grouped-looking numbers rather than guessing", async () => {
+  it("rejects a second separator rather than guessing at it", async () => {
     const user = userEvent.setup();
     render(<FuelSplit />);
 
-    // "1.234" normalises to "1,234", which is a thousands separator to one
-    // reader and three decimals to another. Saying so beats guessing.
-    await user.type(screen.getByLabelText("Miriam"), "1.234");
+    // "1.256,4" normalises to "1,256,4". There is no grouping separator, so
+    // this is not a number at all — saying so beats picking a reading.
+    await user.type(screen.getByLabelText("Miriam"), "1.256,4");
     await user.type(screen.getByLabelText("Simon"), "100");
     await user.type(screen.getByLabelText("Betrag"), "50");
 
@@ -138,7 +138,7 @@ describe("FuelSplit", () => {
     const user = userEvent.setup();
     render(<FuelSplit />);
 
-    await user.type(screen.getByLabelText("Miriam"), "1.234");
+    await user.type(screen.getByLabelText("Miriam"), "1.256,4");
     await user.type(screen.getByLabelText("Simon"), "352,2");
     await user.type(screen.getByLabelText("Beide"), "273,8");
     await user.type(screen.getByLabelText("Gesamt"), "1052,4");
