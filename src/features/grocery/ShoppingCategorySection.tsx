@@ -25,36 +25,17 @@ export function ShoppingCategorySection({
 }: ShoppingCategorySectionProps) {
   return (
     <section aria-labelledby={`category-${category.id}`}>
-      <div className="flex items-center gap-3">
-        <h2
-          className="flex min-w-0 items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground sm:text-base"
-          id={`category-${category.id}`}
-        >
-          <span aria-hidden="true" className="text-base sm:text-xl">
-            {category.icon}
-          </span>
-          <span className="min-w-0 break-words">{category.name}</span>
-        </h2>
+      <h2
+        className="flex min-w-0 items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground sm:text-base"
+        id={`category-${category.id}`}
+      >
+        <span aria-hidden="true" className="text-base sm:text-xl">
+          {category.icon}
+        </span>
+        <span className="min-w-0 break-words">{category.name}</span>
+      </h2>
 
-        <Button
-          variant="outline"
-          size="icon-lg"
-          aria-label={`${category.name} hinzufügen`}
-          className="ml-auto rounded-full"
-          // An open draft's blur fires before this click, so the typed item is
-          // saved before a fresh draft replaces it. Keep this button outside
-          // the list: hiding or moving it on save would swallow the click.
-          onClick={() => onAddDraft(category.id)}
-        >
-          <Plus aria-hidden="true" />
-        </Button>
-      </div>
-
-      {category.items.length === 0 ? (
-        <p className="mt-3 text-sm leading-snug text-muted-foreground sm:text-base">
-          Noch nichts in dieser Kategorie.
-        </p>
-      ) : (
+      {category.items.length > 0 && (
         <ul className="mt-3 space-y-0">
           {category.items.map((item) => (
             <ShoppingItem
@@ -68,6 +49,20 @@ export function ShoppingCategorySection({
           ))}
         </ul>
       )}
+
+      <Button
+        variant="outline"
+        size="sm"
+        aria-label={`${category.name} hinzufügen`}
+        className="mt-2 rounded-full text-muted-foreground"
+        // An open draft's blur fires before this click, so the typed item is
+        // saved before a fresh draft replaces it. Keep this button outside
+        // the list: hiding or moving it on save would swallow the click.
+        onClick={() => onAddDraft(category.id)}
+      >
+        <Plus aria-hidden="true" />
+        Hinzufügen
+      </Button>
     </section>
   );
 }
