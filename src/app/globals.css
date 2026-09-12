@@ -23,6 +23,11 @@ button {
     @apply mt-6 text-3xl font-bold leading-tight tracking-normal sm:mt-10 sm:text-5xl;
   }
 
+  /* Small uppercase heading above a group of fields or list items. */
+  .section-label {
+    @apply text-xs font-bold uppercase tracking-widest text-muted-foreground sm:text-base;
+  }
+
   .text-card-title {
     @apply text-xl font-bold leading-tight sm:text-2xl;
   }

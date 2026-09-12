@@ -9,6 +9,11 @@ const modules = [
     description: "Gemeinsame Einkaufsliste für den Haushalt.",
     href: "/einkauf",
   },
+  {
+    title: "Tanken",
+    description: "Spritkosten nach gefahrenen Kilometern aufteilen.",
+    href: "/tanken",
+  },
 ];
 
 export default function Home() {
