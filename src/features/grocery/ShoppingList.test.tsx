@@ -185,6 +185,26 @@ describe("adding an item", () => {
     await waitFor(() => expect(screen.getAllByRole("textbox")).toHaveLength(1));
     expect(within(section("Gebäck")).getByRole("textbox")).toBeInTheDocument();
   });
+
+  it("ignores a second press while an empty draft is open", async () => {
+    const { user } = renderList();
+
+    await user.click(addButton("Gebäck"));
+    await user.click(addButton("Gebäck"));
+
+    expect(within(section("Gebäck")).queryByRole("textbox")).toBeNull();
+    expect(actions.addGroceryItem).not.toHaveBeenCalled();
+  });
+
+  it("opens a fresh draft again after an empty one was dismissed", async () => {
+    const { user } = renderList();
+
+    await user.click(addButton("Gebäck"));
+    await user.click(addButton("Gebäck"));
+    await user.click(addButton("Gebäck"));
+
+    expect(within(section("Gebäck")).getByRole("textbox")).toBeInTheDocument();
+  });
 });
 
 describe("renaming an item", () => {

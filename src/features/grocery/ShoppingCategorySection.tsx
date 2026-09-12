@@ -52,12 +52,12 @@ export function ShoppingCategorySection({
 
       <Button
         variant="outline"
-        size="sm"
-        aria-label={`${category.name} hinzufügen`}
-        className="mt-2 rounded-full text-muted-foreground"
-        // An open draft's blur fires before this click, so the typed item is
-        // saved before a fresh draft replaces it. Keep this button outside
-        // the list: hiding or moving it on save would swallow the click.
+        // h-11 meets the 44px touch minimum; the sized variants top out at 36.
+        // The default border-input is ~1.3:1 here, too faint for the only
+        // affordance an empty category has.
+        className="mt-2 h-11 rounded-full border-muted-foreground px-4"
+        // Keep this outside the list: an open draft's blur must fire before
+        // this click for the draft to be saved or dropped first.
         onClick={() => onAddDraft(category.id)}
       >
         <Plus aria-hidden="true" />

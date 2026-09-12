@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useState } from "react";
+import { useOptimistic, useRef, useState } from "react";
 
 import {
   addGroceryItem,
@@ -40,6 +40,9 @@ type OptimisticAction =
 
 export function ShoppingList({ categories }: ShoppingListProps) {
   const [drafts, setDrafts] = useState<Draft[]>([]);
+  // A draft's blur clears it from state before the add click runs, so `drafts`
+  // cannot tell us whether that click is a repeat press on an empty draft.
+  const dismissedEmptyDraftCategory = useRef<string | null>(null);
   const [optimisticCategories, applyOptimistic] = useOptimistic(
     categories,
     reduce,
@@ -49,6 +52,11 @@ export function ShoppingList({ categories }: ShoppingListProps) {
   const categoriesWithDrafts = withDrafts(optimisticCategories, drafts);
 
   function createDraftItem(categoryId: string) {
+    if (dismissedEmptyDraftCategory.current === categoryId) {
+      dismissedEmptyDraftCategory.current = null;
+      return null;
+    }
+
     const draftId = `${DRAFT_ID_PREFIX}${crypto.randomUUID()}`;
     // One draft at a time: replace any open draft with the new one.
     setDrafts([{ id: draftId, categoryId }]);
@@ -63,7 +71,12 @@ export function ShoppingList({ categories }: ShoppingListProps) {
     removeDraft(draftId);
 
     const nextName = name.trim();
-    if (!nextName) return;
+    if (!nextName) {
+      dismissedEmptyDraftCategory.current = categoryId;
+      return;
+    }
+
+    dismissedEmptyDraftCategory.current = null;
 
     const itemId = `${PENDING_ID_PREFIX}${crypto.randomUUID()}`;
     mutate(
