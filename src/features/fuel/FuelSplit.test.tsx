@@ -61,6 +61,23 @@ describe("FuelSplit", () => {
     expect(result().getByText("55,64 €")).toBeInTheDocument();
   });
 
+  it("shows each person's share of the bill, summing to 100 %", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit />);
+
+    // Mostly-shared trip: the personal distance shares are 1,2 % and 4,5 %,
+    // which next to 58,02 € and 61,98 € read as though the split were broken.
+    await user.type(screen.getByLabelText("Miriam"), "15");
+    await user.type(screen.getByLabelText("Simon"), "55");
+    await user.type(screen.getByLabelText("Beide"), "1150");
+    await user.type(screen.getByLabelText("Gesamt"), "1220");
+    await user.type(screen.getByLabelText("Betrag"), "120");
+
+    expect(result().getByText("48,4 %")).toBeInTheDocument();
+    expect(result().getByText("51,6 %")).toBeInTheDocument();
+    expect(result().queryByText("1,2 %")).not.toBeInTheDocument();
+  });
+
   it("shows the device shortfall against the car reading", async () => {
     const user = userEvent.setup();
     render(<FuelSplit />);

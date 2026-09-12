@@ -45,6 +45,36 @@ describe("calculateTanken", () => {
     expect(result.zahltSimon).toBeCloseTo(56.54, 2);
   });
 
+  it("reports bill shares that sum to 100 % and match the euro amounts", () => {
+    for (const mode of ["proportional", "beide"] as const) {
+      const r = calculateTanken(sheetFillUp, mode);
+
+      expect(r.zahlAnteilMiriam + r.zahlAnteilSimon).toBeCloseTo(1, 6);
+      expect(r.zahlAnteilMiriam * sheetFillUp.bezahlt).toBeCloseTo(
+        r.zahltMiriam,
+        6,
+      );
+      expect(r.zahlAnteilSimon * sheetFillUp.bezahlt).toBeCloseTo(
+        r.zahltSimon,
+        6,
+      );
+    }
+  });
+
+  it("keeps the bill share above the personal distance share", () => {
+    // A mostly-shared trip: the personal distance shares are tiny, but each
+    // person still carries about half the bill. Showing the distance share
+    // next to the euro amount made the two look unrelated.
+    const r = calculateTanken(
+      { kmMiriam: 15, kmSimon: 55, kmBeide: 1150, kmAuto: 1220, bezahlt: 120 },
+      "proportional",
+    );
+
+    expect(r.anteilMiriam * 100).toBeCloseTo(1.2, 1);
+    expect(r.zahlAnteilMiriam * 100).toBeCloseTo(48.4, 1);
+    expect(r.zahlAnteilSimon * 100).toBeCloseTo(51.6, 1);
+  });
+
   it("always splits the full amount between the two drivers", () => {
     for (const mode of ["proportional", "beide"] as const) {
       const { zahltMiriam, zahltSimon } = calculateTanken(sheetFillUp, mode);

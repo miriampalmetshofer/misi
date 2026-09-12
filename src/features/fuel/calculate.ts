@@ -20,10 +20,21 @@ export type TankenResult = {
   differenz: number;
   /** Share of the offset relative to the car reading, 0–1. */
   differenzAnteil: number;
-  /** Shares of the total, 0–1, always summing to 1. */
+  /**
+   * Shares of the distance, 0–1. The two personal shares plus the shared one
+   * sum to 1, so a personal share on its own is NOT what someone pays — half
+   * of `anteilBeide` belongs to each of them on top. Use `zahlAnteil*` to
+   * describe a person's part of the bill.
+   */
   anteilMiriam: number;
   anteilSimon: number;
   anteilBeide: number;
+  /**
+   * Share of the bill each person carries — their own distance plus half the
+   * shared distance. These two sum to 1 and match the euro amounts below.
+   */
+  zahlAnteilMiriam: number;
+  zahlAnteilSimon: number;
   /** Euro amounts, unrounded. */
   zahltMiriam: number;
   zahltSimon: number;
@@ -74,6 +85,8 @@ export function calculateTanken(
       anteilMiriam: 0,
       anteilSimon: 0,
       anteilBeide: 0,
+      zahlAnteilMiriam: 0,
+      zahlAnteilSimon: 0,
       zahltMiriam: 0,
       zahltSimon: 0,
       isInconsistent,
@@ -87,6 +100,9 @@ export function calculateTanken(
   const anteilBeide =
     mode === "beide" ? (kmAuto - summeGeraet + kmBeide) / basis : kmBeide / basis;
 
+  const zahlAnteilMiriam = anteilMiriam + anteilBeide / 2;
+  const zahlAnteilSimon = anteilSimon + anteilBeide / 2;
+
   return {
     summeGeraet,
     differenz: kmAuto - summeGeraet,
@@ -94,8 +110,10 @@ export function calculateTanken(
     anteilMiriam,
     anteilSimon,
     anteilBeide,
-    zahltMiriam: bezahlt * (anteilMiriam + anteilBeide / 2),
-    zahltSimon: bezahlt * (anteilSimon + anteilBeide / 2),
+    zahlAnteilMiriam,
+    zahlAnteilSimon,
+    zahltMiriam: bezahlt * zahlAnteilMiriam,
+    zahltSimon: bezahlt * zahlAnteilSimon,
     isInconsistent,
   };
 }

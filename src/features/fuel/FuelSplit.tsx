@@ -250,14 +250,17 @@ export function FuelSplit() {
 
             {canCalculate ? (
               <dl className="mt-4 flex flex-col gap-3">
+                {/* The share of the bill, not of the distance: a personal
+                    distance share excludes the shared kilometres and so would
+                    not match the euro amount beside it. */}
                 <Share
                   label="Miriam"
-                  share={result.anteilMiriam}
+                  share={result.zahlAnteilMiriam}
                   amount={result.zahltMiriam}
                 />
                 <Share
                   label="Simon"
-                  share={result.anteilSimon}
+                  share={result.zahlAnteilSimon}
                   amount={result.zahltSimon}
                 />
               </dl>
