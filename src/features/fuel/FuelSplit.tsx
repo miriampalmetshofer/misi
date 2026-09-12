@@ -2,111 +2,84 @@
 
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { useState } from "react";
+import { useOptimistic } from "react";
 
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { calculateFuelSplit, type OffsetMode } from "./calculate";
-import { parseNumber } from "./parseNumber";
+import { useOptimisticMutation } from "@/lib/useOptimisticMutation";
+import { addFuelFillUp, deleteFuelFillUp } from "./actions";
+import { euro, km, percent } from "./format";
+import { FuelHistory } from "./FuelHistory";
+import type { FuelFillUpEntry, OptimisticFuelFillUpEntry } from "./types";
+import { FIELDS, useFuelSplitForm, type FieldName } from "./useFuelSplitForm";
 
-const FIELDS = [
-  { name: "kmMiriam", label: "Miriam" },
-  { name: "kmSimon", label: "Simon" },
-  { name: "kmBeide", label: "Beide" },
-] as const;
-
-type FieldName = (typeof FIELDS)[number]["name"] | "kmAuto" | "bezahlt";
-
-const EMPTY_FORM: Record<FieldName, string> = {
-  kmMiriam: "",
-  kmSimon: "",
-  kmBeide: "",
-  kmAuto: "",
-  bezahlt: "",
+type FuelSplitProps = {
+  /** Past fill-ups, newest first. Empty until the page loads them. */
+  fillUps?: FuelFillUpEntry[];
 };
 
-const km = new Intl.NumberFormat("de-DE", {
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-});
+type OptimisticAction =
+  | { type: "add"; entry: OptimisticFuelFillUpEntry }
+  | { type: "remove"; id: string };
 
-const euro = new Intl.NumberFormat("de-DE", {
-  style: "currency",
-  currency: "EUR",
-});
+export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
+  const form = useFuelSplitForm();
+  const [optimisticFillUps, applyOptimistic] = useOptimistic(fillUps, reduce);
+  const { mutate } = useOptimisticMutation(applyOptimistic);
 
-const percent = new Intl.NumberFormat("de-DE", {
-  style: "percent",
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-});
+  function save() {
+    if (!form.canSave) {
+      return;
+    }
 
-/** Today as yyyy-mm-dd in local time, which is what <input type="date"> wants. */
-function today() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60_000;
-  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
-}
+    const { input, result, datum, mode } = form;
 
-export function FuelSplit() {
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [useFiftyFifty, setUseFiftyFifty] = useState(false);
-  // Initialised lazily so the date comes from the browser's clock rather than
-  // the server's, and stays put if the component re-renders around midnight.
-  const [datum, setDatum] = useState(today);
-  const mode: OffsetMode = useFiftyFifty ? "shared" : "proportional";
+    mutate(
+      addFuelFillUp,
+      {
+        filledOn: datum,
+        offsetMode: mode,
+        // The action re-parses these in the app's comma notation, so send them
+        // the way the form holds them rather than in JS number formatting.
+        miriamKm: toField(input.miriamKm),
+        simonKm: toField(input.simonKm),
+        sharedKm: toField(input.sharedKm),
+        carKm: toField(input.carKm),
+        paidAmount: toField(input.paidAmount),
+      },
+      {
+        type: "add",
+        entry: {
+          id: `pending-${crypto.randomUUID()}`,
+          filledOn: datum,
+          miriamKm: input.miriamKm,
+          simonKm: input.simonKm,
+          sharedKm: input.sharedKm,
+          carKm: input.carKm,
+          paidAmount: input.paidAmount,
+          offsetMode: mode,
+          miriamAmount: result.miriamAmount,
+          simonAmount: result.simonAmount,
+          isSyncing: true,
+        },
+      },
+    );
 
-  const parsed = {
-    kmMiriam: parseNumber(form.kmMiriam),
-    kmSimon: parseNumber(form.kmSimon),
-    kmBeide: parseNumber(form.kmBeide),
-    kmAuto: parseNumber(form.kmAuto),
-    bezahlt: parseNumber(form.bezahlt),
-  };
+    // Cleared so the next fill-up starts from an empty form rather than from
+    // numbers that have already been settled.
+    form.reset();
+  }
 
-  // A field is invalid only once something unreadable is in it; empty just
-  // means "not filled in yet" and must not light up the whole form in red.
-  const invalidFields = (Object.keys(parsed) as FieldName[]).filter(
-    (name) => form[name].trim() !== "" && parsed[name] === null,
-  );
+  function deleteFillUp(id: string) {
+    // A row still waiting for its server-assigned uuid has a made-up id, so
+    // dropping it locally is the whole deletion.
+    if (id.startsWith("pending-")) {
+      applyOptimistic({ type: "remove", id });
+      return;
+    }
 
-  const input = {
-    miriamKm: parsed.kmMiriam ?? 0,
-    simonKm: parsed.kmSimon ?? 0,
-    sharedKm: parsed.kmBeide ?? 0,
-    carKm: parsed.kmAuto ?? 0,
-    paidAmount: parsed.bezahlt ?? 0,
-  };
-
-  const result = calculateFuelSplit(input, mode);
-
-  // A summary that silently treats an unreadable field as 0 is not a partial
-  // result, it is a wrong one — "Summe Gerät 626,0 km" looks just as settled
-  // as the correct number. Each summary suppresses on its own inputs only.
-  const hasInvalidDeviceKm = FIELDS.some((field) =>
-    invalidFields.includes(field.name),
-  );
-  const hasInvalidDistance =
-    hasInvalidDeviceKm || invalidFields.includes("kmAuto");
-
-  // 50/50 divides by the car reading, `proportional` by the device sum, so the
-  // readiness gate has to follow the basis the active mode actually uses.
-  // Otherwise a missing car reading yields a confident "0,00 €" split.
-  const basis = mode === "shared" ? input.carKm : result.deviceKmTotal;
-  const adjustedSharedKm = input.sharedKm + result.distanceOffset;
-  // The car reading has to be there before the offset means anything: without
-  // it the whole device sum reads as a negative offset, which is a missing
-  // entry rather than an impossible 50/50 split.
-  const hasImpossibleFiftyFifty =
-    mode === "shared" && input.carKm > 0 && adjustedSharedKm < 0;
-  const canCalculate =
-    basis > 0 && invalidFields.length === 0 && !hasImpossibleFiftyFifty;
-
-  function update(name: FieldName, value: string) {
-    // The comma is the decimal separator, but some phone keypads only offer a
-    // dot. Turn it into a comma as it is typed, so the field shows the one
-    // separator the app accepts instead of silently refusing the entry.
-    setForm((current) => ({ ...current, [name]: value.replace(".", ",") }));
+    mutate(deleteFuelFillUp, { id }, { type: "remove", id });
   }
 
   return (
@@ -126,8 +99,8 @@ export function FuelSplit() {
               className="w-40 tabular-nums"
               name="datum"
               type="date"
-              value={datum}
-              onChange={(event) => setDatum(event.target.value)}
+              value={form.datum}
+              onChange={(event) => form.setDatum(event.target.value)}
             />
           </label>
 
@@ -142,16 +115,18 @@ export function FuelSplit() {
                 label={field.label}
                 name={field.name}
                 unit="km"
-                value={form[field.name]}
-                isInvalid={invalidFields.includes(field.name)}
-                onChange={update}
+                value={form.form[field.name]}
+                isInvalid={form.invalidFields.includes(field.name)}
+                onChange={form.update}
               />
             ))}
 
             <Summary
               label="Summe Gerät"
               value={
-                hasInvalidDeviceKm ? "—" : `${km.format(result.deviceKmTotal)} km`
+                form.hasInvalidDeviceKm
+                  ? "—"
+                  : `${km.format(form.result.deviceKmTotal)} km`
               }
             />
           </section>
@@ -165,21 +140,21 @@ export function FuelSplit() {
               label="Gesamt"
               name="kmAuto"
               unit="km"
-              value={form.kmAuto}
-              isInvalid={invalidFields.includes("kmAuto")}
-              onChange={update}
+              value={form.form.kmAuto}
+              isInvalid={form.invalidFields.includes("kmAuto")}
+              onChange={form.update}
             />
 
             <Summary
               label="Differenz"
               value={
-                hasInvalidDistance
+                form.hasInvalidDistance
                   ? "—"
-                  : `${km.format(result.distanceOffset)} km${
+                  : `${km.format(form.result.distanceOffset)} km${
                       // The share is relative to the car reading, so without
                       // one there is no percentage to show — only a "0,0 %".
-                      input.carKm > 0
-                        ? ` (${percent.format(result.distanceOffsetShare)})`
+                      form.input.carKm > 0
+                        ? ` (${percent.format(form.result.distanceOffsetShare)})`
                         : ""
                     }`
               }
@@ -195,9 +170,9 @@ export function FuelSplit() {
               label="Betrag"
               name="bezahlt"
               unit="€"
-              value={form.bezahlt}
-              isInvalid={invalidFields.includes("bezahlt")}
-              onChange={update}
+              value={form.form.bezahlt}
+              isInvalid={form.invalidFields.includes("bezahlt")}
+              onChange={form.update}
             />
           </section>
 
@@ -208,9 +183,9 @@ export function FuelSplit() {
 
             <label className="flex cursor-pointer items-center gap-3">
               <Checkbox
-                checked={useFiftyFifty}
+                checked={form.useFiftyFifty}
                 className="size-5 border-muted-foreground"
-                onCheckedChange={(checked) => setUseFiftyFifty(!!checked)}
+                onCheckedChange={(checked) => form.setUseFiftyFifty(!!checked)}
               />
               <span>50/50-Modus verwenden</span>
             </label>
@@ -230,38 +205,67 @@ export function FuelSplit() {
               Zu zahlen
             </h2>
 
-            {canCalculate ? (
+            {form.canCalculate ? (
               <dl className="mt-4 flex flex-col gap-3">
                 {/* The share of the bill, not of the distance: a personal
                     distance share excludes the shared kilometres and so would
                     not match the euro amount beside it. */}
                 <Share
                   label="Miriam"
-                  share={result.miriamBillShare}
-                  amount={result.miriamAmount}
+                  share={form.result.miriamBillShare}
+                  amount={form.result.miriamAmount}
                 />
                 <Share
                   label="Simon"
-                  share={result.simonBillShare}
-                  amount={result.simonAmount}
+                  share={form.result.simonBillShare}
+                  amount={form.result.simonAmount}
                 />
               </dl>
             ) : (
               <p className="text-body-muted mt-4">
-                {invalidFields.length > 0
+                {form.invalidFields.length > 0
                   ? "Bitte nur Zahlen eintragen, dann erscheint hier die Aufteilung."
-                  : hasImpossibleFiftyFifty
+                  : form.hasImpossibleFiftyFifty
                     ? "Die Differenz ist größer als die gemeinsamen Kilometer. 50/50 passt hier nicht; proportional funktioniert weiterhin."
-                    : mode === "shared"
+                    : form.mode === "shared"
                       ? "Kilometer und Tachostand eintragen, dann erscheint hier die Aufteilung."
                       : "Kilometer eintragen, dann erscheint hier die Aufteilung."}
               </p>
             )}
+
+            <Button
+              className="mt-5 w-full"
+              disabled={!form.canSave}
+              onClick={save}
+              size="lg"
+            >
+              Speichern
+            </Button>
           </section>
+
+          <FuelHistory entries={optimisticFillUps} onDelete={deleteFillUp} />
         </div>
       </main>
     </div>
   );
+}
+
+/** Renders a number the way the form writes it, so the action can re-parse it. */
+function toField(value: number) {
+  return String(value).replace(".", ",");
+}
+
+export function reduce(
+  entries: OptimisticFuelFillUpEntry[],
+  action: OptimisticAction,
+): OptimisticFuelFillUpEntry[] {
+  switch (action.type) {
+    case "add":
+      // Newest first, matching the order the query returns.
+      return [action.entry, ...entries];
+    case "remove":
+      return entries.filter((entry) => entry.id !== action.id);
+  }
 }
 
 function Summary({ label, value }: { label: string; value: string }) {
