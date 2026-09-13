@@ -38,14 +38,14 @@ export const FALLBACK_CATEGORY_HEADER_STYLE = "bg-muted/60";
  * drop target announces itself without the card being greyed out.
  */
 export const CATEGORY_DROP_GLOW_STYLES: Record<string, string> = {
-  Obst: "ring-rose-500 shadow-rose-500/45",
-  Gemüse: "ring-green-600 shadow-green-600/45",
-  Gebäck: "ring-amber-500 shadow-amber-500/45",
-  Haushalt: "ring-blue-500 shadow-blue-500/45",
-  "Mehl, Nudeln, Trockenwaren": "ring-orange-500 shadow-orange-500/45",
-  Kühlregal: "ring-cyan-600 shadow-cyan-600/45",
-  Gefrorenes: "ring-indigo-500 shadow-indigo-500/45",
+  Obst: "shadow-rose-500/45",
+  Gemüse: "shadow-green-600/45",
+  Gebäck: "shadow-amber-500/45",
+  Haushalt: "shadow-blue-500/45",
+  "Mehl, Nudeln, Trockenwaren": "shadow-orange-500/45",
+  Kühlregal: "shadow-cyan-600/45",
+  Gefrorenes: "shadow-indigo-500/45",
 };
 
 export const FALLBACK_CATEGORY_DROP_GLOW_STYLE =
-  "ring-foreground/60 shadow-foreground/40";
+  "shadow-foreground/40";

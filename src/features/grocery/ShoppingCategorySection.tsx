@@ -72,14 +72,11 @@ export function ShoppingCategorySection({
         "overflow-hidden rounded-xl border bg-card",
         "transition-[box-shadow,scale] duration-200",
         // The target lights up in its own colour rather than filling with grey,
-        // which would read as disabled. The ring is inset so it never draws a
-        // line through a row's checkbox, and the card keeps its own background.
-        // A centred, blurred shadow rather than one of the shadow-* presets,
-        // which are all offset downwards and read as a drop shadow instead of
-        // a halo. Tailwind only carries a single stop through an arbitrary
-        // value here, so the bloom is one wide, soft ring of light.
+        // which would read as disabled, and keeps its own background. Just the
+        // light: a centred blurred shadow, not one of the shadow-* presets,
+        // which are offset downwards and read as a drop shadow instead.
         isDropTarget &&
-          "scale-[1.02] shadow-[0_0_22px_6px_var(--tw-shadow-color)] ring-2 ring-inset",
+          "scale-[1.02] shadow-[0_0_22px_6px_var(--tw-shadow-color)]",
         isDropTarget && dropGlowStyle,
       )}
       data-category-id={category.id}
