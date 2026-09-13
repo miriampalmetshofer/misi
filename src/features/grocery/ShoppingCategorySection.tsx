@@ -5,7 +5,9 @@ import { cn } from "cn";
 
 import { Button } from "@/components/ui/button";
 import {
+  CATEGORY_DROP_GLOW_STYLES,
   CATEGORY_HEADER_STYLES,
+  FALLBACK_CATEGORY_DROP_GLOW_STYLE,
   FALLBACK_CATEGORY_HEADER_STYLE,
   QUICK_ADD_GROCERY_ITEMS,
 } from "./categories";
@@ -59,14 +61,26 @@ export function ShoppingCategorySection({
 
   const headerStyle =
     CATEGORY_HEADER_STYLES[category.name] ?? FALLBACK_CATEGORY_HEADER_STYLE;
+  const dropGlowStyle =
+    CATEGORY_DROP_GLOW_STYLES[category.name] ??
+    FALLBACK_CATEGORY_DROP_GLOW_STYLE;
 
   return (
     <section
       aria-labelledby={`category-${category.id}`}
       className={cn(
-        "overflow-hidden rounded-xl border bg-card transition-colors",
-        // Inset, so the highlight never draws a line through a row's checkbox.
-        isDropTarget && "bg-muted ring-1 ring-inset ring-ring/40",
+        "overflow-hidden rounded-xl border bg-card",
+        "transition-[box-shadow,scale] duration-200",
+        // The target lights up in its own colour rather than filling with grey,
+        // which would read as disabled. The ring is inset so it never draws a
+        // line through a row's checkbox, and the card keeps its own background.
+        // A centred, blurred shadow rather than one of the shadow-* presets,
+        // which are all offset downwards and read as a drop shadow instead of
+        // a halo. Tailwind only carries a single stop through an arbitrary
+        // value here, so the bloom is one wide, soft ring of light.
+        isDropTarget &&
+          "scale-[1.02] shadow-[0_0_22px_6px_var(--tw-shadow-color)] ring-2 ring-inset",
+        isDropTarget && dropGlowStyle,
       )}
       data-category-id={category.id}
       data-drop-target={isDropTarget || undefined}
