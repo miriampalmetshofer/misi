@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Menu } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const modules = [
   {
@@ -22,9 +23,13 @@ export default function Home() {
       <header className="flex items-center justify-between border-b px-5 py-5 sm:px-8 sm:py-6 lg:px-10">
         <h1 className="text-app-brand">Misi</h1>
 
-        <Button variant="outline" size="icon-lg" aria-label="Menü öffnen">
-          <Menu />
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+
+          <Button variant="outline" size="icon-lg" aria-label="Menü öffnen">
+            <Menu />
+          </Button>
+        </div>
       </header>
 
       <section className="px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-12">
