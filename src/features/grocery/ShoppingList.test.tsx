@@ -629,6 +629,19 @@ describe("moving an item between categories", () => {
     expect(row).toHaveAttribute("data-dragging", "true");
   });
 
+
+  // iOS begins selecting text during the long press itself and shows its
+  // selection handles over the row, so selection has to be off before a drag
+  // exists to react to.
+  it("keeps a draggable row unselectable so iOS does not select its text", () => {
+    renderList();
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+
+    expect(row).toHaveAttribute("data-draggable", "true");
+    expect(row.className).toContain("select-none");
+  });
+
   it("moves an item from the keyboard-accessible category select", async () => {
     const { user } = renderList();
 

@@ -47,22 +47,23 @@ export function useDraggableItem({
 
   useEffect(() => clearPress, [clearPress]);
 
-  // While a row is lifted, the page itself must not scroll or select under it.
+  // While a row is lifted the page must not scroll under it; the drag scrolls
+  // it deliberately at the edges instead. Selection is suppressed on the row
+  // itself in CSS, because iOS starts selecting during the hold, before a drag
+  // exists for this effect to react to.
   useEffect(() => {
     if (!isDragging) {
       return;
     }
 
-    const previousUserSelect = document.body.style.userSelect;
     const blockScroll = (event: TouchEvent) => event.preventDefault();
 
-    document.body.style.userSelect = "none";
     document.addEventListener("touchmove", blockScroll, { passive: false });
+    // A selection made just before the press is still on screen with its
+    // handles; drop it so the lifted row is not dragged through it.
+    document.getSelection()?.removeAllRanges();
 
-    return () => {
-      document.body.style.userSelect = previousUserSelect;
-      document.removeEventListener("touchmove", blockScroll);
-    };
+    return () => document.removeEventListener("touchmove", blockScroll);
   }, [isDragging]);
 
   function handlePointerDown(event: PointerEvent<HTMLLIElement>) {

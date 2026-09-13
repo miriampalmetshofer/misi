@@ -97,7 +97,11 @@ export function ShoppingItem({
         // Never transition transform: it would lag behind the per-frame
         // position writes the drag controller makes.
         "transition-[box-shadow,opacity,scale,background-color]",
-        isPersisted && "touch-pan-y",
+        // iOS starts selecting text during the long press itself, before the
+        // drag begins, and shows its selection handles over the row. Suppress
+        // it up front rather than once dragging: by then the selection exists.
+        // The name is a button, not prose, so nothing selectable is lost.
+        isPersisted && "touch-pan-y select-none [-webkit-touch-callout:none]",
         // Elevation rather than a ring, so nothing is drawn through the
         // checkbox at the start of the row.
         isDragging && "z-20 scale-[1.02] rounded-xl bg-background shadow-lg",
