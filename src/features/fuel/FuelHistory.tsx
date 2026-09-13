@@ -3,6 +3,15 @@
 import { Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Empty, EmptyDescription, EmptyHeader } from "@/components/ui/empty";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from "@/components/ui/item";
 import { euro, formatFillUpDate } from "./format";
 import type { OptimisticFuelFillUpEntry } from "./types";
 
@@ -19,43 +28,59 @@ export function FuelHistory({ entries, onDelete }: FuelHistoryProps) {
       </h2>
 
       {entries.length === 0 ? (
-        <p className="text-body-muted">
-          Noch keine Tankfüllungen gespeichert.
-        </p>
+        <Empty className="border">
+          <EmptyHeader>
+            <EmptyDescription>
+              Noch keine Tankfüllungen gespeichert.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {entries.map((entry) => (
-            <li
-              className="flex items-center justify-between gap-3 rounded-xl border bg-card p-3 text-card-foreground sm:p-4"
-              // Lets the e2e suite wait for the insert to come back before
-              // reloading, rather than racing the write.
-              data-syncing={entry.isSyncing ? "true" : undefined}
-              key={entry.id}
-            >
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-sm tabular-nums text-muted-foreground">
-                  {formatFillUpDate(entry.filledOn)}
-                </span>
-                <span className="font-medium tabular-nums">
-                  {euro.format(entry.paidAmount)}
-                </span>
-                <span className="text-sm tabular-nums text-muted-foreground">
-                  Miriam {euro.format(entry.miriamAmount)} · Simon{" "}
-                  {euro.format(entry.simonAmount)}
-                </span>
-              </div>
+        <ItemGroup className="gap-2">
+          {entries.map((entry) => {
+            const date = formatFillUpDate(entry.filledOn);
 
-              <Button
-                aria-label={`Tankfüllung vom ${formatFillUpDate(entry.filledOn)} löschen`}
-                onClick={() => onDelete(entry.id)}
-                size="icon"
-                variant="ghost"
+            return (
+              <Item
+                key={entry.id}
+                variant="outline"
+                // Rendered as an <li> so the role="list" ItemGroup sets has
+                // real listitem children rather than bare divs.
+                render={
+                  <li
+                    // Lets the e2e suite wait for the insert to come back
+                    // before reloading, rather than racing the write.
+                    data-syncing={entry.isSyncing ? "true" : undefined}
+                  />
+                }
               >
-                <Trash2 className="text-muted-foreground" />
-              </Button>
-            </li>
-          ))}
-        </ul>
+                <ItemContent>
+                  <ItemDescription className="tabular-nums">
+                    {date}
+                  </ItemDescription>
+                  <ItemTitle className="tabular-nums">
+                    {euro.format(entry.paidAmount)}
+                  </ItemTitle>
+                  <ItemDescription className="tabular-nums">
+                    Miriam {euro.format(entry.miriamAmount)} · Simon{" "}
+                    {euro.format(entry.simonAmount)}
+                  </ItemDescription>
+                </ItemContent>
+
+                <ItemActions>
+                  <Button
+                    aria-label={`Tankfüllung vom ${date} löschen`}
+                    onClick={() => onDelete(entry.id)}
+                    size="icon"
+                    variant="ghost"
+                  >
+                    <Trash2 className="text-muted-foreground" />
+                  </Button>
+                </ItemActions>
+              </Item>
+            );
+          })}
+        </ItemGroup>
       )}
     </section>
   );
