@@ -13,9 +13,11 @@ import type {
   OptimisticShoppingListCategory,
   OptimisticShoppingListItem,
   ShoppingListCategory,
+  ShoppingListItem,
 } from "./types";
 import { ShoppingListView } from "./ShoppingListView";
 import { useOptimisticMutation } from "@/lib/useOptimisticMutation";
+import { useUndo } from "./useUndo";
 
 type ShoppingListProps = {
   categories: ShoppingListCategory[];
@@ -38,7 +40,8 @@ type OptimisticAction =
   | { type: "add"; itemId: string; name: string; categoryId: string }
   | { type: "move"; itemId: string; categoryId: string }
   | { type: "rename"; itemId: string; name: string }
-  | { type: "remove"; itemId: string };
+  | { type: "remove"; itemId: string }
+  | { type: "restore"; item: ShoppingListItem; index: number };
 
 export function ShoppingList({ categories }: ShoppingListProps) {
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -47,6 +50,9 @@ export function ShoppingList({ categories }: ShoppingListProps) {
     reduce,
   );
   const { mutate } = useOptimisticMutation(applyOptimistic);
+  // Checking an item off is the one-tap action that hides a row, so it is the
+  // one worth taking back. The write already went out; undo is its own write.
+  const undo = useUndo<{ item: ShoppingListItem; index: number }>();
 
   const categoriesWithDrafts = withDrafts(optimisticCategories, drafts);
 
@@ -138,10 +144,32 @@ export function ShoppingList({ categories }: ShoppingListProps) {
   }
 
   function checkItem(itemId: string) {
+    const found = findItem(optimisticCategories, itemId);
+
     mutate(
       setGroceryItemChecked,
       { itemId, isChecked: "true" },
       { type: "remove", itemId },
+    );
+
+    // A row still waiting for its server id cannot be checked off (the checkbox
+    // is disabled while syncing), so anything reaching here has a real uuid.
+    if (found) {
+      undo.push(`${found.item.name} erledigt`, found);
+    }
+  }
+
+  function undoCheck() {
+    const offer = undo.offer;
+    if (!offer) {
+      return;
+    }
+
+    undo.clear();
+    mutate(
+      setGroceryItemChecked,
+      { itemId: offer.payload.item.id, isChecked: "false" },
+      { type: "restore", ...offer.payload },
     );
   }
 
@@ -168,9 +196,28 @@ export function ShoppingList({ categories }: ShoppingListProps) {
       onQuickAddItem={quickAddItem}
       onRenameItem={renameItem}
       onSaveDraft={saveDraftItem}
+      onUndoCheck={undoCheck}
       onUpdateDraft={updateDraft}
+      undo={undo.offer && { id: undo.offer.id, label: undo.offer.label }}
     />
   );
+}
+
+/** The item with that id, plus the position it holds in its category. */
+function findItem(
+  categories: OptimisticShoppingListCategory[],
+  itemId: string,
+): { item: ShoppingListItem; index: number } | undefined {
+  for (const category of categories) {
+    const index = category.items.findIndex((item) => item.id === itemId);
+
+    if (index !== -1) {
+      const { id, name, isChecked, categoryId } = category.items[index];
+      // Deliberately rebuilt rather than spread: isDraft/isSyncing are
+      // client-only flags that must not survive into a restored row.
+      return { item: { id, name, isChecked, categoryId }, index };
+    }
+  }
 }
 
 export function withDrafts(
@@ -282,5 +329,20 @@ export function reduce(
         ...category,
         items: category.items.filter((item) => item.id !== action.itemId),
       }));
+    case "restore":
+      return categories.map((category) => {
+        if (category.id !== action.item.categoryId) {
+          return category;
+        }
+
+        // The server orders by createdAt, which the client does not have. The
+        // row's own index from before it was checked off stands in for it, so an
+        // undo puts the row back where it was instead of at the end. It is
+        // clamped because other rows may have gone in the meantime.
+        const items = [...category.items];
+        items.splice(Math.min(action.index, items.length), 0, action.item);
+
+        return { ...category, items };
+      });
   }
 }

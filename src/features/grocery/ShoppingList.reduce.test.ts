@@ -91,6 +91,45 @@ describe("reduce", () => {
     ).toEqual(before);
   });
 
+  it("puts a restored item back at the position it held", () => {
+    const withThree = categories();
+    withThree[0].items = [
+      { id: "a", name: "A", isChecked: false, categoryId: "obst" },
+      { id: "c", name: "C", isChecked: false, categoryId: "obst" },
+    ];
+
+    const next = reduce(withThree, {
+      type: "restore",
+      item: { id: "b", name: "B", isChecked: false, categoryId: "obst" },
+      index: 1,
+    });
+
+    expect(next[0].items.map((item) => item.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("restores into the item's own category only", () => {
+    const next = reduce(categories(), {
+      type: "restore",
+      item: { id: "semmeln", name: "Semmeln", isChecked: false, categoryId: "gebaeck" },
+      index: 0,
+    });
+
+    expect(next[0].items).toHaveLength(1);
+    expect(next[1].items.map((item) => item.id)).toEqual(["semmeln"]);
+  });
+
+  it("appends a restored item whose old position no longer exists", () => {
+    // Other rows can leave during the undo window, so the remembered index may
+    // now sit past the end of the list.
+    const next = reduce(categories(), {
+      type: "restore",
+      item: { id: "birnen", name: "Birnen", isChecked: false, categoryId: "obst" },
+      index: 7,
+    });
+
+    expect(next[0].items.map((item) => item.id)).toEqual(["apfel", "birnen"]);
+  });
+
   it("ignores actions for unknown ids", () => {
     const before = categories();
 
