@@ -329,9 +329,25 @@ export function reduce(
         ...category,
         items: category.items.filter((item) => item.id !== action.itemId),
       }));
-    case "restore":
+    case "restore": {
+      // The server may already have sent the restored row back before the
+      // pending action stops replaying, and the same category is the only
+      // place it can be. Without this the replay splices in a second copy.
+      const alreadyBack = categories.some((category) =>
+        category.items.some((item) => item.id === action.item.id),
+      );
+      if (alreadyBack) {
+        return categories;
+      }
+
+      // The item's category can have been removed during the undo window, so
+      // fall back to the same last category the server assigns orphans to.
+      const target =
+        categories.find((category) => category.id === action.item.categoryId) ??
+        categories.at(-1);
+
       return categories.map((category) => {
-        if (category.id !== action.item.categoryId) {
+        if (category !== target) {
           return category;
         }
 
@@ -344,5 +360,6 @@ export function reduce(
 
         return { ...category, items };
       });
+    }
   }
 }
