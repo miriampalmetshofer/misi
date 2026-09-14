@@ -714,65 +714,6 @@ describe("moving an item between categories", () => {
     expect(row).toHaveAttribute("data-draggable", "true");
     expect(row.className).toContain("select-none");
   });
-
-  // The select is the only non-pointer way to move an item, so it has to be
-  // reachable without first entering edit mode: a hidden container takes it
-  // out of the accessibility tree and the tab order entirely.
-  it("keeps the category select reachable without entering edit mode", () => {
-    renderList();
-
-    const select = screen.getByRole("combobox", {
-      name: /Äpfel in andere Kategorie/,
-    });
-
-    expect(select).toBeVisible();
-    expect(select.tabIndex).not.toBe(-1);
-  });
-
-  // Focusing the select blurs the name input, which runs save() and leaves
-  // edit mode. The select used to live inside the edit-only container, so that
-  // hid it out from under the user before an option could be picked.
-  it("stays usable when focus moves to it from the name input", async () => {
-    const { user } = renderList();
-
-    await user.click(screen.getByRole("button", { name: "Äpfel" }));
-    const select = screen.getByRole("combobox", {
-      name: /Äpfel in andere Kategorie/,
-    });
-
-    select.focus();
-    await waitFor(() => expect(select).toHaveFocus());
-
-    await user.selectOptions(select, "gebaeck");
-
-    await waitFor(() =>
-      expect(actions.moveGroceryItem).toHaveBeenCalledTimes(1),
-    );
-    expect(fieldsOf(actions.moveGroceryItem)).toEqual({
-      itemId: "apfel",
-      categoryId: "gebaeck",
-    });
-  });
-
-  it("moves an item from the keyboard-accessible category select", async () => {
-    const { user } = renderList();
-
-    await user.click(screen.getByRole("button", { name: "Äpfel" }));
-    await user.selectOptions(
-      screen.getByRole("combobox", {
-        name: /Äpfel in andere Kategorie/,
-      }),
-      "gebaeck",
-    );
-
-    await waitFor(() =>
-      expect(actions.moveGroceryItem).toHaveBeenCalledTimes(1),
-    );
-    expect(fieldsOf(actions.moveGroceryItem)).toEqual({
-      itemId: "apfel",
-      categoryId: "gebaeck",
-    });
-  });
 });
 
 describe("checking an item off", () => {

@@ -16,12 +16,10 @@ import { ShoppingItem } from "./ShoppingItem";
 import { useDrag } from "./drag/DragContext";
 
 type ShoppingCategorySectionProps = {
-  categories: OptimisticShoppingListCategory[];
   category: OptimisticShoppingListCategory;
   onAddDraft: (categoryId: string) => void;
   onCheckItem: (itemId: string) => void;
   onDeleteItem: (itemId: string) => void;
-  onMoveItem: (itemId: string, categoryId: string) => void;
   onQuickAddItem: (name: string, categoryId: string) => void;
   onRenameItem: (itemId: string, name: string) => void;
   onSaveDraft: (draftId: string, name: string, categoryId: string) => void;
@@ -29,12 +27,10 @@ type ShoppingCategorySectionProps = {
 };
 
 export function ShoppingCategorySection({
-  categories,
   category,
   onAddDraft,
   onCheckItem,
   onDeleteItem,
-  onMoveItem,
   onQuickAddItem,
   onRenameItem,
   onSaveDraft,
@@ -108,12 +104,10 @@ export function ShoppingCategorySection({
         <ul className="divide-y border-b">
           {category.items.map((item) => (
             <ShoppingItem
-              categories={categories}
               item={item}
               key={item.id}
               onCheck={onCheckItem}
               onDelete={onDeleteItem}
-              onMove={onMoveItem}
               onRename={onRenameItem}
               onSaveDraft={onSaveDraft}
               onUpdateDraft={onUpdateDraft}

@@ -65,13 +65,11 @@ export function ShoppingListView({
           <div className="mt-8 space-y-3 sm:mt-12 sm:space-y-4">
             {categories.map((category) => (
               <ShoppingCategorySection
-                categories={categories}
                 category={category}
                 key={category.id}
                 onAddDraft={onAddDraft}
                 onCheckItem={onCheckItem}
                 onDeleteItem={onDeleteItem}
-                onMoveItem={onMoveItem}
                 onQuickAddItem={onQuickAddItem}
                 onRenameItem={onRenameItem}
                 onSaveDraft={onSaveDraft}

@@ -7,30 +7,23 @@ import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import type {
-  OptimisticShoppingListCategory,
-  OptimisticShoppingListItem,
-} from "./types";
+import type { OptimisticShoppingListItem } from "./types";
 import { useDrag } from "./drag/DragContext";
 import { useDraggableItem } from "./drag/useDraggableItem";
 
 type ShoppingItemRowProps = {
-  categories: OptimisticShoppingListCategory[];
   item: OptimisticShoppingListItem;
   onCheck: (itemId: string) => void;
   onDelete: (itemId: string) => void;
-  onMove: (itemId: string, categoryId: string) => void;
   onRename: (itemId: string, name: string) => void;
   onSaveDraft: (draftId: string, name: string, categoryId: string) => void;
   onUpdateDraft: (draftId: string, name: string) => void;
 };
 
 export function ShoppingItem({
-  categories,
   item,
   onCheck,
   onDelete,
-  onMove,
   onRename,
   onSaveDraft,
   onUpdateDraft,
@@ -186,38 +179,6 @@ export function ShoppingItem({
           <Trash2 aria-hidden="true" />
         </Button>
       </div>
-
-      {/* Long-press drag is pointer-only. This is the same move, reachable by
-          keyboard and screen reader, so it must stay in the tab order at all
-          times — inside the edit-only container above it would be
-          visibility:hidden, i.e. out of the accessibility tree entirely. It is
-          off-screen until focused rather than always drawn, because a select
-          on every row would bury the names the list exists to be scanned for. */}
-      {isPersisted && (
-        <select
-          aria-label={`${item.name || "Artikel"} in andere Kategorie verschieben`}
-          className="absolute right-3 z-10 h-9 max-w-28 rounded-md border border-input bg-background px-2 text-sm text-muted-foreground not-focus-visible:sr-only"
-          value={item.categoryId}
-          // The row starts drags on pointerdown; keep the select's own press
-          // from reaching it.
-          onPointerDown={(event) => event.stopPropagation()}
-          onChange={(event) => {
-            if (event.target.value !== item.categoryId) {
-              // The move unmounts this select (the row re-renders as syncing,
-              // then under a different section), so leave edit mode with it
-              // rather than stranding the row in an editor nobody focused.
-              setIsEditing(false);
-              onMove(item.id, event.target.value);
-            }
-          }}
-        >
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-      )}
     </li>
   );
 }
