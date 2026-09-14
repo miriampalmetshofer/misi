@@ -8,7 +8,7 @@ import { parseNumber } from "./parseNumber";
 export const FIELDS = [
   { name: "kmMiriam", label: "Miriam" },
   { name: "kmSimon", label: "Simon" },
-  { name: "kmBeide", label: "Beide" },
+  { name: "kmBeide", label: "Gemeinsam" },
 ] as const;
 
 export type FieldName =
@@ -72,7 +72,7 @@ export function useFuelSplitForm() {
   const result = calculateFuelSplit(input, mode);
 
   // A summary that silently treats an unreadable field as 0 is not a partial
-  // result, it is a wrong one — "Summe Gerät 626,0 km" looks just as settled
+  // result, it is a wrong one — "Summe 626,0 km" looks just as settled
   // as the correct number. Each summary suppresses on its own inputs only.
   const hasInvalidDeviceKm = FIELDS.some((field) =>
     invalidFields.includes(field.name),

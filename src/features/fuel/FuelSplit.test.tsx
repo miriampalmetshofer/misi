@@ -7,8 +7,8 @@ import { FuelSplit } from "./FuelSplit";
 async function fillSheetExample(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("Miriam"), "256,4");
   await user.type(screen.getByLabelText("Simon"), "352,2");
-  await user.type(screen.getByLabelText("Beide"), "273,8");
-  await user.type(screen.getByLabelText("Gesamt"), "1052,4");
+  await user.type(screen.getByLabelText("Gemeinsam"), "273,8");
+  await user.type(screen.getByLabelText("Auto"), "1052,4");
   await user.type(screen.getByLabelText("Betrag"), "102");
 }
 
@@ -71,8 +71,8 @@ describe("FuelSplit", () => {
     // which next to 58,02 € and 61,98 € read as though the split were broken.
     await user.type(screen.getByLabelText("Miriam"), "15");
     await user.type(screen.getByLabelText("Simon"), "55");
-    await user.type(screen.getByLabelText("Beide"), "1150");
-    await user.type(screen.getByLabelText("Gesamt"), "1220");
+    await user.type(screen.getByLabelText("Gemeinsam"), "1150");
+    await user.type(screen.getByLabelText("Auto"), "1220");
     await user.type(screen.getByLabelText("Betrag"), "120");
 
     expect(result().getByText("48,4 %")).toBeInTheDocument();
@@ -140,8 +140,8 @@ describe("FuelSplit", () => {
 
     await user.type(screen.getByLabelText("Miriam"), "1.256,4");
     await user.type(screen.getByLabelText("Simon"), "352,2");
-    await user.type(screen.getByLabelText("Beide"), "273,8");
-    await user.type(screen.getByLabelText("Gesamt"), "1052,4");
+    await user.type(screen.getByLabelText("Gemeinsam"), "273,8");
+    await user.type(screen.getByLabelText("Auto"), "1052,4");
 
     // Counting the unreadable field as 0 would report a confident "626,0 km",
     // which reads as settled rather than as missing input.
@@ -191,8 +191,8 @@ describe("FuelSplit", () => {
 
     await user.type(screen.getByLabelText("Miriam"), "100");
     await user.type(screen.getByLabelText("Simon"), "100");
-    await user.type(screen.getByLabelText("Beide"), "100");
-    await user.type(screen.getByLabelText("Gesamt"), "150");
+    await user.type(screen.getByLabelText("Gemeinsam"), "100");
+    await user.type(screen.getByLabelText("Auto"), "150");
     await user.type(screen.getByLabelText("Betrag"), "90");
 
     expect(screen.getByText("-150,0 km (-100,0 %)")).toBeInTheDocument();
@@ -205,8 +205,8 @@ describe("FuelSplit", () => {
 
     await user.type(screen.getByLabelText("Miriam"), "100");
     await user.type(screen.getByLabelText("Simon"), "100");
-    await user.type(screen.getByLabelText("Beide"), "100");
-    await user.type(screen.getByLabelText("Gesamt"), "150");
+    await user.type(screen.getByLabelText("Gemeinsam"), "100");
+    await user.type(screen.getByLabelText("Auto"), "150");
     await user.type(screen.getByLabelText("Betrag"), "90");
 
     expect(result().getAllByText("45,00 €")).toHaveLength(2);
@@ -228,7 +228,7 @@ describe("FuelSplit", () => {
 
     expect(toggle).not.toBeChecked();
     expect(screen.getByText(/Standard: proportional/)).toBeInTheDocument();
-    expect(screen.getByText(/komplett zu „Beide“/)).toBeInTheDocument();
+    expect(screen.getByText(/komplett zu „Gemeinsam“/)).toBeInTheDocument();
 
     await user.click(toggle);
 

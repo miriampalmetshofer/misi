@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { ChevronDown, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader } from "@/components/ui/empty";
@@ -14,6 +14,7 @@ import {
   ItemTitle,
 } from "@/components/ui/item";
 import { DeleteFillUpDialog } from "./DeleteFillUpDialog";
+import { FillUpDetails } from "./FillUpDetails";
 import { euro, formatFillUpDate } from "./format";
 import { HistoryPagination } from "./HistoryPagination";
 import { PAGE_SIZE, clampPage, pageCountFor } from "./paginate";
@@ -35,6 +36,19 @@ export function FuelHistory({
   // Held as the whole entry rather than an id: the dialog names the fill-up it
   // is about, and needs those details for as long as it is open.
   const [selected, setSelected] = useState<FuelFillUpEntry | null>(null);
+  // Several rows may be open at once, so two fill-ups can be compared without
+  // one closing the other.
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+
+  function toggleExpanded(id: string) {
+    setExpanded((open) => {
+      const next = new Set(open);
+      if (!next.delete(id)) {
+        next.add(id);
+      }
+      return next;
+    });
+  }
 
   // The dialog closes when the deleted fill-up leaves `entries`, i.e. once the
   // server has confirmed it. Derived rather than cleared on click, so the
@@ -72,6 +86,8 @@ export function FuelHistory({
           <ItemGroup className="gap-2">
             {visible.map((entry) => {
               const date = formatFillUpDate(entry.filledOn);
+              const isExpanded = expanded.has(entry.id);
+              const detailsId = `details-${entry.id}`;
 
               return (
                 <Item
@@ -82,19 +98,37 @@ export function FuelHistory({
                   render={<li />}
                 >
                   <ItemContent>
-                    <ItemDescription className="tabular-nums">
-                      {date}
-                    </ItemDescription>
-                    <ItemTitle className="tabular-nums">
-                      {euro.format(entry.paidAmount)}
-                    </ItemTitle>
-                    <ItemDescription className="tabular-nums">
-                      Miriam {euro.format(entry.miriamAmount)} · Simon{" "}
-                      {euro.format(entry.simonAmount)}
-                    </ItemDescription>
+                    {/* The summary itself is the toggle, so the whole row body
+                        is the tap target. It stays a sibling of the delete
+                        button rather than wrapping it: a button inside a button
+                        is invalid and would swallow the inner click. */}
+                    <button
+                      aria-controls={detailsId}
+                      aria-expanded={isExpanded}
+                      className="flex flex-col gap-1 text-left"
+                      onClick={() => toggleExpanded(entry.id)}
+                      type="button"
+                    >
+                      <ItemDescription className="tabular-nums">
+                        {date}
+                      </ItemDescription>
+                      <ItemTitle className="tabular-nums">
+                        {euro.format(entry.paidAmount)}
+                      </ItemTitle>
+                      <ItemDescription className="tabular-nums">
+                        Miriam {euro.format(entry.miriamAmount)} · Simon{" "}
+                        {euro.format(entry.simonAmount)}
+                      </ItemDescription>
+                    </button>
                   </ItemContent>
 
                   <ItemActions>
+                    <ChevronDown
+                      aria-hidden="true"
+                      className={`size-4 text-muted-foreground transition-transform ${
+                        isExpanded ? "rotate-180" : ""
+                      }`}
+                    />
                     <Button
                       aria-label={`Tankfüllung vom ${date} löschen`}
                       onClick={() => setSelected(entry)}
@@ -104,6 +138,12 @@ export function FuelHistory({
                       <Trash2 className="text-muted-foreground" />
                     </Button>
                   </ItemActions>
+
+                  {isExpanded ? (
+                    <div className="basis-full" id={detailsId}>
+                      <FillUpDetails entry={entry} />
+                    </div>
+                  ) : null}
                 </Item>
               );
             })}
