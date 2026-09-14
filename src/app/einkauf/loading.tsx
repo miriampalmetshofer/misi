@@ -1,5 +1,7 @@
 import { ChevronLeft } from "lucide-react";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 export default function EinkaufLoading() {
   return (
     <div className="min-h-screen bg-background text-base text-foreground">
@@ -20,13 +22,12 @@ export default function EinkaufLoading() {
         >
           {Array.from({ length: 4 }).map((_, sectionIndex) => (
             <section key={sectionIndex}>
-              <div className="h-5 w-40 animate-pulse rounded bg-muted" />
+              <Skeleton className="h-5 w-40" />
               <div className="mt-3 space-y-1">
                 {Array.from({ length: 2 }).map((_, rowIndex) => (
-                  <div
-                    key={rowIndex}
-                    className="h-10 animate-pulse rounded-lg bg-muted"
-                  />
+                  // rounded-lg to match the real rows, which Skeleton's own
+                  // rounded-md would otherwise undercut.
+                  <Skeleton key={rowIndex} className="h-10 rounded-lg" />
                 ))}
               </div>
             </section>

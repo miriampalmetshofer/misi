@@ -20,7 +20,7 @@ export default function TankenLoading() {
           {/* Date row: label left, input right, as in the form. */}
           <div className="flex items-center justify-between gap-3">
             <Skeleton className="h-5 w-16" />
-            <Skeleton className="h-9 w-40" />
+            <Skeleton className="h-9 w-40 rounded-lg" />
           </div>
 
           {/* The three km sections, then the amount: a heading and its rows. */}
@@ -28,7 +28,7 @@ export default function TankenLoading() {
             <section key={sectionIndex} className="flex flex-col gap-3">
               <Skeleton className="h-4 w-28" />
               {Array.from({ length: rows }).map((_, rowIndex) => (
-                <Skeleton key={rowIndex} className="h-9" />
+                <Skeleton key={rowIndex} className="h-9 rounded-lg" />
               ))}
             </section>
           ))}
@@ -39,7 +39,7 @@ export default function TankenLoading() {
           <section className="flex flex-col gap-3">
             <Skeleton className="h-4 w-20" />
             {Array.from({ length: 3 }).map((_, rowIndex) => (
-              <Skeleton key={rowIndex} className="h-20" />
+              <Skeleton key={rowIndex} className="h-20 rounded-lg" />
             ))}
           </section>
         </div>
