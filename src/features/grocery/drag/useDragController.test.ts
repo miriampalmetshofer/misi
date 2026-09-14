@@ -225,6 +225,40 @@ describe("useDragController", () => {
     vi.unstubAllGlobals();
   });
 
+  // The finger rests at the edge without moving, so nothing but the loop
+  // re-scheduling itself keeps the page going.
+  it("keeps scrolling across frames while the finger rests at the edge", () => {
+    setUpSections();
+    scrollPageTo(0);
+    const row = makeRow();
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    vi.stubGlobal("scrollTo", (_x: number, y: number) => scrollPageTo(y));
+    Object.defineProperty(window, "innerHeight", {
+      configurable: true,
+      value: 120,
+    });
+
+    const { result } = renderHook(() => useDragController(vi.fn()));
+    act(() => result.current.start(startedSession(row)));
+    act(() => result.current.move(0, 115));
+
+    act(() => frames.splice(0).forEach((frame) => frame(0)));
+    const afterFirstFrame = window.scrollY;
+
+    act(() => frames.splice(0).forEach((frame) => frame(0)));
+
+    expect(afterFirstFrame).toBeGreaterThan(0);
+    expect(window.scrollY).toBeGreaterThan(afterFirstFrame);
+
+    act(() => result.current.cancel());
+    scrollPageTo(0);
+    vi.unstubAllGlobals();
+  });
+
   it("does not scroll while the finger stays away from the edges", () => {
     setUpSections();
     scrollPageTo(0);

@@ -703,6 +703,35 @@ describe("moving an item between categories", () => {
   });
 
 
+  // A drop that produces no click leaves the click-suppressing flag armed.
+  // It must not then swallow the next real tap on the row.
+  it("still opens the editor on the tap after a drop that had no click", () => {
+    vi.useFakeTimers();
+    renderList();
+    layOutSections();
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+    longPress(row);
+    // Dropped back on its own category: a no-op move, and no click follows.
+    fireEvent.pointerUp(row, {
+      clientX: 16,
+      clientY: midpointOf("Obst"),
+      pointerId: 1,
+    });
+    vi.useRealTimers();
+
+    fireEvent.pointerDown(row, {
+      button: 0,
+      clientX: 12,
+      clientY: 12,
+      pointerId: 1,
+    });
+    fireEvent.pointerUp(row, { clientX: 12, clientY: 12, pointerId: 1 });
+    fireEvent.click(screen.getByRole("button", { name: "Äpfel" }));
+
+    expect(screen.getByRole("textbox")).toHaveValue("Äpfel");
+  });
+
   // iOS begins selecting text during the long press itself and shows its
   // selection handles over the row, so selection has to be off before a drag
   // exists to react to.

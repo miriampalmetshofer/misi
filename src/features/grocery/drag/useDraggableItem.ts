@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { MouseEvent, PointerEvent } from "react";
 
 import { useDrag } from "./DragContext";
@@ -35,7 +35,9 @@ export function useDraggableItem({
 }: DraggableItemOptions) {
   const { draggedItemId, start, move, drop, cancel } = useDrag();
   const pressRef = useRef<PendingPress | null>(null);
-  const [suppressClick, setSuppressClick] = useState(false);
+  // Only ever read inside the click handler that follows a drop, so it is a ref
+  // rather than state: nothing about the row renders differently for it.
+  const suppressClickRef = useRef(false);
   const isDragging = draggedItemId === itemId;
 
   const clearPress = useCallback(() => {
@@ -67,6 +69,11 @@ export function useDraggableItem({
   }, [isDragging]);
 
   function handlePointerDown(event: PointerEvent<HTMLLIElement>) {
+    // A drop does not always produce a click to swallow — ending the gesture
+    // over something unclickable produces none at all — so re-arm here rather
+    // than trusting the click to arrive and clear the flag.
+    suppressClickRef.current = false;
+
     if (!canDrag || event.button !== 0) {
       return;
     }
@@ -92,7 +99,7 @@ export function useDraggableItem({
         // ignore: no active pointer to capture
       }
 
-      setSuppressClick(true);
+      suppressClickRef.current = true;
       navigator.vibrate?.(10);
 
       start({
@@ -166,8 +173,6 @@ export function useDraggableItem({
     }
 
     drop(event.clientY);
-    // Let the click that follows this pointerup be swallowed, then re-arm.
-    setTimeout(() => setSuppressClick(false), 0);
   }
 
   function handlePointerCancel(event: PointerEvent<HTMLLIElement>) {
@@ -186,19 +191,18 @@ export function useDraggableItem({
     }
 
     cancel();
-    setTimeout(() => setSuppressClick(false), 0);
   }
 
   // A drag ends over some row's text; without this the drop would also open
   // that row's editor.
   function handleClickCapture(event: MouseEvent<HTMLLIElement>) {
-    if (!suppressClick) {
+    if (!suppressClickRef.current) {
       return;
     }
 
     event.preventDefault();
     event.stopPropagation();
-    setSuppressClick(false);
+    suppressClickRef.current = false;
   }
 
   return {

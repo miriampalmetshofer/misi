@@ -27,6 +27,12 @@ describe("findCategoryAtPoint", () => {
     expect(findCategoryAtPoint(rects(), 118)).toBe("gebaeck");
   });
 
+  // Exactly halfway across the gap: pick the section below, so a finger moving
+  // down the list changes target only once it is past the midpoint.
+  it("resolves a tie in the gap to the lower section", () => {
+    expect(findCategoryAtPoint(rects(), 110)).toBe("gebaeck");
+  });
+
   it("returns null outside the list entirely", () => {
     expect(findCategoryAtPoint(rects(), -40)).toBeNull();
     expect(findCategoryAtPoint(rects(), 900)).toBeNull();

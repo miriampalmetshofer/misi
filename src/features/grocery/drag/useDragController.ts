@@ -36,7 +36,6 @@ type ActiveSession = DragSession & {
   frame: number | null;
   pendingX: number;
   pendingY: number;
-  edgeFrame: number | null;
   edgeSpeed: number;
 };
 
@@ -58,29 +57,6 @@ export function useDragController(
   const [dropCategoryId, setDropCategoryId] = useState<string | null>(null);
   const sessionRef = useRef<ActiveSession | null>(null);
 
-  const paint = useCallback(() => {
-    const session = sessionRef.current;
-
-    if (!session) {
-      return;
-    }
-
-    session.frame = null;
-    // The row is positioned in the document, so a page that scrolled under it
-    // has to be added back in for it to stay under the finger.
-    const scrolled = window.scrollY - session.originScrollY;
-    session.element.style.transform = `translate3d(${session.pendingX}px, ${session.pendingY + scrolled}px, 0)`;
-  }, []);
-
-  const schedulePaint = useCallback(
-    (session: ActiveSession) => {
-      if (session.frame === null) {
-        session.frame = requestAnimationFrame(paint);
-      }
-    },
-    [paint],
-  );
-
   /** Re-resolve the drop target for the finger's current document position. */
   const refreshTarget = useCallback((session: ActiveSession) => {
     // pendingY is a screen-space delta, so the finger's document position is
@@ -90,79 +66,72 @@ export function useDragController(
     setDropCategoryId((current) => (current === next ? current : next));
   }, []);
 
-  const stopEdgeScroll = useCallback((session: ActiveSession) => {
-    if (session.edgeFrame !== null) {
-      cancelAnimationFrame(session.edgeFrame);
-      session.edgeFrame = null;
-    }
+  /**
+   * One frame of the drag: scroll if the finger is resting near an edge, then
+   * put the row back under it. The frame keeps running only while the edge
+   * scroll still has somewhere to go — a finger held still in the middle of the
+   * screen paints once and stops.
+   */
+  const scheduleFrame = useCallback(
+    (session: ActiveSession) => {
+      if (session.frame !== null) {
+        return;
+      }
 
-    session.edgeSpeed = 0;
-  }, []);
+      const runFrame = () => {
+        session.frame = null;
+
+        if (session.edgeSpeed !== 0) {
+          const before = window.scrollY;
+          const next = Math.min(
+            Math.max(0, before + session.edgeSpeed),
+            session.maxScrollY,
+          );
+
+          if (next === before) {
+            // Already at the end of the list: nothing left to reveal.
+            session.edgeSpeed = 0;
+          } else {
+            window.scrollTo(0, next);
+            refreshTarget(session);
+          }
+        }
+
+        // The row is positioned in the document, so a page that scrolled under
+        // it has to be added back in for it to stay under the finger.
+        const scrolled = window.scrollY - session.originScrollY;
+        session.element.style.transform = `translate3d(${session.pendingX}px, ${session.pendingY + scrolled}px, 0)`;
+
+        // Keep the loop alive only while the edge scroll still has somewhere to
+        // go; a finger held still in the middle of the screen paints once.
+        if (session.edgeSpeed !== 0) {
+          session.frame = requestAnimationFrame(runFrame);
+        }
+      };
+
+      session.frame = requestAnimationFrame(runFrame);
+    },
+    [refreshTarget],
+  );
 
   /**
-   * Keep scrolling the page while the finger rests near an edge, so a category
-   * below the fold can be reached without letting go. Each frame schedules the
-   * next one, so the loop is expressed as a single self-driving step.
+   * How fast the page should scroll itself, so a category below the fold can be
+   * reached without letting go. Ramps up as the finger nears the edge.
    */
-  const runEdgeScroll = useCallback(() => {
-    const step = () => {
-      const session = sessionRef.current;
+  const updateEdgeSpeed = useCallback((session: ActiveSession, clientY: number) => {
+    const fromTop = clientY;
+    const fromBottom = window.innerHeight - clientY;
 
-      if (!session || session.edgeSpeed === 0) {
-        return;
-      }
-
-      const before = window.scrollY;
-      const next = Math.min(
-        Math.max(0, before + session.edgeSpeed),
-        session.maxScrollY,
-      );
-
-      // Already at the end of the list: there is nothing left to reveal.
-      if (next === before) {
-        stopEdgeScroll(session);
-        return;
-      }
-
-      window.scrollTo(0, next);
-
-      schedulePaint(session);
-      refreshTarget(session);
-      session.edgeFrame = requestAnimationFrame(step);
-    };
-
-    step();
-  }, [refreshTarget, schedulePaint, stopEdgeScroll]);
-
-  const updateEdgeScroll = useCallback(
-    (session: ActiveSession, clientY: number) => {
-      const fromTop = clientY;
-      const fromBottom = window.innerHeight - clientY;
-
-      let speed = 0;
-
-      if (fromTop < EDGE_ZONE_PX) {
-        // Ramp up as the finger gets closer to the edge.
-        speed =
-          -MAX_EDGE_SPEED_PX_PER_FRAME * (1 - fromTop / EDGE_ZONE_PX);
-      } else if (fromBottom < EDGE_ZONE_PX) {
-        speed =
-          MAX_EDGE_SPEED_PX_PER_FRAME * (1 - fromBottom / EDGE_ZONE_PX);
-      }
-
-      session.edgeSpeed = speed;
-
-      if (speed === 0) {
-        stopEdgeScroll(session);
-        return;
-      }
-
-      if (session.edgeFrame === null) {
-        session.edgeFrame = requestAnimationFrame(runEdgeScroll);
-      }
-    },
-    [runEdgeScroll, stopEdgeScroll],
-  );
+    if (fromTop < EDGE_ZONE_PX) {
+      session.edgeSpeed =
+        -MAX_EDGE_SPEED_PX_PER_FRAME * (1 - fromTop / EDGE_ZONE_PX);
+    } else if (fromBottom < EDGE_ZONE_PX) {
+      session.edgeSpeed =
+        MAX_EDGE_SPEED_PX_PER_FRAME * (1 - fromBottom / EDGE_ZONE_PX);
+    } else {
+      session.edgeSpeed = 0;
+    }
+  }, []);
 
   const releaseSession = useCallback(() => {
     const session = sessionRef.current;
@@ -172,11 +141,13 @@ export function useDragController(
       return null;
     }
 
+    // One loop drives both the scrolling and the painting, so cancelling the
+    // pending frame and zeroing the speed is the whole teardown.
     if (session.frame !== null) {
       cancelAnimationFrame(session.frame);
     }
 
-    stopEdgeScroll(session);
+    session.edgeSpeed = 0;
 
     // Hand the row back to the stylesheet; React re-renders it unlifted.
     session.element.style.transform = "";
@@ -197,7 +168,7 @@ export function useDragController(
     setDropCategoryId(null);
 
     return session;
-  }, [stopEdgeScroll]);
+  }, []);
 
   const start = useCallback((session: DragSession) => {
     const scrollY = window.scrollY;
@@ -212,7 +183,6 @@ export function useDragController(
       frame: null,
       pendingX: 0,
       pendingY: 0,
-      edgeFrame: null,
       edgeSpeed: 0,
     };
 
@@ -238,11 +208,11 @@ export function useDragController(
       // and has to be pushed back to wherever the finger now is.
       session.pendingY = clientY - session.originY;
 
-      schedulePaint(session);
       refreshTarget(session);
-      updateEdgeScroll(session, clientY);
+      updateEdgeSpeed(session, clientY);
+      scheduleFrame(session);
     },
-    [refreshTarget, schedulePaint, updateEdgeScroll],
+    [refreshTarget, scheduleFrame, updateEdgeSpeed],
   );
 
   const drop = useCallback(

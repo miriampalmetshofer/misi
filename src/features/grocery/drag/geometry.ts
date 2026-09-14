@@ -59,27 +59,18 @@ export function findCategoryAtPoint(
     return null;
   }
 
-  const direct = rects.find(
-    (rect) => clientY >= rect.top && clientY <= rect.bottom,
-  );
+  // Sections are in document order, so the first one reaching past the point
+  // either contains it or is the section just below the gap it sits in.
+  const index = rects.findIndex((rect) => clientY <= rect.bottom);
+  const below = rects[index];
 
-  if (direct) {
-    return direct.categoryId;
+  if (clientY >= below.top) {
+    return below.categoryId;
   }
 
-  // In a gap: attach to whichever neighbouring section is closer.
-  let nearest = first;
-  let nearestDistance = Number.POSITIVE_INFINITY;
+  // In the gap above it: attach to whichever of the two neighbours is closer.
+  const above = rects[index - 1];
+  const closerToAbove = clientY - above.bottom < below.top - clientY;
 
-  for (const rect of rects) {
-    const distance =
-      clientY < rect.top ? rect.top - clientY : clientY - rect.bottom;
-
-    if (distance < nearestDistance) {
-      nearest = rect;
-      nearestDistance = distance;
-    }
-  }
-
-  return nearest.categoryId;
+  return closerToAbove ? above.categoryId : below.categoryId;
 }
