@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { ChevronDown, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader } from "@/components/ui/empty";
@@ -9,11 +9,10 @@ import {
   Item,
   ItemActions,
   ItemContent,
-  ItemDescription,
   ItemGroup,
-  ItemTitle,
 } from "@/components/ui/item";
 import { DeleteFillUpDialog } from "./DeleteFillUpDialog";
+import { FillUpDetails } from "./FillUpDetails";
 import { euro, formatFillUpDate } from "./format";
 import { HistoryPagination } from "./HistoryPagination";
 import { PAGE_SIZE, clampPage, pageCountFor } from "./paginate";
@@ -35,6 +34,19 @@ export function FuelHistory({
   // Held as the whole entry rather than an id: the dialog names the fill-up it
   // is about, and needs those details for as long as it is open.
   const [selected, setSelected] = useState<FuelFillUpEntry | null>(null);
+  // Several rows may be open at once, so two fill-ups can be compared without
+  // one closing the other.
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+
+  function toggleExpanded(id: string) {
+    setExpanded((open) => {
+      const next = new Set(open);
+      if (!next.delete(id)) {
+        next.add(id);
+      }
+      return next;
+    });
+  }
 
   // The dialog closes when the deleted fill-up leaves `entries`, i.e. once the
   // server has confirmed it. Derived rather than cleared on click, so the
@@ -72,6 +84,8 @@ export function FuelHistory({
           <ItemGroup className="gap-2">
             {visible.map((entry) => {
               const date = formatFillUpDate(entry.filledOn);
+              const isExpanded = expanded.has(entry.id);
+              const detailsId = `details-${entry.id}`;
 
               return (
                 <Item
@@ -82,16 +96,43 @@ export function FuelHistory({
                   render={<li />}
                 >
                   <ItemContent>
-                    <ItemDescription className="tabular-nums">
-                      {date}
-                    </ItemDescription>
-                    <ItemTitle className="tabular-nums">
-                      {euro.format(entry.paidAmount)}
-                    </ItemTitle>
-                    <ItemDescription className="tabular-nums">
-                      Miriam {euro.format(entry.miriamAmount)} · Simon{" "}
-                      {euro.format(entry.simonAmount)}
-                    </ItemDescription>
+                    {/* The chevron lives inside the toggle, not beside it: an
+                        arrow that says "tap me" has to be part of the target.
+                        The button stretches across the row so the gap between
+                        the text and the arrow is clickable too. It stays a
+                        sibling of the delete button rather than wrapping it —
+                        a button inside a button is invalid and would swallow
+                        the inner click. */}
+                    <button
+                      aria-controls={detailsId}
+                      aria-expanded={isExpanded}
+                      className="flex w-full items-center gap-3 text-left"
+                      onClick={() => toggleExpanded(entry.id)}
+                      type="button"
+                    >
+                      {/* Spans rather than ItemDescription/ItemTitle, which
+                          render <p> and <div>: neither is allowed inside a
+                          <button>. The muted styling is repeated here instead. */}
+                      <span className="flex flex-1 flex-col gap-1">
+                        <span className="text-sm leading-normal text-muted-foreground tabular-nums">
+                          {date}
+                        </span>
+                        <span className="text-sm leading-snug font-medium tabular-nums">
+                          {euro.format(entry.paidAmount)}
+                        </span>
+                        <span className="text-sm leading-normal text-muted-foreground tabular-nums">
+                          Miriam {euro.format(entry.miriamAmount)} · Simon{" "}
+                          {euro.format(entry.simonAmount)}
+                        </span>
+                      </span>
+
+                      <ChevronDown
+                        aria-hidden="true"
+                        className={`size-4 shrink-0 text-muted-foreground transition-transform ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
                   </ItemContent>
 
                   <ItemActions>
@@ -104,6 +145,12 @@ export function FuelHistory({
                       <Trash2 className="text-muted-foreground" />
                     </Button>
                   </ItemActions>
+
+                  {isExpanded ? (
+                    <div className="basis-full" id={detailsId}>
+                      <FillUpDetails entry={entry} />
+                    </div>
+                  ) : null}
                 </Item>
               );
             })}

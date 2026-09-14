@@ -85,7 +85,7 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
 
           <section aria-labelledby="geraet" className="flex flex-col gap-3">
             <h2 className="section-label" id="geraet">
-              Laut Gerät
+              Gerät
             </h2>
 
             {FIELDS.map((field) => (
@@ -101,7 +101,7 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
             ))}
 
             <Summary
-              label="Summe Gerät"
+              label="Summe"
               value={
                 form.hasInvalidDeviceKm
                   ? "—"
@@ -112,11 +112,11 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
 
           <section aria-labelledby="auto" className="flex flex-col gap-3">
             <h2 className="section-label" id="auto">
-              Laut Auto
+              Tachostand
             </h2>
 
             <NumberField
-              label="Gesamt"
+              label="Auto"
               name="kmAuto"
               unit="km"
               value={form.form.kmAuto}
@@ -125,7 +125,7 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
             />
 
             <Summary
-              label="Differenz"
+              label="Nicht erfasst"
               value={
                 form.hasInvalidDistance
                   ? "—"
@@ -157,7 +157,7 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
 
           <section aria-labelledby="modus" className="flex flex-col gap-3">
             <h2 className="section-label" id="modus">
-              Differenz verteilen
+              Nicht erfasste Kilometer verteilen
             </h2>
 
             <label className="flex cursor-pointer items-center gap-3">
@@ -170,8 +170,8 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
             </label>
 
             <p className="text-sm leading-snug text-muted-foreground">
-              Standard: proportional nach Geräte-Kilometern. Im 50/50-Modus wird
-              die Differenz zwischen Auto und Gerät komplett zu „Beide“
+              Standard: proportional nach Geräte-Kilometern. Im 50/50-Modus
+              werden die nicht erfassten Kilometer komplett zu „Gemeinsam“
               gerechnet und halbiert.
             </p>
           </section>
@@ -205,7 +205,7 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
                 {form.invalidFields.length > 0
                   ? "Bitte nur Zahlen eintragen, dann erscheint hier die Aufteilung."
                   : form.hasImpossibleFiftyFifty
-                    ? "Die Differenz ist größer als die gemeinsamen Kilometer. 50/50 passt hier nicht; proportional funktioniert weiterhin."
+                    ? "Es sind mehr Kilometer erfasst als das Auto zählt. 50/50 passt hier nicht; proportional funktioniert weiterhin."
                     : form.mode === "shared"
                       ? "Kilometer und Tachostand eintragen, dann erscheint hier die Aufteilung."
                       : "Kilometer eintragen, dann erscheint hier die Aufteilung."}
