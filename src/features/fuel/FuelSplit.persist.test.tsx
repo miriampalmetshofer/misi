@@ -1,8 +1,8 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { FuelSplit, reduce } from "./FuelSplit";
+import { FuelSplit } from "./FuelSplit";
 import type { FuelFillUpEntry } from "./types";
 
 /**
@@ -55,8 +55,9 @@ async function fillSheetExample(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("Betrag"), "102");
 }
 
+/** The save button, whose label changes while the write is in flight. */
 function saveButton() {
-  return screen.getByRole("button", { name: "Speichern" });
+  return screen.getByRole("button", { name: /Speichern|Wird gespeichert/ });
 }
 
 function history() {
@@ -155,16 +156,43 @@ describe("FuelSplit persistence", () => {
     });
   });
 
-  it("shows the saved fill-up straight away and empties the form", async () => {
+  it("waits for the insert instead of showing the fill-up straight away", async () => {
     const user = userEvent.setup();
     render(<FuelSplit />);
 
     await fillSheetExample(user);
     await user.click(saveButton());
 
-    // Optimistic row: the action is still in flight.
-    expect(history().getByText("102,00 €")).toBeInTheDocument();
-    expect(history().getByText(/45,46 €/)).toBeInTheDocument();
+    // A fill-up is entered once and considered, so it is worth waiting for the
+    // write rather than showing a row that might not be there.
+    expect(history().queryByText("102,00 €")).not.toBeInTheDocument();
+    expect(saveButton()).toHaveTextContent("Wird gespeichert …");
+    expect(saveButton()).toBeDisabled();
+  });
+
+  it("keeps the numbers on screen while the write is in flight", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit />);
+
+    await fillSheetExample(user);
+    await user.click(saveButton());
+
+    // Not cleared yet: if the insert fails, these are the only copy of what
+    // was typed at the pump.
+    expect(screen.getByLabelText("Miriam")).toHaveValue("256,4");
+    expect(screen.getByLabelText("Betrag")).toHaveValue("102");
+  });
+
+  it("empties the form once the fill-up is stored", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit />);
+
+    await fillSheetExample(user);
+    await user.click(saveButton());
+
+    await act(async () => {
+      actions.pending.get("add")?.();
+    });
 
     // The next fill-up starts clean rather than from numbers already settled.
     expect(screen.getByLabelText("Miriam")).toHaveValue("");
@@ -204,24 +232,32 @@ describe("FuelSplit persistence", () => {
     expect(sentFields(actions.deleteFuelFillUp)).toMatchObject({
       id: entry.id,
     });
-    expect(history().queryByText("102,00 €")).not.toBeInTheDocument();
+    // Still on screen behind the dialog: the row goes when the server drops it
+    // from the page's props, not when the dialog is confirmed. (The open modal
+    // makes the history inert, so it is queried through the document.)
+    expect(screen.getByText("102,00 €")).toBeInTheDocument();
   });
 
-  it("drops an unsaved row locally instead of sending a made-up id", async () => {
+  it("says the fill-up is being deleted while the delete is in flight", async () => {
     const user = userEvent.setup();
-    render(<FuelSplit />);
+    render(<FuelSplit fillUps={[entry]} />);
 
-    await fillSheetExample(user);
-    await user.click(saveButton());
     await user.click(
-      screen.getByRole("button", { name: /Tankfüllung vom .* löschen/ }),
+      screen.getByRole("button", {
+        name: "Tankfüllung vom 04.11.2025 löschen",
+      }),
     );
     await user.click(confirmDeleteButton());
 
-    // The row has no database id yet, so its deletion is purely local —
-    // sending the "pending-" id on would fail the uuid cast.
-    expect(actions.deleteFuelFillUp).not.toHaveBeenCalled();
-    expect(history().queryByText("102,00 €")).not.toBeInTheDocument();
+    // The confirmation stays up and says so, rather than closing onto a row
+    // that is still there.
+    const dialog = within(screen.getByRole("alertdialog"));
+    // Busy rather than disabled, so the label keeps full contrast while the
+    // delete runs; the click is guarded in the handler.
+    expect(
+      dialog.getByRole("button", { name: /Wird gelöscht/ }),
+    ).toHaveAttribute("aria-busy", "true");
+    expect(dialog.getByRole("button", { name: "Abbrechen" })).toBeDisabled();
   });
 });
 
@@ -259,18 +295,14 @@ describe("history pagination", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("falls back a page when the last row on it is deleted", async () => {
-    const user = userEvent.setup();
-    // Eleven rows: page 2 holds exactly one, so deleting it empties the page.
-    render(<FuelSplit fillUps={manyFillUps(11)} />);
+  it("falls back a page once the last row on it is gone", () => {
+    // Eleven rows: page 2 holds exactly one, so losing it empties the page.
+    const { rerender } = render(<FuelSplit fillUps={manyFillUps(11)} />);
 
-    await user.click(screen.getByRole("button", { name: "Seite 2" }));
-    await user.click(
-      history().getByRole("button", { name: /Tankfüllung vom .* löschen/ }),
-    );
-    await user.click(confirmDeleteButton());
+    // Re-rendered with ten rows, the way the server sends them back after a
+    // delete — page 2 no longer exists.
+    rerender(<FuelSplit fillUps={manyFillUps(10)} />);
 
-    // Back on page 1, rather than looking at an empty page 2.
     expect(history().getByText("100,00 €")).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Seite 2" }),
@@ -311,24 +343,5 @@ describe("delete confirmation", () => {
     const dialog = within(screen.getByRole("alertdialog"));
     expect(dialog.getByText(/04\.11\.2025/)).toBeInTheDocument();
     expect(dialog.getByText(/102,00/)).toBeInTheDocument();
-  });
-});
-
-describe("reduce", () => {
-  it("puts a new fill-up first, matching the query's order", () => {
-    const added = { ...entry, id: "pending-1", filledOn: "2025-12-01" };
-
-    expect(reduce([entry], { type: "add", entry: added })).toEqual([
-      added,
-      entry,
-    ]);
-  });
-
-  it("removes only the fill-up it was given", () => {
-    const other = { ...entry, id: "other" };
-
-    expect(reduce([entry, other], { type: "remove", id: other.id })).toEqual([
-      entry,
-    ]);
   });
 });

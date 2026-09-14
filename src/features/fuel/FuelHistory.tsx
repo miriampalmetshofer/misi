@@ -17,25 +17,37 @@ import { DeleteFillUpDialog } from "./DeleteFillUpDialog";
 import { euro, formatFillUpDate } from "./format";
 import { HistoryPagination } from "./HistoryPagination";
 import { PAGE_SIZE, clampPage, pageCountFor } from "./paginate";
-import type { OptimisticFuelFillUpEntry } from "./types";
+import type { FuelFillUpEntry } from "./types";
 
 type FuelHistoryProps = {
-  entries: OptimisticFuelFillUpEntry[];
+  entries: FuelFillUpEntry[];
+  /** True while a delete is in flight, so the dialog can say so. */
+  isDeleting: boolean;
   onDelete: (id: string) => void;
 };
 
-export function FuelHistory({ entries, onDelete }: FuelHistoryProps) {
+export function FuelHistory({
+  entries,
+  isDeleting,
+  onDelete,
+}: FuelHistoryProps) {
   const [page, setPage] = useState(1);
   // Held as the whole entry rather than an id: the dialog names the fill-up it
-  // is about, and the row is gone from `entries` by the time it closes.
-  const [pendingDelete, setPendingDelete] =
-    useState<OptimisticFuelFillUpEntry | null>(null);
+  // is about, and needs those details for as long as it is open.
+  const [selected, setSelected] = useState<FuelFillUpEntry | null>(null);
+
+  // The dialog closes when the deleted fill-up leaves `entries`, i.e. once the
+  // server has confirmed it. Derived rather than cleared on click, so the
+  // confirmation stays on screen — saying "Wird gelöscht …" — for as long as
+  // the delete is actually running.
+  const pendingDelete =
+    selected && entries.some((entry) => entry.id === selected.id)
+      ? selected
+      : null;
 
   const pageCount = pageCountFor(entries.length);
   // Deleting the last fill-up on a page leaves the stored number past the end
-  // of the list, so every read goes through the clamp. Derived rather than
-  // corrected in an effect: there is no render in which the stored number is
-  // the one being displayed.
+  // of the list, so every read goes through the clamp.
   const currentPage = clampPage(page, pageCount);
 
   const start = (currentPage - 1) * PAGE_SIZE;
@@ -67,13 +79,7 @@ export function FuelHistory({ entries, onDelete }: FuelHistoryProps) {
                   variant="outline"
                   // Rendered as an <li> so the role="list" ItemGroup sets has
                   // real listitem children rather than bare divs.
-                  render={
-                    <li
-                      // Lets the e2e suite wait for the insert to come back
-                      // before reloading, rather than racing the write.
-                      data-syncing={entry.isSyncing ? "true" : undefined}
-                    />
-                  }
+                  render={<li />}
                 >
                   <ItemContent>
                     <ItemDescription className="tabular-nums">
@@ -91,7 +97,7 @@ export function FuelHistory({ entries, onDelete }: FuelHistoryProps) {
                   <ItemActions>
                     <Button
                       aria-label={`Tankfüllung vom ${date} löschen`}
-                      onClick={() => setPendingDelete(entry)}
+                      onClick={() => setSelected(entry)}
                       size="icon"
                       variant="ghost"
                     >
@@ -115,12 +121,12 @@ export function FuelHistory({ entries, onDelete }: FuelHistoryProps) {
 
       <DeleteFillUpDialog
         entry={pendingDelete}
-        onCancel={() => setPendingDelete(null)}
+        isDeleting={isDeleting}
+        onCancel={() => setSelected(null)}
         onConfirm={() => {
           if (pendingDelete) {
             onDelete(pendingDelete.id);
           }
-          setPendingDelete(null);
         }}
       />
     </section>

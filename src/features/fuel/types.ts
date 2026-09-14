@@ -14,9 +14,3 @@ export type FuelFillUpEntry = {
   miriamAmount: number;
   simonAmount: number;
 };
-
-// Client-only: a row that has been saved but whose insert has not come back
-// yet. The server never sets this, so it stays off the type it returns.
-export type OptimisticFuelFillUpEntry = FuelFillUpEntry & {
-  isSyncing?: boolean;
-};
