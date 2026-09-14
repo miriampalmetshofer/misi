@@ -16,9 +16,6 @@ type UndoBarProps = {
  */
 export function UndoBar({ label, onUndo }: UndoBarProps) {
   return (
-    // Inverted against the page rather than card-coloured: the bar floats over
-    // the list, and in dark mode a bg-card bar is the same near-black as the
-    // cards it covers, with shadow-lg too faint to separate them.
     <div className="pointer-events-auto flex w-full max-w-md items-center gap-2 rounded-xl bg-foreground py-2 pl-4 pr-2 text-background shadow-lg animate-in fade-in slide-in-from-bottom-2">
       <p className="min-w-0 flex-1 truncate text-sm">{label}</p>
 

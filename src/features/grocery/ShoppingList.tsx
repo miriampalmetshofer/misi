@@ -50,8 +50,6 @@ export function ShoppingList({ categories }: ShoppingListProps) {
     reduce,
   );
   const { mutate } = useOptimisticMutation(applyOptimistic);
-  // Checking an item off is the one-tap action that hides a row, so it is the
-  // one worth taking back. The write already went out; undo is its own write.
   const undo = useUndo<{ item: ShoppingListItem; index: number }>();
 
   const categoriesWithDrafts = withDrafts(optimisticCategories, drafts);
@@ -152,8 +150,8 @@ export function ShoppingList({ categories }: ShoppingListProps) {
       { type: "remove", itemId },
     );
 
-    // A row still waiting for its server id cannot be checked off (the checkbox
-    // is disabled while syncing), so anything reaching here has a real uuid.
+    // No isClientOnlyId guard as in rename/delete: the checkbox is disabled
+    // while syncing, so a row reaching here always has a real uuid.
     if (found) {
       undo.push(`${found.item.name} erledigt`, found);
     }
