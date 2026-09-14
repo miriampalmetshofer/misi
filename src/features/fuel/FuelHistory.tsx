@@ -3,16 +3,6 @@
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader } from "@/components/ui/empty";
 import {
@@ -23,14 +13,10 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-} from "@/components/ui/pagination";
+import { DeleteFillUpDialog } from "./DeleteFillUpDialog";
 import { euro, formatFillUpDate } from "./format";
-import { PAGE_SIZE, clampPage, pageCountFor, pageItems } from "./paginate";
+import { HistoryPagination } from "./HistoryPagination";
+import { PAGE_SIZE, clampPage, pageCountFor } from "./paginate";
 import type { OptimisticFuelFillUpEntry } from "./types";
 
 type FuelHistoryProps = {
@@ -127,7 +113,7 @@ export function FuelHistory({ entries, onDelete }: FuelHistoryProps) {
         </>
       )}
 
-      <DeleteDialog
+      <DeleteFillUpDialog
         entry={pendingDelete}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => {
@@ -138,126 +124,5 @@ export function FuelHistory({ entries, onDelete }: FuelHistoryProps) {
         }}
       />
     </section>
-  );
-}
-
-type HistoryPaginationProps = {
-  page: number;
-  pageCount: number;
-  onPageChange: (page: number) => void;
-};
-
-/**
- * Page buttons for the history.
- *
- * Built from the shadcn Pagination layout parts, but not its PaginationLink:
- * that one renders an <a>, and these pages are client state rather than URLs,
- * so an anchor without an href would be unreachable by keyboard.
- */
-function HistoryPagination({
-  page,
-  pageCount,
-  onPageChange,
-}: HistoryPaginationProps) {
-  return (
-    <Pagination>
-      <PaginationContent>
-        <PaginationItem>
-          <Button
-            aria-label="Vorherige Seite"
-            disabled={page === 1}
-            onClick={() => onPageChange(page - 1)}
-            size="icon"
-            variant="ghost"
-          >
-            <span aria-hidden="true">‹</span>
-          </Button>
-        </PaginationItem>
-
-        {pageItems(page, pageCount).map((item, index) =>
-          item === null ? (
-            <PaginationItem key={`gap-${index}`}>
-              <PaginationEllipsis />
-            </PaginationItem>
-          ) : (
-            <PaginationItem key={item}>
-              <Button
-                aria-current={item === page ? "page" : undefined}
-                aria-label={`Seite ${item}`}
-                className="tabular-nums"
-                onClick={() => onPageChange(item)}
-                size="icon"
-                variant={item === page ? "outline" : "ghost"}
-              >
-                {item}
-              </Button>
-            </PaginationItem>
-          ),
-        )}
-
-        <PaginationItem>
-          <Button
-            aria-label="Nächste Seite"
-            disabled={page === pageCount}
-            onClick={() => onPageChange(page + 1)}
-            size="icon"
-            variant="ghost"
-          >
-            <span aria-hidden="true">›</span>
-          </Button>
-        </PaginationItem>
-      </PaginationContent>
-    </Pagination>
-  );
-}
-
-type DeleteDialogProps = {
-  /** The fill-up awaiting confirmation, or null while the dialog is closed. */
-  entry: OptimisticFuelFillUpEntry | null;
-  onCancel: () => void;
-  onConfirm: () => void;
-};
-
-/**
- * Confirms deleting a fill-up.
- *
- * A fill-up is settled money and there is no undo, so the dialog repeats the
- * date and the amounts: on a phone the delete buttons sit close together, and
- * this is what catches a mis-tap before the row is gone.
- */
-function DeleteDialog({ entry, onCancel, onConfirm }: DeleteDialogProps) {
-  return (
-    <AlertDialog
-      open={entry !== null}
-      onOpenChange={(open) => {
-        if (!open) {
-          onCancel();
-        }
-      }}
-    >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Tankfüllung löschen?</AlertDialogTitle>
-          <AlertDialogDescription>
-            {entry ? (
-              <>
-                {formatFillUpDate(entry.filledOn)} ·{" "}
-                {euro.format(entry.paidAmount)}
-                <br />
-                Miriam {euro.format(entry.miriamAmount)} · Simon{" "}
-                {euro.format(entry.simonAmount)}
-              </>
-            ) : null}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-
-        <AlertDialogFooter>
-          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} variant="destructive">
-            Löschen
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   );
 }

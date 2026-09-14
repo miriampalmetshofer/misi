@@ -1,5 +1,7 @@
 import { ChevronLeft } from "lucide-react";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 export default function TankenLoading() {
   return (
     <div className="min-h-screen bg-background text-base text-foreground">
@@ -17,33 +19,27 @@ export default function TankenLoading() {
         <div aria-hidden="true" className="mt-8 flex flex-col gap-8 sm:mt-12">
           {/* Date row: label left, input right, as in the form. */}
           <div className="flex items-center justify-between gap-3">
-            <div className="h-5 w-16 animate-pulse rounded bg-muted" />
-            <div className="h-9 w-40 animate-pulse rounded-lg bg-muted" />
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-9 w-40" />
           </div>
 
           {/* The three km sections, then the amount: a heading and its rows. */}
           {[3, 1, 1].map((rows, sectionIndex) => (
             <section key={sectionIndex} className="flex flex-col gap-3">
-              <div className="h-4 w-28 animate-pulse rounded bg-muted" />
+              <Skeleton className="h-4 w-28" />
               {Array.from({ length: rows }).map((_, rowIndex) => (
-                <div
-                  key={rowIndex}
-                  className="h-9 animate-pulse rounded-lg bg-muted"
-                />
+                <Skeleton key={rowIndex} className="h-9" />
               ))}
             </section>
           ))}
 
           {/* The result card, which carries the save button. */}
-          <div className="h-48 animate-pulse rounded-2xl bg-muted" />
+          <Skeleton className="h-48 rounded-2xl" />
 
           <section className="flex flex-col gap-3">
-            <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+            <Skeleton className="h-4 w-20" />
             {Array.from({ length: 3 }).map((_, rowIndex) => (
-              <div
-                key={rowIndex}
-                className="h-20 animate-pulse rounded-lg bg-muted"
-              />
+              <Skeleton key={rowIndex} className="h-20" />
             ))}
           </section>
         </div>
