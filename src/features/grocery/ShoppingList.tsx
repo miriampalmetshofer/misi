@@ -43,16 +43,16 @@ type OptimisticAction =
   | { type: "remove"; itemId: string }
   | { type: "restore"; item: ShoppingListItem; index: number };
 
-export function ShoppingList({ categories }: ShoppingListProps) {
+export function ShoppingList({
+  categories: persistedCategories,
+}: ShoppingListProps) {
   const [drafts, setDrafts] = useState<Draft[]>([]);
-  const [optimisticCategories, applyOptimistic] = useOptimistic(
-    categories,
+  const [categories, applyOptimistic] = useOptimistic(
+    persistedCategories,
     reduce,
   );
   const { mutate } = useOptimisticMutation(applyOptimistic);
   const undo = useUndo<{ item: ShoppingListItem; index: number }>();
-
-  const categoriesWithDrafts = withDrafts(optimisticCategories, drafts);
 
   function createDraftItem(categoryId: string) {
     const currentDraft = drafts[0];
@@ -142,7 +142,7 @@ export function ShoppingList({ categories }: ShoppingListProps) {
   }
 
   function checkItem(itemId: string) {
-    const found = findItem(optimisticCategories, itemId);
+    const found = findItem(categories, itemId);
 
     mutate(
       setGroceryItemChecked,
@@ -186,7 +186,7 @@ export function ShoppingList({ categories }: ShoppingListProps) {
 
   return (
     <ShoppingListView
-      categories={categoriesWithDrafts}
+      categories={withDrafts(categories, drafts)}
       onAddDraft={createDraftItem}
       onCheckItem={checkItem}
       onDeleteItem={deleteItem}
