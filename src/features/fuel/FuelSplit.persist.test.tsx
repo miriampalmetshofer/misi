@@ -367,6 +367,27 @@ describe("history details", () => {
     expect(history().getByText("256,4 km")).toBeInTheDocument();
   });
 
+  it("lists the distances that make up the car's reading above it", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<FuelSplit fillUps={[entry]} />);
+
+    await user.click(summaryToggle());
+
+    // The first four add up to "Auto", so they come before it; the mode is not
+    // a distance at all and closes the list.
+    const labels = [...container.querySelectorAll("dt")].map(
+      (term) => term.textContent,
+    );
+    expect(labels).toEqual([
+      "Miriam",
+      "Simon",
+      "Gemeinsam",
+      "Nicht erfasst",
+      "Auto",
+      "Verteilt",
+    ]);
+  });
+
   it("closes the row again on a second tap", async () => {
     const user = userEvent.setup();
     render(<FuelSplit fillUps={[entry]} />);

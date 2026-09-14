@@ -51,12 +51,14 @@ export function FillUpDetails({ entry }: { entry: FuelFillUpEntry }) {
         value={km.format(entry.sharedKm)}
         share={share(entry.sharedKm)}
       />
-      <Row label="Auto" value={km.format(entry.carKm)} />
       <Row
         label="Nicht erfasst"
         value={km.format(result.distanceOffset)}
         share={share(result.distanceOffset)}
       />
+      {/* Last of the distances, because the four rows above are its parts:
+          they add up to exactly this number, and to 100 %. */}
+      <Row label="Auto" value={km.format(entry.carKm)} />
       <Row label="Verteilt" unit="" value={MODE_LABELS[entry.offsetMode]} />
     </dl>
   );
