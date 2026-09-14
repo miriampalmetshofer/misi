@@ -91,6 +91,77 @@ describe("reduce", () => {
     ).toEqual(before);
   });
 
+  it("puts a restored item back at the position it held", () => {
+    const withThree = categories();
+    withThree[0].items = [
+      { id: "a", name: "A", isChecked: false, categoryId: "obst" },
+      { id: "c", name: "C", isChecked: false, categoryId: "obst" },
+    ];
+
+    const next = reduce(withThree, {
+      type: "restore",
+      item: { id: "b", name: "B", isChecked: false, categoryId: "obst" },
+      index: 1,
+    });
+
+    expect(next[0].items.map((item) => item.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("restores into the item's own category only", () => {
+    const next = reduce(categories(), {
+      type: "restore",
+      item: { id: "semmeln", name: "Semmeln", isChecked: false, categoryId: "gebaeck" },
+      index: 0,
+    });
+
+    expect(next[0].items).toHaveLength(1);
+    expect(next[1].items.map((item) => item.id)).toEqual(["semmeln"]);
+  });
+
+  it("appends a restored item whose old position no longer exists", () => {
+    // Other rows can leave during the undo window, so the remembered index may
+    // now sit past the end of the list.
+    const next = reduce(categories(), {
+      type: "restore",
+      item: { id: "birnen", name: "Birnen", isChecked: false, categoryId: "obst" },
+      index: 7,
+    });
+
+    expect(next[0].items.map((item) => item.id)).toEqual(["apfel", "birnen"]);
+  });
+
+  it("leaves the list alone when the restored item is already back", () => {
+    // useOptimistic replays the pending restore over the latest props, which
+    // can already contain the row the undo write put back.
+    const before = categories();
+
+    const next = reduce(before, {
+      type: "restore",
+      item: { id: "apfel", name: "Äpfel", isChecked: false, categoryId: "obst" },
+      index: 0,
+    });
+
+    expect(next).toEqual(before);
+  });
+
+  it("restores an item whose category is gone into the last category", () => {
+    // The category can be removed while the undo window is open, which leaves
+    // the remembered categoryId pointing at nothing.
+    const next = reduce(categories(), {
+      type: "restore",
+      item: {
+        id: "birnen",
+        name: "Birnen",
+        isChecked: false,
+        categoryId: "geloescht",
+      },
+      index: 0,
+    });
+
+    expect(next[0].items.map((item) => item.id)).toEqual(["apfel"]);
+    expect(next[1].items.map((item) => item.id)).toEqual(["birnen"]);
+  });
+
   it("ignores actions for unknown ids", () => {
     const before = categories();
 

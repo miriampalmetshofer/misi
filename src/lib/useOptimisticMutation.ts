@@ -5,12 +5,12 @@ import { useCallback, useTransition } from "react";
 type ServerAction = (formData: FormData) => Promise<unknown>;
 
 /**
- * Apply an optimistic action, then run a server action inside a transition. If the
+ * Add an optimistic action, then run a server action inside a transition. If the
  * server action throws, `useOptimistic` discards the optimistic value once the
  * transition settles, so the UI rolls back on its own.
  */
 export function useOptimisticMutation<Action>(
-  applyOptimistic: (action: Action) => void,
+  addOptimistic: (action: Action) => void,
 ) {
   const [isPending, startTransition] = useTransition();
 
@@ -22,12 +22,12 @@ export function useOptimisticMutation<Action>(
     ) => {
       startTransition(async () => {
         if (optimistic !== undefined) {
-          applyOptimistic(optimistic);
+          addOptimistic(optimistic);
         }
         await action(toFormData(fields));
       });
     },
-    [applyOptimistic],
+    [addOptimistic],
   );
 
   return { mutate, isPending };

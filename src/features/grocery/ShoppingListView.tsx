@@ -6,6 +6,7 @@ import { ChevronLeft } from "lucide-react";
 import type { OptimisticShoppingListCategory } from "./types";
 import { ShoppingCategorySection } from "./ShoppingCategorySection";
 import { DragProvider } from "./drag/DragContext";
+import { UndoBar } from "./UndoBar";
 
 type ShoppingListViewProps = {
   categories: OptimisticShoppingListCategory[];
@@ -16,7 +17,9 @@ type ShoppingListViewProps = {
   onQuickAddItem: (name: string, categoryId: string) => void;
   onRenameItem: (itemId: string, name: string) => void;
   onSaveDraft: (draftId: string, name: string, categoryId: string) => void;
+  onUndoCheck: () => void;
   onUpdateDraft: (draftId: string, name: string) => void;
+  undo: { id: string; label: string } | null;
 };
 
 export function ShoppingListView({
@@ -28,7 +31,9 @@ export function ShoppingListView({
   onQuickAddItem,
   onRenameItem,
   onSaveDraft,
+  onUndoCheck,
   onUpdateDraft,
+  undo,
 }: ShoppingListViewProps) {
   const openItemCount = categories.reduce(
     (total, category) =>
@@ -79,6 +84,21 @@ export function ShoppingListView({
           </div>
         </DragProvider>
       </main>
+
+      {/* Always mounted as a live region so the undo offer is announced when it
+          appears, rather than only on the next focus move. Fixed to the bottom
+          for thumb reach; pointer-events are handed back by the bar itself so
+          the empty region never swallows taps on the list. */}
+      <div
+        aria-live="polite"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8"
+      >
+        {undo && (
+          // Keyed per offer so replacing one offer with another replays the
+          // enter animation — otherwise the label swaps with no cue.
+          <UndoBar key={undo.id} label={undo.label} onUndo={onUndoCheck} />
+        )}
+      </div>
     </div>
   );
 }

@@ -786,3 +786,98 @@ describe("checking an item off", () => {
     expect(actions.setGroceryItemChecked).not.toHaveBeenCalled();
   });
 });
+
+describe("taking a check-off back", () => {
+  function undoButton() {
+    return screen.getByRole("button", { name: "Rückgängig" });
+  }
+
+  async function checkOffApples(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(
+      screen.getByRole("checkbox", { name: /Äpfel erledigt markieren/ }),
+    );
+  }
+
+  it("offers an undo naming the item that was checked off", async () => {
+    const { user } = renderList();
+
+    await checkOffApples(user);
+
+    expect(await screen.findByText("Äpfel erledigt")).toBeInTheDocument();
+    expect(undoButton()).toBeInTheDocument();
+  });
+
+  it("is not offered before anything has been checked off", () => {
+    renderList();
+
+    expect(
+      screen.queryByRole("button", { name: "Rückgängig" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("un-checks the item on the server rather than reversing nothing", async () => {
+    const { user } = renderList();
+
+    await checkOffApples(user);
+    await user.click(undoButton());
+
+    // The check-off was already written, so undo is a second write of its own.
+    await waitFor(() =>
+      expect(actions.setGroceryItemChecked).toHaveBeenCalledTimes(2),
+    );
+    expect(fieldsOfCall(actions.setGroceryItemChecked, 1)).toEqual({
+      itemId: "apfel",
+      isChecked: "false",
+    });
+  });
+
+  it("puts the row back where it was, not at the end", async () => {
+    const { user } = renderList();
+
+    await checkOffApples(user);
+    await user.click(undoButton());
+
+    const names = await waitFor(() => {
+      const rows = within(section("Obst")).getAllByRole("button", {
+        name: /Äpfel|Bananen/,
+      });
+      expect(rows).toHaveLength(2);
+      return rows.map((row) => row.textContent);
+    });
+    // Äpfel was the first row before it was checked off, so it must not come
+    // back underneath Bananen.
+    expect(names).toEqual(["Äpfel", "Bananen"]);
+  });
+
+  it("stops offering the undo once it has been used", async () => {
+    const { user } = renderList();
+
+    await checkOffApples(user);
+    await user.click(undoButton());
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Rückgängig" }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it("offers only the most recent check-off", async () => {
+    const { user } = renderList();
+
+    await checkOffApples(user);
+    await user.click(
+      screen.getByRole("checkbox", { name: /Bananen erledigt markieren/ }),
+    );
+
+    expect(await screen.findByText("Bananen erledigt")).toBeInTheDocument();
+    expect(screen.queryByText("Äpfel erledigt")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Rückgängig" })).toHaveLength(
+      1,
+    );
+  });
+
+  // The window expiring is covered in useUndo.test.ts. Driving it from here
+  // would mean fake timers, and the action mocks deliberately never resolve, so
+  // the transition would wait on a clock the test has frozen.
+});
