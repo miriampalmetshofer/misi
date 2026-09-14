@@ -2,16 +2,15 @@
 
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { useOptimistic } from "react";
+import { useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { useOptimisticMutation } from "@/lib/useOptimisticMutation";
 import { addFuelFillUp, deleteFuelFillUp } from "./actions";
 import { euro, km, percent } from "./format";
 import { FuelHistory } from "./FuelHistory";
-import type { FuelFillUpEntry, OptimisticFuelFillUpEntry } from "./types";
+import type { FuelFillUpEntry } from "./types";
 import { FIELDS, useFuelSplitForm, type FieldName } from "./useFuelSplitForm";
 
 type FuelSplitProps = {
@@ -19,67 +18,47 @@ type FuelSplitProps = {
   fillUps?: FuelFillUpEntry[];
 };
 
-type OptimisticAction =
-  | { type: "add"; entry: OptimisticFuelFillUpEntry }
-  | { type: "remove"; id: string };
-
+/**
+ * Writes wait for the server, unlike the shopping list's.
+ *
+ * A fill-up is entered once at the pump and considered, not rattled off in a
+ * burst, so the round-trip costs nothing worth optimising away — and in return
+ * the history only ever shows rows the database really has. Both writes show
+ * their progress instead: the save on its button, the delete in its dialog.
+ */
 export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
   const form = useFuelSplitForm();
-  const [optimisticFillUps, applyOptimistic] = useOptimistic(fillUps, reduce);
-  const { mutate } = useOptimisticMutation(applyOptimistic);
+  const [isSaving, startSaving] = useTransition();
+  const [isDeleting, startDeleting] = useTransition();
 
   function save() {
     if (!form.canSave) {
       return;
     }
 
-    const { input, result, datum, mode } = form;
+    const { input, datum, mode } = form;
 
-    mutate(
-      addFuelFillUp,
-      {
-        filledOn: datum,
-        offsetMode: mode,
-        // The action re-parses these in the app's comma notation, so send them
-        // the way the form holds them rather than in JS number formatting.
-        miriamKm: toField(input.miriamKm),
-        simonKm: toField(input.simonKm),
-        sharedKm: toField(input.sharedKm),
-        carKm: toField(input.carKm),
-        paidAmount: toField(input.paidAmount),
-      },
-      {
-        type: "add",
-        entry: {
-          id: `pending-${crypto.randomUUID()}`,
+    startSaving(async () => {
+      await addFuelFillUp(
+        toFormData({
           filledOn: datum,
-          miriamKm: input.miriamKm,
-          simonKm: input.simonKm,
-          sharedKm: input.sharedKm,
-          carKm: input.carKm,
-          paidAmount: input.paidAmount,
           offsetMode: mode,
-          miriamAmount: result.miriamAmount,
-          simonAmount: result.simonAmount,
-          isSyncing: true,
-        },
-      },
-    );
+          miriamKm: toField(input.miriamKm),
+          simonKm: toField(input.simonKm),
+          sharedKm: toField(input.sharedKm),
+          carKm: toField(input.carKm),
+          paidAmount: toField(input.paidAmount),
+        }),
+      );
 
-    // Cleared so the next fill-up starts from an empty form rather than from
-    // numbers that have already been settled.
-    form.reset();
+      form.reset();
+    });
   }
 
   function deleteFillUp(id: string) {
-    // A row still waiting for its server-assigned uuid has a made-up id, so
-    // dropping it locally is the whole deletion.
-    if (id.startsWith("pending-")) {
-      applyOptimistic({ type: "remove", id });
-      return;
-    }
-
-    mutate(deleteFuelFillUp, { id }, { type: "remove", id });
+    startDeleting(async () => {
+      await deleteFuelFillUp(toFormData({ id }));
+    });
   }
 
   return (
@@ -191,8 +170,8 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
             </label>
 
             <p className="text-sm leading-snug text-muted-foreground">
-              Standard: proportional nach Geräte-Kilometern. Im 50/50-Modus
-              wird die Differenz zwischen Auto und Gerät komplett zu „Beide“
+              Standard: proportional nach Geräte-Kilometern. Im 50/50-Modus wird
+              die Differenz zwischen Auto und Gerät komplett zu „Beide“
               gerechnet und halbiert.
             </p>
           </section>
@@ -235,15 +214,19 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
 
             <Button
               className="mt-5 w-full"
-              disabled={!form.canSave}
+              disabled={!form.canSave || isSaving}
               onClick={save}
               size="lg"
             >
-              Speichern
+              {isSaving ? "Wird gespeichert …" : "Speichern"}
             </Button>
           </section>
 
-          <FuelHistory entries={optimisticFillUps} onDelete={deleteFillUp} />
+          <FuelHistory
+            entries={fillUps}
+            isDeleting={isDeleting}
+            onDelete={deleteFillUp}
+          />
         </div>
       </main>
     </div>
@@ -255,17 +238,12 @@ function toField(value: number) {
   return String(value).replace(".", ",");
 }
 
-export function reduce(
-  entries: OptimisticFuelFillUpEntry[],
-  action: OptimisticAction,
-): OptimisticFuelFillUpEntry[] {
-  switch (action.type) {
-    case "add":
-      // Newest first, matching the order the query returns.
-      return [action.entry, ...entries];
-    case "remove":
-      return entries.filter((entry) => entry.id !== action.id);
+function toFormData(fields: Record<string, string>) {
+  const formData = new FormData();
+  for (const [key, value] of Object.entries(fields)) {
+    formData.set(key, value);
   }
+  return formData;
 }
 
 function Summary({ label, value }: { label: string; value: string }) {

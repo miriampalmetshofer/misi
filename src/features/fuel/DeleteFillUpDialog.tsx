@@ -11,11 +11,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { euro, formatFillUpDate } from "./format";
-import type { OptimisticFuelFillUpEntry } from "./types";
+import type { FuelFillUpEntry } from "./types";
 
 type DeleteFillUpDialogProps = {
-  /** The fill-up awaiting confirmation, or null while the dialog is closed. */
-  entry: OptimisticFuelFillUpEntry | null;
+  entry: FuelFillUpEntry | null;
+  isDeleting: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -29,6 +29,7 @@ type DeleteFillUpDialogProps = {
  */
 export function DeleteFillUpDialog({
   entry,
+  isDeleting,
   onCancel,
   onConfirm,
 }: DeleteFillUpDialogProps) {
@@ -36,7 +37,7 @@ export function DeleteFillUpDialog({
     <AlertDialog
       open={entry !== null}
       onOpenChange={(open) => {
-        if (!open) {
+        if (!open && !isDeleting) {
           onCancel();
         }
       }}
@@ -58,9 +59,22 @@ export function DeleteFillUpDialog({
         </AlertDialogHeader>
 
         <AlertDialogFooter>
-          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} variant="destructive">
-            Löschen
+          <AlertDialogCancel disabled={isDeleting}>Abbrechen</AlertDialogCancel>
+          {/* Marked busy rather than `disabled`: the shared Button fades a
+              disabled control to 50% opacity, which drops this label to about
+              2.6:1 against the dialog — under AA, on the one line saying a
+              deletion is running. The click is guarded here instead. */}
+          <AlertDialogAction
+            aria-busy={isDeleting}
+            aria-disabled={isDeleting}
+            onClick={() => {
+              if (!isDeleting) {
+                onConfirm();
+              }
+            }}
+            variant="destructive"
+          >
+            {isDeleting ? "Wird gelöscht …" : "Löschen"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

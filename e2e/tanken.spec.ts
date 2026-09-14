@@ -27,14 +27,9 @@ async function saveFillUp(page: Page, amount: string) {
 
   await page.getByRole("button", { name: "Speichern" }).click();
 
-  // The row shows up optimistically before the insert finishes. Reloading at
-  // that point can beat the write, so wait for the syncing flag to clear —
-  // that is the UI saying the server action has come back.
+  // The save blocks on the insert, so the row only appears once the server
+  // action has come back — no need to wait out an optimistic row first.
   await expect(historyRow(page, amount)).toBeVisible();
-  await expect(historyRow(page, amount)).not.toHaveAttribute(
-    "data-syncing",
-    "true",
-  );
 }
 
 test.beforeEach(async ({ page }) => {
@@ -67,8 +62,6 @@ test("a deleted fill-up stays gone after a reload", async ({ page }) => {
   const amount = uniqueAmount();
 
   await saveFillUp(page, amount);
-  // Reload first so the delete targets a real database row, not a pending one.
-  await page.reload();
 
   await historyRow(page, amount)
     .getByRole("button", { name: /löschen/ })
