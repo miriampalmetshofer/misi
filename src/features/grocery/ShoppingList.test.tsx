@@ -613,6 +613,79 @@ describe("moving an item between categories", () => {
     expect(actions.moveGroceryItem).not.toHaveBeenCalled();
   });
 
+  // A second finger tapping the lifted row must not commit the drop: its
+  // clientY has nothing to do with where the dragging finger is aiming.
+  it("ignores a second finger lifting during the drag", () => {
+    vi.useFakeTimers();
+    renderList();
+    layOutSections();
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+    longPress(row);
+
+    fireEvent.pointerUp(row, {
+      clientX: 16,
+      clientY: midpointOf("Gebäck"),
+      pointerId: 2,
+    });
+    vi.useRealTimers();
+
+    expect(row).toHaveAttribute("data-dragging", "true");
+    expect(actions.moveGroceryItem).not.toHaveBeenCalled();
+  });
+
+  // iOS cancels unrelated touches routinely when it takes over a gesture;
+  // that must not silently drop the drag the user is still performing.
+  it("ignores a pointercancel for a different pointer", () => {
+    vi.useFakeTimers();
+    renderList();
+    layOutSections();
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+    longPress(row);
+
+    fireEvent.pointerCancel(row, { pointerId: 2 });
+    vi.useRealTimers();
+
+    expect(row).toHaveAttribute("data-dragging", "true");
+  });
+
+  // The drag origin is the point the row is positioned against, so drift
+  // during the hold has to move it too or the row snaps sideways on pickup.
+  it("does not jump sideways when the finger drifted during the hold", () => {
+    vi.useFakeTimers();
+    renderList();
+    layOutSections();
+
+    // The row is positioned inside a frame; paint synchronously so the
+    // transform is readable straight after the move.
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      callback(0);
+      return 0;
+    });
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+
+    fireEvent.pointerDown(row, {
+      button: 0,
+      clientX: 12,
+      clientY: 12,
+      pointerId: 1,
+    });
+    // Drift well past the slop radius, horizontally so the hold survives.
+    fireEvent.pointerMove(row, { clientX: 42, clientY: 14, pointerId: 1 });
+    act(() => vi.advanceTimersByTime(450));
+
+    expect(row).toHaveAttribute("data-dragging", "true");
+
+    // Holding still after the lift must leave the row where it was picked up.
+    fireEvent.pointerMove(row, { clientX: 42, clientY: 14, pointerId: 1 });
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+
+    expect(row.style.transform).toBe("translate3d(0px, 0px, 0)");
+  });
+
   // setPointerCapture throws NotFoundError when the browser has already dropped
   // the pointer. That surfaced as a runtime error overlay mid-drag.
   it("survives the browser refusing pointer capture", () => {
@@ -640,6 +713,45 @@ describe("moving an item between categories", () => {
 
     expect(row).toHaveAttribute("data-draggable", "true");
     expect(row.className).toContain("select-none");
+  });
+
+  // The select is the only non-pointer way to move an item, so it has to be
+  // reachable without first entering edit mode: a hidden container takes it
+  // out of the accessibility tree and the tab order entirely.
+  it("keeps the category select reachable without entering edit mode", () => {
+    renderList();
+
+    const select = screen.getByRole("combobox", {
+      name: /Äpfel in andere Kategorie/,
+    });
+
+    expect(select).toBeVisible();
+    expect(select.tabIndex).not.toBe(-1);
+  });
+
+  // Focusing the select blurs the name input, which runs save() and leaves
+  // edit mode. The select used to live inside the edit-only container, so that
+  // hid it out from under the user before an option could be picked.
+  it("stays usable when focus moves to it from the name input", async () => {
+    const { user } = renderList();
+
+    await user.click(screen.getByRole("button", { name: "Äpfel" }));
+    const select = screen.getByRole("combobox", {
+      name: /Äpfel in andere Kategorie/,
+    });
+
+    select.focus();
+    await waitFor(() => expect(select).toHaveFocus());
+
+    await user.selectOptions(select, "gebaeck");
+
+    await waitFor(() =>
+      expect(actions.moveGroceryItem).toHaveBeenCalledTimes(1),
+    );
+    expect(fieldsOf(actions.moveGroceryItem)).toEqual({
+      itemId: "apfel",
+      categoryId: "gebaeck",
+    });
   });
 
   it("moves an item from the keyboard-accessible category select", async () => {

@@ -25,7 +25,7 @@ type PendingPress = {
 type DraggableItemOptions = {
   canDrag: boolean;
   itemId: string;
-  sourceCategoryId: string | null;
+  sourceCategoryId: string;
 };
 
 export function useDraggableItem({
@@ -67,7 +67,7 @@ export function useDraggableItem({
   }, [isDragging]);
 
   function handlePointerDown(event: PointerEvent<HTMLLIElement>) {
-    if (!canDrag || event.button !== 0 || !sourceCategoryId) {
+    if (!canDrag || event.button !== 0) {
       return;
     }
 
@@ -139,14 +139,29 @@ export function useDraggableItem({
     // the list only scrolls vertically — so let the hold keep running.
     if (Math.abs(dy) > Math.abs(dx)) {
       clearPress();
+      return;
     }
+
+    // The hold survives, so this drift is part of it. Follow the finger with
+    // the origin: start() records it as the drag origin, and leaving it at the
+    // original touch point would snap the row sideways by the drift the moment
+    // it lifts.
+    press.startX = event.clientX;
+    press.startY = event.clientY;
   }
 
   function handlePointerUp(event: PointerEvent<HTMLLIElement>) {
     const press = pressRef.current;
+
+    // A second finger lifting must not end the first finger's drag: its
+    // clientY would drop the item wherever that finger happened to be.
+    if (!press || press.pointerId !== event.pointerId) {
+      return;
+    }
+
     clearPress();
 
-    if (!press?.dragging) {
+    if (!press.dragging) {
       return;
     }
 
@@ -155,11 +170,18 @@ export function useDraggableItem({
     setTimeout(() => setSuppressClick(false), 0);
   }
 
-  function handlePointerCancel() {
+  function handlePointerCancel(event: PointerEvent<HTMLLIElement>) {
     const press = pressRef.current;
+
+    // iOS cancels unrelated touches routinely when it takes a gesture over;
+    // only this pointer's own cancellation should abort the drag.
+    if (!press || press.pointerId !== event.pointerId) {
+      return;
+    }
+
     clearPress();
 
-    if (!press?.dragging) {
+    if (!press.dragging) {
       return;
     }
 

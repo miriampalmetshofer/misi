@@ -40,7 +40,11 @@ export function ShoppingListView({
     // The lifted row is translated out of its slot and would otherwise stretch
     // the document as it travels, letting the drag scroll on past the list into
     // empty space. Clipping contains it without introducing a scroll container.
-    <div className="min-h-screen overflow-clip bg-background text-base text-foreground">
+    // The margin keeps the row itself whole: the edge auto-scroll deliberately
+    // stops with the finger a little past the end of the content, so a clip
+    // flush against the box would cut the row off exactly while the user is
+    // aiming at the last category.
+    <div className="min-h-screen overflow-clip [overflow-clip-margin:6rem] bg-background text-base text-foreground">
       <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-5 pb-16 pt-6 sm:px-8 sm:pt-10">
         <Link href="/" className="page-back-link">
           <ChevronLeft aria-hidden="true" className="size-4" />
