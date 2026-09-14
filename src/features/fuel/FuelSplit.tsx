@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
 import { useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -62,173 +60,162 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background text-base text-foreground">
-      <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-5 pb-16 pt-6 sm:px-8 sm:pt-10">
-        <Link href="/" className="page-back-link">
-          <ChevronLeft aria-hidden="true" className="size-4" />
-          <span>Home</span>
-        </Link>
+    <div className="mt-8 flex flex-col gap-8 sm:mt-12">
+      <label className="flex items-center justify-between gap-3">
+        <span>Datum</span>
+        <Input
+          className="w-40 tabular-nums"
+          name="datum"
+          type="date"
+          value={form.datum}
+          onChange={(event) => form.setDatum(event.target.value)}
+        />
+      </label>
 
-        <h1 className="page-headline">Tanken</h1>
+      <section aria-labelledby="geraet" className="flex flex-col gap-3">
+        <h2 className="section-label" id="geraet">
+          Laut Gerät
+        </h2>
 
-        <div className="mt-8 flex flex-col gap-8 sm:mt-12">
-          <label className="flex items-center justify-between gap-3">
-            <span>Datum</span>
-            <Input
-              className="w-40 tabular-nums"
-              name="datum"
-              type="date"
-              value={form.datum}
-              onChange={(event) => form.setDatum(event.target.value)}
-            />
-          </label>
+        {FIELDS.map((field) => (
+          <NumberField
+            key={field.name}
+            label={field.label}
+            name={field.name}
+            unit="km"
+            value={form.form[field.name]}
+            isInvalid={form.invalidFields.includes(field.name)}
+            onChange={form.update}
+          />
+        ))}
 
-          <section aria-labelledby="geraet" className="flex flex-col gap-3">
-            <h2 className="section-label" id="geraet">
-              Laut Gerät
-            </h2>
+        <Summary
+          label="Summe Gerät"
+          value={
+            form.hasInvalidDeviceKm
+              ? "—"
+              : `${km.format(form.result.deviceKmTotal)} km`
+          }
+        />
+      </section>
 
-            {FIELDS.map((field) => (
-              <NumberField
-                key={field.name}
-                label={field.label}
-                name={field.name}
-                unit="km"
-                value={form.form[field.name]}
-                isInvalid={form.invalidFields.includes(field.name)}
-                onChange={form.update}
-              />
-            ))}
+      <section aria-labelledby="auto" className="flex flex-col gap-3">
+        <h2 className="section-label" id="auto">
+          Laut Auto
+        </h2>
 
-            <Summary
-              label="Summe Gerät"
-              value={
-                form.hasInvalidDeviceKm
-                  ? "—"
-                  : `${km.format(form.result.deviceKmTotal)} km`
-              }
-            />
-          </section>
+        <NumberField
+          label="Gesamt"
+          name="kmAuto"
+          unit="km"
+          value={form.form.kmAuto}
+          isInvalid={form.invalidFields.includes("kmAuto")}
+          onChange={form.update}
+        />
 
-          <section aria-labelledby="auto" className="flex flex-col gap-3">
-            <h2 className="section-label" id="auto">
-              Laut Auto
-            </h2>
+        <Summary
+          label="Differenz"
+          value={
+            form.hasInvalidDistance
+              ? "—"
+              : `${km.format(form.result.distanceOffset)} km${
+                  // The share is relative to the car reading, so without
+                  // one there is no percentage to show — only a "0,0 %".
+                  form.input.carKm > 0
+                    ? ` (${percent.format(form.result.distanceOffsetShare)})`
+                    : ""
+                }`
+          }
+        />
+      </section>
 
-            <NumberField
-              label="Gesamt"
-              name="kmAuto"
-              unit="km"
-              value={form.form.kmAuto}
-              isInvalid={form.invalidFields.includes("kmAuto")}
-              onChange={form.update}
-            />
+      <section aria-labelledby="betrag" className="flex flex-col gap-3">
+        <h2 className="section-label" id="betrag">
+          Bezahlt
+        </h2>
 
-            <Summary
-              label="Differenz"
-              value={
-                form.hasInvalidDistance
-                  ? "—"
-                  : `${km.format(form.result.distanceOffset)} km${
-                      // The share is relative to the car reading, so without
-                      // one there is no percentage to show — only a "0,0 %".
-                      form.input.carKm > 0
-                        ? ` (${percent.format(form.result.distanceOffsetShare)})`
-                        : ""
-                    }`
-              }
-            />
-          </section>
+        <NumberField
+          label="Betrag"
+          name="bezahlt"
+          unit="€"
+          value={form.form.bezahlt}
+          isInvalid={form.invalidFields.includes("bezahlt")}
+          onChange={form.update}
+        />
+      </section>
 
-          <section aria-labelledby="betrag" className="flex flex-col gap-3">
-            <h2 className="section-label" id="betrag">
-              Bezahlt
-            </h2>
+      <section aria-labelledby="modus" className="flex flex-col gap-3">
+        <h2 className="section-label" id="modus">
+          Differenz verteilen
+        </h2>
 
-            <NumberField
-              label="Betrag"
-              name="bezahlt"
-              unit="€"
-              value={form.form.bezahlt}
-              isInvalid={form.invalidFields.includes("bezahlt")}
-              onChange={form.update}
-            />
-          </section>
+        <label className="flex cursor-pointer items-center gap-3">
+          <Checkbox
+            checked={form.useFiftyFifty}
+            className="size-5 border-muted-foreground"
+            onCheckedChange={(checked) => form.setUseFiftyFifty(!!checked)}
+          />
+          <span>50/50-Modus verwenden</span>
+        </label>
 
-          <section aria-labelledby="modus" className="flex flex-col gap-3">
-            <h2 className="section-label" id="modus">
-              Differenz verteilen
-            </h2>
+        <p className="text-sm leading-snug text-muted-foreground">
+          Standard: proportional nach Geräte-Kilometern. Im 50/50-Modus wird die
+          Differenz zwischen Auto und Gerät komplett zu „Beide“ gerechnet und
+          halbiert.
+        </p>
+      </section>
 
-            <label className="flex cursor-pointer items-center gap-3">
-              <Checkbox
-                checked={form.useFiftyFifty}
-                className="size-5 border-muted-foreground"
-                onCheckedChange={(checked) => form.setUseFiftyFifty(!!checked)}
-              />
-              <span>50/50-Modus verwenden</span>
-            </label>
+      <section
+        aria-labelledby="ergebnis"
+        className="rounded-2xl border bg-card p-5 text-card-foreground sm:p-7"
+      >
+        <h2 className="section-label" id="ergebnis">
+          Zu zahlen
+        </h2>
 
-            <p className="text-sm leading-snug text-muted-foreground">
-              Standard: proportional nach Geräte-Kilometern. Im 50/50-Modus wird
-              die Differenz zwischen Auto und Gerät komplett zu „Beide“
-              gerechnet und halbiert.
-            </p>
-          </section>
-
-          <section
-            aria-labelledby="ergebnis"
-            className="rounded-2xl border bg-card p-5 text-card-foreground sm:p-7"
-          >
-            <h2 className="section-label" id="ergebnis">
-              Zu zahlen
-            </h2>
-
-            {form.canCalculate ? (
-              <dl className="mt-4 flex flex-col gap-3">
-                {/* The share of the bill, not of the distance: a personal
+        {form.canCalculate ? (
+          <dl className="mt-4 flex flex-col gap-3">
+            {/* The share of the bill, not of the distance: a personal
                     distance share excludes the shared kilometres and so would
                     not match the euro amount beside it. */}
-                <Share
-                  label="Miriam"
-                  share={form.result.miriamBillShare}
-                  amount={form.result.miriamAmount}
-                />
-                <Share
-                  label="Simon"
-                  share={form.result.simonBillShare}
-                  amount={form.result.simonAmount}
-                />
-              </dl>
-            ) : (
-              <p className="text-body-muted mt-4">
-                {form.invalidFields.length > 0
-                  ? "Bitte nur Zahlen eintragen, dann erscheint hier die Aufteilung."
-                  : form.hasImpossibleFiftyFifty
-                    ? "Die Differenz ist größer als die gemeinsamen Kilometer. 50/50 passt hier nicht; proportional funktioniert weiterhin."
-                    : form.mode === "shared"
-                      ? "Kilometer und Tachostand eintragen, dann erscheint hier die Aufteilung."
-                      : "Kilometer eintragen, dann erscheint hier die Aufteilung."}
-              </p>
-            )}
+            <Share
+              label="Miriam"
+              share={form.result.miriamBillShare}
+              amount={form.result.miriamAmount}
+            />
+            <Share
+              label="Simon"
+              share={form.result.simonBillShare}
+              amount={form.result.simonAmount}
+            />
+          </dl>
+        ) : (
+          <p className="text-body-muted mt-4">
+            {form.invalidFields.length > 0
+              ? "Bitte nur Zahlen eintragen, dann erscheint hier die Aufteilung."
+              : form.hasImpossibleFiftyFifty
+                ? "Die Differenz ist größer als die gemeinsamen Kilometer. 50/50 passt hier nicht; proportional funktioniert weiterhin."
+                : form.mode === "shared"
+                  ? "Kilometer und Tachostand eintragen, dann erscheint hier die Aufteilung."
+                  : "Kilometer eintragen, dann erscheint hier die Aufteilung."}
+          </p>
+        )}
 
-            <Button
-              className="mt-5 w-full"
-              disabled={!form.canSave || isSaving}
-              onClick={save}
-              size="lg"
-            >
-              {isSaving ? "Wird gespeichert …" : "Speichern"}
-            </Button>
-          </section>
+        <Button
+          className="mt-5 w-full"
+          disabled={!form.canSave || isSaving}
+          onClick={save}
+          size="lg"
+        >
+          {isSaving ? "Wird gespeichert …" : "Speichern"}
+        </Button>
+      </section>
 
-          <FuelHistory
-            entries={fillUps}
-            isDeleting={isDeleting}
-            onDelete={deleteFillUp}
-          />
-        </div>
-      </main>
+      <FuelHistory
+        entries={fillUps}
+        isDeleting={isDeleting}
+        onDelete={deleteFillUp}
+      />
     </div>
   );
 }
