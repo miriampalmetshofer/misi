@@ -1,5 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 
 /**
@@ -26,6 +33,7 @@ const actions = vi.hoisted(() => {
     pending,
     addGroceryItem: action("add"),
     deleteGroceryItem: action("delete"),
+    moveGroceryItem: action("move"),
     renameGroceryItem: action("rename"),
     setGroceryItemChecked: action("check"),
   };
@@ -34,12 +42,36 @@ const actions = vi.hoisted(() => {
 vi.mock("./actions", () => ({
   addGroceryItem: actions.addGroceryItem,
   deleteGroceryItem: actions.deleteGroceryItem,
+  moveGroceryItem: actions.moveGroceryItem,
   renameGroceryItem: actions.renameGroceryItem,
   setGroceryItemChecked: actions.setGroceryItemChecked,
 }));
 
 import { ShoppingList } from "./ShoppingList";
 import type { ShoppingListCategory } from "./types";
+
+/**
+ * happy-dom gives every element a zero-size rect, so the drag controller — which
+ * measures the category sections once when the drag starts — would see nothing to
+ * aim at. Lay the sections out as 100px bands with a 20px gap, matching how they
+ * really stack, so hit-testing has real geometry to work against.
+ */
+function layOutSections() {
+  screen.getAllByRole("region", { hidden: true });
+  const sections = [...document.querySelectorAll("[data-category-id]")];
+
+  sections.forEach((element, index) => {
+    const top = index * 120;
+    element.getBoundingClientRect = () =>
+      ({ top, bottom: top + 100, left: 0, right: 400, width: 400, height: 100,
+         x: 0, y: top, toJSON: () => {} }) as DOMRect;
+  });
+}
+
+/** Vertical midpoint of a laid-out section, for aiming a drop. */
+function midpointOf(name: string) {
+  return section(name).getBoundingClientRect().top + 50;
+}
 
 function categories(): ShoppingListCategory[] {
   return [
@@ -92,6 +124,11 @@ function addButton(categoryName: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   actions.pending.clear();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 describe("adding an item", () => {
@@ -415,6 +452,296 @@ describe("the open-item total", () => {
     await user.click(addButton("Gebäck"));
 
     expect(screen.getByText("2 Artikel offen")).toBeInTheDocument();
+  });
+});
+
+describe("moving an item between categories", () => {
+  /** Press the row, wait out the hold, and report whether the drag engaged. */
+  function longPress(row: HTMLElement, at = { x: 12, y: 12 }) {
+    fireEvent.pointerDown(row, {
+      button: 0,
+      clientX: at.x,
+      clientY: at.y,
+      pointerId: 1,
+    });
+    act(() => vi.advanceTimersByTime(450));
+  }
+
+  it("keeps a normal item click as edit, not drag", () => {
+    vi.useFakeTimers();
+    renderList();
+
+    const editButton = screen.getByRole("button", { name: "Äpfel" });
+    const row = editButton.closest("li")!;
+
+    fireEvent.pointerDown(row, {
+      button: 0,
+      clientX: 12,
+      clientY: 12,
+      pointerId: 1,
+    });
+    act(() => vi.advanceTimersByTime(120));
+    fireEvent.pointerUp(row, { clientX: 12, clientY: 12, pointerId: 1 });
+    fireEvent.click(editButton);
+
+    expect(row).not.toHaveAttribute("data-dragging", "true");
+    expect(screen.getByRole("textbox")).toHaveValue("Äpfel");
+    expect(actions.moveGroceryItem).not.toHaveBeenCalled();
+  });
+
+  it("long-presses a saved item, highlights the target and persists the move", async () => {
+    vi.useFakeTimers();
+    renderList();
+    layOutSections();
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+    longPress(row);
+
+    expect(row).toHaveAttribute("data-dragging", "true");
+
+    const targetY = midpointOf("Gebäck");
+    fireEvent.pointerMove(row, { clientX: 16, clientY: targetY, pointerId: 1 });
+
+    expect(section("Gebäck")).toHaveAttribute("data-drop-target", "true");
+
+    fireEvent.pointerUp(row, { clientX: 16, clientY: targetY, pointerId: 1 });
+    vi.useRealTimers();
+
+    await waitFor(() =>
+      expect(actions.moveGroceryItem).toHaveBeenCalledTimes(1),
+    );
+    expect(fieldsOf(actions.moveGroceryItem)).toEqual({
+      itemId: "apfel",
+      categoryId: "gebaeck",
+    });
+    expect(
+      await within(section("Gebäck")).findByText("Äpfel"),
+    ).toBeInTheDocument();
+  });
+
+  // The reported bug: holding a finger still is not something people actually
+  // do, and the old 8px threshold meant ordinary drift cancelled the drag.
+  it("still starts the drag when the finger drifts during the hold", () => {
+    vi.useFakeTimers();
+    renderList();
+    layOutSections();
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+
+    fireEvent.pointerDown(row, {
+      button: 0,
+      clientX: 12,
+      clientY: 12,
+      pointerId: 1,
+    });
+
+    // ~8px of wobble in each direction, spread across the hold window
+    for (let step = 1; step <= 8; step += 1) {
+      act(() => vi.advanceTimersByTime(40));
+      fireEvent.pointerMove(row, {
+        clientX: 12 + step,
+        clientY: 12 + (step % 2),
+        pointerId: 1,
+      });
+    }
+    act(() => vi.advanceTimersByTime(450));
+
+    expect(row).toHaveAttribute("data-dragging", "true");
+  });
+
+  it("keeps normal scrolling from starting a drag", () => {
+    vi.useFakeTimers();
+    renderList();
+    layOutSections();
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+
+    fireEvent.pointerDown(row, {
+      button: 0,
+      clientX: 12,
+      clientY: 12,
+      pointerId: 1,
+    });
+    // Clearly vertical: the page is being scrolled, not the row picked up.
+    fireEvent.pointerMove(row, { clientX: 12, clientY: 60, pointerId: 1 });
+    act(() => vi.advanceTimersByTime(450));
+
+    expect(row).not.toHaveAttribute("data-dragging", "true");
+    expect(actions.moveGroceryItem).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when the item is dropped outside every category", () => {
+    vi.useFakeTimers();
+    renderList();
+    layOutSections();
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+    longPress(row);
+    fireEvent.pointerUp(row, { clientX: 16, clientY: 5000, pointerId: 1 });
+    vi.useRealTimers();
+
+    expect(actions.moveGroceryItem).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when the item is dropped back on its own category", () => {
+    vi.useFakeTimers();
+    renderList();
+    layOutSections();
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+    longPress(row);
+    const ownY = midpointOf("Obst");
+    fireEvent.pointerUp(row, { clientX: 16, clientY: ownY, pointerId: 1 });
+    vi.useRealTimers();
+
+    expect(actions.moveGroceryItem).not.toHaveBeenCalled();
+  });
+
+  it("abandons the drag on pointercancel without moving anything", () => {
+    vi.useFakeTimers();
+    renderList();
+    layOutSections();
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+    longPress(row);
+    expect(row).toHaveAttribute("data-dragging", "true");
+
+    fireEvent.pointerCancel(row, { pointerId: 1 });
+    vi.useRealTimers();
+
+    expect(row).not.toHaveAttribute("data-dragging", "true");
+    expect(actions.moveGroceryItem).not.toHaveBeenCalled();
+  });
+
+  // A second finger tapping the lifted row must not commit the drop: its
+  // clientY has nothing to do with where the dragging finger is aiming.
+  it("ignores a second finger lifting during the drag", () => {
+    vi.useFakeTimers();
+    renderList();
+    layOutSections();
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+    longPress(row);
+
+    fireEvent.pointerUp(row, {
+      clientX: 16,
+      clientY: midpointOf("Gebäck"),
+      pointerId: 2,
+    });
+    vi.useRealTimers();
+
+    expect(row).toHaveAttribute("data-dragging", "true");
+    expect(actions.moveGroceryItem).not.toHaveBeenCalled();
+  });
+
+  // iOS cancels unrelated touches routinely when it takes over a gesture;
+  // that must not silently drop the drag the user is still performing.
+  it("ignores a pointercancel for a different pointer", () => {
+    vi.useFakeTimers();
+    renderList();
+    layOutSections();
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+    longPress(row);
+
+    fireEvent.pointerCancel(row, { pointerId: 2 });
+    vi.useRealTimers();
+
+    expect(row).toHaveAttribute("data-dragging", "true");
+  });
+
+  // The drag origin is the point the row is positioned against, so drift
+  // during the hold has to move it too or the row snaps sideways on pickup.
+  it("does not jump sideways when the finger drifted during the hold", () => {
+    vi.useFakeTimers();
+    renderList();
+    layOutSections();
+
+    // The row is positioned inside a frame; paint synchronously so the
+    // transform is readable straight after the move.
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      callback(0);
+      return 0;
+    });
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+
+    fireEvent.pointerDown(row, {
+      button: 0,
+      clientX: 12,
+      clientY: 12,
+      pointerId: 1,
+    });
+    // Drift well past the slop radius, horizontally so the hold survives.
+    fireEvent.pointerMove(row, { clientX: 42, clientY: 14, pointerId: 1 });
+    act(() => vi.advanceTimersByTime(450));
+
+    expect(row).toHaveAttribute("data-dragging", "true");
+
+    // Holding still after the lift must leave the row where it was picked up.
+    fireEvent.pointerMove(row, { clientX: 42, clientY: 14, pointerId: 1 });
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+
+    expect(row.style.transform).toBe("translate3d(0px, 0px, 0)");
+  });
+
+  // setPointerCapture throws NotFoundError when the browser has already dropped
+  // the pointer. That surfaced as a runtime error overlay mid-drag.
+  it("survives the browser refusing pointer capture", () => {
+    vi.useFakeTimers();
+    renderList();
+    layOutSections();
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+    row.setPointerCapture = () => {
+      throw new DOMException("No active pointer", "NotFoundError");
+    };
+
+    expect(() => longPress(row)).not.toThrow();
+    expect(row).toHaveAttribute("data-dragging", "true");
+  });
+
+
+  // A drop that produces no click leaves the click-suppressing flag armed.
+  // It must not then swallow the next real tap on the row.
+  it("still opens the editor on the tap after a drop that had no click", () => {
+    vi.useFakeTimers();
+    renderList();
+    layOutSections();
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+    longPress(row);
+    // Dropped back on its own category: a no-op move, and no click follows.
+    fireEvent.pointerUp(row, {
+      clientX: 16,
+      clientY: midpointOf("Obst"),
+      pointerId: 1,
+    });
+    vi.useRealTimers();
+
+    fireEvent.pointerDown(row, {
+      button: 0,
+      clientX: 12,
+      clientY: 12,
+      pointerId: 1,
+    });
+    fireEvent.pointerUp(row, { clientX: 12, clientY: 12, pointerId: 1 });
+    fireEvent.click(screen.getByRole("button", { name: "Äpfel" }));
+
+    expect(screen.getByRole("textbox")).toHaveValue("Äpfel");
+  });
+
+  // iOS begins selecting text during the long press itself and shows its
+  // selection handles over the row, so selection has to be off before a drag
+  // exists to react to.
+  it("keeps a draggable row unselectable so iOS does not select its text", () => {
+    renderList();
+
+    const row = screen.getByRole("button", { name: "Äpfel" }).closest("li")!;
+
+    expect(row).toHaveAttribute("data-draggable", "true");
+    expect(row.className).toContain("select-none");
   });
 });
 

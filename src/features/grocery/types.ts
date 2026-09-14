@@ -2,7 +2,10 @@ export type ShoppingListItem = {
   id: string;
   name: string;
   isChecked: boolean;
-  categoryId: string | null;
+  // Never null on the way out: getShoppingListData falls back to a real
+  // category for items whose column is null or points at a deleted one, and
+  // every client-side path (drafts, quick add, move) carries a real id too.
+  categoryId: string;
 };
 
 export type ShoppingListCategory = {

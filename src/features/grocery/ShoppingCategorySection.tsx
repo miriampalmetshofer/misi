@@ -1,15 +1,19 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import { cn } from "cn";
 
 import { Button } from "@/components/ui/button";
 import {
+  CATEGORY_DROP_GLOW_STYLES,
   CATEGORY_HEADER_STYLES,
+  FALLBACK_CATEGORY_DROP_GLOW_STYLE,
   FALLBACK_CATEGORY_HEADER_STYLE,
   QUICK_ADD_GROCERY_ITEMS,
 } from "./categories";
 import type { OptimisticShoppingListCategory } from "./types";
 import { ShoppingItem } from "./ShoppingItem";
+import { useDropTarget } from "./drag/useDropTarget";
 
 type ShoppingCategorySectionProps = {
   category: OptimisticShoppingListCategory;
@@ -32,6 +36,8 @@ export function ShoppingCategorySection({
   onSaveDraft,
   onUpdateDraft,
 }: ShoppingCategorySectionProps) {
+  const isDropTarget = useDropTarget(category);
+
   const existingItemNames = new Set(
     category.items.map((item) => normalizeItemName(item.name)),
   );
@@ -45,11 +51,26 @@ export function ShoppingCategorySection({
 
   const headerStyle =
     CATEGORY_HEADER_STYLES[category.name] ?? FALLBACK_CATEGORY_HEADER_STYLE;
+  const dropGlowStyle =
+    CATEGORY_DROP_GLOW_STYLES[category.name] ??
+    FALLBACK_CATEGORY_DROP_GLOW_STYLE;
 
   return (
     <section
       aria-labelledby={`category-${category.id}`}
-      className="overflow-hidden rounded-xl border bg-card"
+      className={cn(
+        "overflow-hidden rounded-xl border bg-card",
+        "transition-[box-shadow,scale] duration-200",
+        // The target lights up in its own colour rather than filling with grey,
+        // which would read as disabled, and keeps its own background. Just the
+        // light: a centred blurred shadow, not one of the shadow-* presets,
+        // which are offset downwards and read as a drop shadow instead.
+        isDropTarget &&
+          "scale-[1.02] shadow-[0_0_22px_6px_var(--tw-shadow-color)]",
+        isDropTarget && dropGlowStyle,
+      )}
+      data-category-id={category.id}
+      data-drop-target={isDropTarget || undefined}
     >
       <div className={`flex items-center gap-3 px-3 py-2.5 ${headerStyle}`}>
         <span

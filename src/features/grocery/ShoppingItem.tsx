@@ -2,11 +2,13 @@
 
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
+import { cn } from "cn";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import type { OptimisticShoppingListItem } from "./types";
+import { useDraggableItem } from "./drag/useDraggableItem";
 
 type ShoppingItemRowProps = {
   item: OptimisticShoppingListItem;
@@ -28,6 +30,12 @@ export function ShoppingItem({
   const [isEditing, setIsEditing] = useState(item.isDraft ?? false);
   const [draft, setDraft] = useState(item.name);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isPersisted = !item.isDraft && !item.isSyncing;
+  const { dragProps, isDragging, isDimmed } = useDraggableItem({
+    canDrag: isPersisted && !isEditing,
+    itemId: item.id,
+    sourceCategoryId: item.categoryId,
+  });
 
   useEffect(() => {
     if (!isEditing || !inputRef.current) {
@@ -47,7 +55,7 @@ export function ShoppingItem({
         setIsEditing(false);
       }
 
-      onSaveDraft(item.id, nextName, item.categoryId ?? "");
+      onSaveDraft(item.id, nextName, item.categoryId);
       return;
     }
 
@@ -75,8 +83,25 @@ export function ShoppingItem({
 
   return (
     <li
-      className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-1 data-[syncing=true]:opacity-70"
+      className={cn(
+        "relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-1 data-[syncing=true]:opacity-70",
+        // Never transition transform: it would lag behind the per-frame
+        // position writes the drag controller makes.
+        "transition-[box-shadow,opacity,scale,background-color]",
+        // iOS starts selecting text during the long press itself, before the
+        // drag begins, and shows its selection handles over the row. Suppress
+        // it up front rather than once dragging: by then the selection exists.
+        // The name is a button, not prose, so nothing selectable is lost.
+        isPersisted && "touch-pan-y select-none [-webkit-touch-callout:none]",
+        // Elevation rather than a ring, so nothing is drawn through the
+        // checkbox at the start of the row.
+        isDragging && "z-20 scale-[1.02] rounded-xl bg-background shadow-lg",
+        isDimmed && "opacity-50",
+      )}
+      data-dragging={isDragging || undefined}
+      data-draggable={isPersisted || undefined}
       data-syncing={item.isSyncing}
+      {...dragProps}
     >
       <Checkbox
         aria-label={`${item.name || "Artikel"} erledigt markieren`}
@@ -128,25 +153,29 @@ export function ShoppingItem({
         </Button>
       )}
 
-      {/* Always render the delete button so its grid column keeps a constant
-          width and height; hide it when not editing to avoid a layout shift
-          (the row was reflowing as this column appeared/disappeared). */}
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={`${item.name || "Artikel"} löschen`}
-        aria-hidden={!isEditing}
-        tabIndex={isEditing ? undefined : -1}
-        className="rounded-full text-muted-foreground data-[hidden=true]:pointer-events-none data-[hidden=true]:invisible"
+      {/* Always render the trailing controls so their grid column keeps a
+          constant width and height; hide them when not editing to avoid a
+          layout shift (the row was reflowing as this column appeared). */}
+      <div
+        className="flex items-center gap-1 data-[hidden=true]:pointer-events-none data-[hidden=true]:invisible"
         data-hidden={!isEditing}
-        disabled={item.isSyncing}
-        // Keep the input focused on mousedown: blurring it would run save(),
-        // leave edit mode and hide this button before the click could land.
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={() => onDelete(item.id)}
       >
-        <Trash2 aria-hidden="true" />
-      </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={`${item.name || "Artikel"} löschen`}
+          aria-hidden={!isEditing}
+          tabIndex={isEditing ? undefined : -1}
+          className="rounded-full text-muted-foreground"
+          disabled={item.isSyncing}
+          // Keep the input focused on mousedown: blurring it would run save(),
+          // leave edit mode and hide this button before the click could land.
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => onDelete(item.id)}
+        >
+          <Trash2 aria-hidden="true" />
+        </Button>
+      </div>
     </li>
   );
 }

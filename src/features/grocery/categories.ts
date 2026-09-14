@@ -31,3 +31,21 @@ export const CATEGORY_HEADER_STYLES: Record<string, string> = {
 };
 
 export const FALLBACK_CATEGORY_HEADER_STYLE = "bg-muted/60";
+
+/**
+ * Halo shown on the category a dragged item would land in. It picks up the same
+ * hue as the header tint, at a weight that still reads on the paler ones, so the
+ * drop target announces itself without the card being greyed out.
+ */
+export const CATEGORY_DROP_GLOW_STYLES: Record<string, string> = {
+  Obst: "shadow-rose-500/45",
+  Gemüse: "shadow-green-600/45",
+  Gebäck: "shadow-amber-500/45",
+  Haushalt: "shadow-blue-500/45",
+  "Mehl, Nudeln, Trockenwaren": "shadow-orange-500/45",
+  Kühlregal: "shadow-cyan-600/45",
+  Gefrorenes: "shadow-indigo-500/45",
+};
+
+export const FALLBACK_CATEGORY_DROP_GLOW_STYLE =
+  "shadow-foreground/40";
