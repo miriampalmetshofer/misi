@@ -63,6 +63,18 @@ function history() {
   return within(screen.getByRole("region", { name: "Verlauf" }));
 }
 
+/**
+ * The "Löschen" inside the confirmation dialog.
+ *
+ * Scoped to the dialog because every history row also has a "… löschen"
+ * button, which is the one that opened it.
+ */
+function confirmDeleteButton() {
+  return within(screen.getByRole("alertdialog")).getByRole("button", {
+    name: "Löschen",
+  });
+}
+
 /** The fields one `mutate` call sent, as a plain object. */
 function sentFields(mock: ReturnType<typeof vi.fn>) {
   const formData = mock.mock.calls[0][0] as FormData;
@@ -187,6 +199,7 @@ describe("FuelSplit persistence", () => {
         name: "Tankfüllung vom 04.11.2025 löschen",
       }),
     );
+    await user.click(confirmDeleteButton());
 
     expect(sentFields(actions.deleteFuelFillUp)).toMatchObject({
       id: entry.id,
@@ -203,11 +216,101 @@ describe("FuelSplit persistence", () => {
     await user.click(
       screen.getByRole("button", { name: /Tankfüllung vom .* löschen/ }),
     );
+    await user.click(confirmDeleteButton());
 
     // The row has no database id yet, so its deletion is purely local —
     // sending the "pending-" id on would fail the uuid cast.
     expect(actions.deleteFuelFillUp).not.toHaveBeenCalled();
     expect(history().queryByText("102,00 €")).not.toBeInTheDocument();
+  });
+});
+
+describe("history pagination", () => {
+  /** `count` fill-ups, newest first, each with its own date and amount. */
+  function manyFillUps(count: number): FuelFillUpEntry[] {
+    return Array.from({ length: count }, (_, index) => ({
+      ...entry,
+      id: `id-${index}`,
+      // Counts down from the 28th so the first row is the newest, the order
+      // the query returns.
+      filledOn: `2026-01-${String(28 - index).padStart(2, "0")}`,
+      paidAmount: 100 + index,
+    }));
+  }
+
+  it("shows only the first page and pages on to the rest", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit fillUps={manyFillUps(24)} />);
+
+    expect(history().getByText("100,00 €")).toBeInTheDocument();
+    expect(history().queryByText("110,00 €")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Seite 2" }));
+
+    expect(history().getByText("110,00 €")).toBeInTheDocument();
+    expect(history().queryByText("100,00 €")).not.toBeInTheDocument();
+  });
+
+  it("leaves the control off while everything fits on one page", () => {
+    render(<FuelSplit fillUps={manyFillUps(10)} />);
+
+    expect(
+      screen.queryByRole("button", { name: "Seite 2" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("falls back a page when the last row on it is deleted", async () => {
+    const user = userEvent.setup();
+    // Eleven rows: page 2 holds exactly one, so deleting it empties the page.
+    render(<FuelSplit fillUps={manyFillUps(11)} />);
+
+    await user.click(screen.getByRole("button", { name: "Seite 2" }));
+    await user.click(
+      history().getByRole("button", { name: /Tankfüllung vom .* löschen/ }),
+    );
+    await user.click(confirmDeleteButton());
+
+    // Back on page 1, rather than looking at an empty page 2.
+    expect(history().getByText("100,00 €")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Seite 2" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("delete confirmation", () => {
+  it("keeps the fill-up when the dialog is cancelled", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit fillUps={[entry]} />);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Tankfüllung vom 04.11.2025 löschen",
+      }),
+    );
+    await user.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", {
+        name: "Abbrechen",
+      }),
+    );
+
+    expect(actions.deleteFuelFillUp).not.toHaveBeenCalled();
+    expect(history().getByText("102,00 €")).toBeInTheDocument();
+  });
+
+  it("names the fill-up it is about to delete", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit fillUps={[entry]} />);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Tankfüllung vom 04.11.2025 löschen",
+      }),
+    );
+
+    const dialog = within(screen.getByRole("alertdialog"));
+    expect(dialog.getByText(/04\.11\.2025/)).toBeInTheDocument();
+    expect(dialog.getByText(/102,00/)).toBeInTheDocument();
   });
 });
 

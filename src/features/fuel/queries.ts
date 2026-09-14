@@ -6,8 +6,16 @@ import { getDb, schema } from "@/db";
 import { isOffsetMode } from "./calculate";
 import type { FuelFillUpEntry } from "./types";
 
-/** How many past fill-ups the page shows. Enough to cover a long while. */
-const HISTORY_LIMIT = 50;
+/**
+ * How many past fill-ups the page loads.
+ *
+ * The history pages client-side, over the rows already in memory, so that
+ * optimistic adds and deletes keep working — a new fill-up has a list to be
+ * prepended to rather than a server page it may not belong on. That makes this
+ * the real end of the history, so it is generous: at roughly one fill-up a
+ * fortnight, 500 rows is about twenty years.
+ */
+const HISTORY_LIMIT = 500;
 
 export async function getFuelFillUps(): Promise<FuelFillUpEntry[]> {
   const rows = await getDb()
