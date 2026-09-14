@@ -341,6 +341,32 @@ describe("history details", () => {
     expect(details.getByText("Proportional")).toBeInTheDocument();
   });
 
+  it("does not repeat the amount already on the row", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit fillUps={[entry]} />);
+
+    await user.click(summaryToggle());
+
+    // The open row still shows "102,00 €" as its title, so a "Bezahlt" line
+    // underneath would be the same figure twice in one card.
+    expect(history().getAllByText("102,00 €")).toHaveLength(1);
+    expect(history().queryByText("Bezahlt")).not.toBeInTheDocument();
+  });
+
+  it("expands when the arrow itself is tapped", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<FuelSplit fillUps={[entry]} />);
+
+    // The arrow advertises the row as expandable, so it has to be inside the
+    // toggle rather than beside it — tapping it must not land on dead space.
+    const chevron = container.querySelector("svg.lucide-chevron-down");
+    expect(summaryToggle()).toContainElement(chevron as HTMLElement);
+
+    await user.click(chevron as Element);
+
+    expect(history().getByText("256,4 km")).toBeInTheDocument();
+  });
+
   it("closes the row again on a second tap", async () => {
     const user = userEvent.setup();
     render(<FuelSplit fillUps={[entry]} />);
@@ -362,22 +388,33 @@ describe("history details", () => {
     expect(history().getByText("50/50")).toBeInTheDocument();
   });
 
-  it("leaves off shares that would not match the kilometres beside them", async () => {
+  it("shows shares of the car's distance, which sum to the whole trip", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit fillUps={[entry]} />);
+
+    await user.click(summaryToggle());
+
+    // 256,4 + 352,2 + 273,8 + 170,0 = 1052,4, the car's own reading, so these
+    // four add up to 100 % and each one is a share of the km beside it.
+    expect(history().getByText("24,4 %")).toBeInTheDocument();
+    expect(history().getByText("33,5 %")).toBeInTheDocument();
+    expect(history().getByText("26,0 %")).toBeInTheDocument();
+    expect(history().getByText("16,2 %")).toBeInTheDocument();
+  });
+
+  it("keeps the shares matching their kilometres in 50/50 mode too", async () => {
     const user = userEvent.setup();
     render(<FuelSplit fillUps={[{ ...entry, offsetMode: "shared" }]} />);
 
     await user.click(summaryToggle());
 
-    // 50/50 folds the unrecorded kilometres into the shared share, so a "31,0
-    // %" next to "273,8 km" would be a percentage of a bigger distance than
-    // the number it sits beside. Better no share than a wrong one.
+    // The mode decides who pays for the unrecorded kilometres, not how far
+    // anyone drove, so the distances are read the same way in both modes.
+    // 273,8 of 1052,4 is 26,0 % — never the 31,0 % the calculator's own shared
+    // share reports, which silently includes the 170 km nobody recorded.
     expect(history().getByText("273,8 km")).toBeInTheDocument();
+    expect(history().getByText("26,0 %")).toBeInTheDocument();
     expect(history().queryByText("31,0 %")).not.toBeInTheDocument();
-    expect(history().queryByText("29,1 %")).not.toBeInTheDocument();
-    expect(history().queryByText("39,9 %")).not.toBeInTheDocument();
-    // "Nicht erfasst" keeps its share: it is measured against the car reading,
-    // which is exactly the distance it is a part of.
-    expect(history().getByText("16,2 %")).toBeInTheDocument();
   });
 
   it("opens one row without opening its neighbours", async () => {

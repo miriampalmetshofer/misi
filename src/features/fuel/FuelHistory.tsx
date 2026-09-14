@@ -9,9 +9,7 @@ import {
   Item,
   ItemActions,
   ItemContent,
-  ItemDescription,
   ItemGroup,
-  ItemTitle,
 } from "@/components/ui/item";
 import { DeleteFillUpDialog } from "./DeleteFillUpDialog";
 import { FillUpDetails } from "./FillUpDetails";
@@ -98,37 +96,46 @@ export function FuelHistory({
                   render={<li />}
                 >
                   <ItemContent>
-                    {/* The summary itself is the toggle, so the whole row body
-                        is the tap target. It stays a sibling of the delete
-                        button rather than wrapping it: a button inside a button
-                        is invalid and would swallow the inner click. */}
+                    {/* The chevron lives inside the toggle, not beside it: an
+                        arrow that says "tap me" has to be part of the target.
+                        The button stretches across the row so the gap between
+                        the text and the arrow is clickable too. It stays a
+                        sibling of the delete button rather than wrapping it —
+                        a button inside a button is invalid and would swallow
+                        the inner click. */}
                     <button
                       aria-controls={detailsId}
                       aria-expanded={isExpanded}
-                      className="flex flex-col gap-1 text-left"
+                      className="flex w-full items-center gap-3 text-left"
                       onClick={() => toggleExpanded(entry.id)}
                       type="button"
                     >
-                      <ItemDescription className="tabular-nums">
-                        {date}
-                      </ItemDescription>
-                      <ItemTitle className="tabular-nums">
-                        {euro.format(entry.paidAmount)}
-                      </ItemTitle>
-                      <ItemDescription className="tabular-nums">
-                        Miriam {euro.format(entry.miriamAmount)} · Simon{" "}
-                        {euro.format(entry.simonAmount)}
-                      </ItemDescription>
+                      {/* Spans rather than ItemDescription/ItemTitle, which
+                          render <p> and <div>: neither is allowed inside a
+                          <button>. The muted styling is repeated here instead. */}
+                      <span className="flex flex-1 flex-col gap-1">
+                        <span className="text-sm leading-normal text-muted-foreground tabular-nums">
+                          {date}
+                        </span>
+                        <span className="text-sm leading-snug font-medium tabular-nums">
+                          {euro.format(entry.paidAmount)}
+                        </span>
+                        <span className="text-sm leading-normal text-muted-foreground tabular-nums">
+                          Miriam {euro.format(entry.miriamAmount)} · Simon{" "}
+                          {euro.format(entry.simonAmount)}
+                        </span>
+                      </span>
+
+                      <ChevronDown
+                        aria-hidden="true"
+                        className={`size-4 shrink-0 text-muted-foreground transition-transform ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
+                      />
                     </button>
                   </ItemContent>
 
                   <ItemActions>
-                    <ChevronDown
-                      aria-hidden="true"
-                      className={`size-4 text-muted-foreground transition-transform ${
-                        isExpanded ? "rotate-180" : ""
-                      }`}
-                    />
                     <Button
                       aria-label={`Tankfüllung vom ${date} löschen`}
                       onClick={() => setSelected(entry)}

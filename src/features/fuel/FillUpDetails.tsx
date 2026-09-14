@@ -1,5 +1,5 @@
 import { calculateFuelSplit } from "./calculate";
-import { euro, km, percent } from "./format";
+import { km, percent } from "./format";
 import type { FuelFillUpEntry } from "./types";
 
 const MODE_LABELS = {
@@ -17,38 +17,46 @@ const MODE_LABELS = {
  */
 export function FillUpDetails({ entry }: { entry: FuelFillUpEntry }) {
   const result = calculateFuelSplit(entry, entry.offsetMode);
-  // In 50/50 mode the unrecorded kilometres are folded into the shared share,
-  // so the percentage would describe a larger distance than the number next to
-  // it — "300,0 km 64,3 %" of 560. The two rows below already say where those
-  // kilometres went, so the shares are left off rather than shown mismatched.
-  const showShares = entry.offsetMode === "proportional";
+
+  /**
+   * Each row's share of the car's own distance.
+   *
+   * Measured against `carKm` rather than through the calculator's distance
+   * shares, because those follow the mode: in 50/50 the unrecorded kilometres
+   * are folded into the shared share, which would print "300,0 km 53,6 %" as
+   * "300,0 km 64,3 %" — a percentage of a distance other than the number
+   * beside it. Against the car reading every row describes its own kilometres,
+   * and the four of them add up to the whole trip in either mode.
+   *
+   * These are shares of the distance, not of the bill: nobody pays 24,4 %.
+   * What each person owes is on the row above, in euros.
+   */
+  const share = (value: number) =>
+    entry.carKm > 0 ? value / entry.carKm : undefined;
 
   return (
     <dl className="flex basis-full flex-col gap-1.5 border-t pt-3 text-sm">
       <Row
         label="Miriam"
         value={km.format(entry.miriamKm)}
-        share={showShares ? result.miriamDistanceShare : undefined}
+        share={share(entry.miriamKm)}
       />
       <Row
         label="Simon"
         value={km.format(entry.simonKm)}
-        share={showShares ? result.simonDistanceShare : undefined}
+        share={share(entry.simonKm)}
       />
       <Row
         label="Gemeinsam"
         value={km.format(entry.sharedKm)}
-        share={showShares ? result.sharedDistanceShare : undefined}
+        share={share(entry.sharedKm)}
       />
       <Row label="Auto" value={km.format(entry.carKm)} />
       <Row
         label="Nicht erfasst"
         value={km.format(result.distanceOffset)}
-        // Relative to the car reading, so without one there is no percentage
-        // to show — only a misleading "0,0 %".
-        share={entry.carKm > 0 ? result.distanceOffsetShare : undefined}
+        share={share(result.distanceOffset)}
       />
-      <Row label="Bezahlt" unit="" value={euro.format(entry.paidAmount)} />
       <Row label="Verteilt" unit="" value={MODE_LABELS[entry.offsetMode]} />
     </dl>
   );
