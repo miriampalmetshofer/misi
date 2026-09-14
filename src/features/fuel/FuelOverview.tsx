@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { defaultRange, DEFAULT_RANGE_MONTHS } from "./dateRange";
+import { defaultRange } from "./dateRange";
+import { DateRangePicker } from "./DateRangePicker";
 import { euro, formatFillUpDate, km, percent } from "./format";
 import { filterByRange, summarizeFillUps } from "./summarize";
 import type { FuelFillUpEntry } from "./types";
@@ -25,13 +24,11 @@ export function FuelOverview({ fillUps }: FuelOverviewProps) {
   // clock, the same way the calculator's date field is.
   const [range, setRange] = useState(defaultRange);
 
-  const isReversed = range.from > range.to;
-
+  // The picker only reports complete ranges and orders the two ends itself, so
+  // unlike a pair of free-text date fields this can never be back to front.
   const summary = useMemo(
-    // A reversed range matches nothing, and summing it would show a confident
-    // set of zeroes. The panel says what is wrong instead, so this is skipped.
-    () => (isReversed ? null : summarizeFillUps(filterByRange(fillUps, range))),
-    [fillUps, range, isReversed],
+    () => summarizeFillUps(filterByRange(fillUps, range)),
+    [fillUps, range],
   );
 
   return (
@@ -41,47 +38,10 @@ export function FuelOverview({ fillUps }: FuelOverviewProps) {
           Zeitraum
         </h2>
 
-        <label className="flex items-center justify-between gap-3">
-          <span>Von</span>
-          <Input
-            aria-invalid={isReversed}
-            className="w-40 tabular-nums"
-            type="date"
-            value={range.from}
-            onChange={(event) =>
-              setRange((current) => ({ ...current, from: event.target.value }))
-            }
-          />
-        </label>
-
-        <label className="flex items-center justify-between gap-3">
-          <span>Bis</span>
-          <Input
-            aria-invalid={isReversed}
-            className="w-40 tabular-nums"
-            type="date"
-            value={range.to}
-            onChange={(event) =>
-              setRange((current) => ({ ...current, to: event.target.value }))
-            }
-          />
-        </label>
-
-        <Button
-          className="self-start"
-          onClick={() => setRange(defaultRange())}
-          size="sm"
-          variant="outline"
-        >
-          Letzte {DEFAULT_RANGE_MONTHS} Monate
-        </Button>
+        <DateRangePicker value={range} onChange={setRange} />
       </section>
 
-      {isReversed ? (
-        <p className="text-body-muted">
-          Das Startdatum liegt nach dem Enddatum.
-        </p>
-      ) : summary === null || summary.fillUpCount === 0 ? (
+      {summary.fillUpCount === 0 ? (
         <p className="text-body-muted">
           In diesem Zeitraum gibt es keine Tankfüllungen.
         </p>
