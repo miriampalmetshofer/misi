@@ -73,6 +73,13 @@ test("a deleted fill-up stays gone after a reload", async ({ page }) => {
   await historyRow(page, amount)
     .getByRole("button", { name: /löschen/ })
     .click();
+
+  // Deleting a settled fill-up is confirmed first, so the row only goes once
+  // the dialog is accepted.
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Löschen" })
+    .click();
   await expect(historyRow(page, amount)).toHaveCount(0);
 
   await page.reload();
