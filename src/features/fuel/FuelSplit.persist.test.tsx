@@ -50,8 +50,8 @@ const entry: FuelFillUpEntry = {
 async function fillSheetExample(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("Miriam"), "256,4");
   await user.type(screen.getByLabelText("Simon"), "352,2");
-  await user.type(screen.getByLabelText("Beide"), "273,8");
-  await user.type(screen.getByLabelText("Gesamt"), "1052,4");
+  await user.type(screen.getByLabelText("Gemeinsam"), "273,8");
+  await user.type(screen.getByLabelText("Auto"), "1052,4");
   await user.type(screen.getByLabelText("Betrag"), "102");
 }
 
@@ -307,6 +307,106 @@ describe("history pagination", () => {
     expect(
       screen.queryByRole("button", { name: "Seite 2" }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("history details", () => {
+  /** The summary line of the one stored fill-up, which toggles its details. */
+  function summaryToggle() {
+    return history().getByRole("button", { expanded: false });
+  }
+
+  it("keeps the recorded readings out of the way until asked for", () => {
+    render(<FuelSplit fillUps={[entry]} />);
+
+    // The history is a list to scan, so a row shows what was settled and not
+    // the six numbers behind it.
+    expect(history().queryByText("256,4 km")).not.toBeInTheDocument();
+    expect(summaryToggle()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("shows every recorded reading when a row is opened", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit fillUps={[entry]} />);
+
+    await user.click(summaryToggle());
+
+    const details = history();
+    expect(details.getByText("256,4 km")).toBeInTheDocument();
+    expect(details.getByText("352,2 km")).toBeInTheDocument();
+    expect(details.getByText("273,8 km")).toBeInTheDocument();
+    expect(details.getByText("1.052,4 km")).toBeInTheDocument();
+    // 1052,4 - 882,4: the kilometres the device never saw.
+    expect(details.getByText("170,0 km")).toBeInTheDocument();
+    expect(details.getByText("Proportional")).toBeInTheDocument();
+  });
+
+  it("closes the row again on a second tap", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit fillUps={[entry]} />);
+
+    await user.click(summaryToggle());
+    await user.click(history().getByRole("button", { expanded: true }));
+
+    expect(history().queryByText("256,4 km")).not.toBeInTheDocument();
+  });
+
+  it("names the mode a 50/50 fill-up was settled under", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit fillUps={[{ ...entry, offsetMode: "shared" }]} />);
+
+    await user.click(summaryToggle());
+
+    // Which mode produced the stored amounts is the one thing the euro figures
+    // cannot be re-derived from, so the row has to say it.
+    expect(history().getByText("50/50")).toBeInTheDocument();
+  });
+
+  it("leaves off shares that would not match the kilometres beside them", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit fillUps={[{ ...entry, offsetMode: "shared" }]} />);
+
+    await user.click(summaryToggle());
+
+    // 50/50 folds the unrecorded kilometres into the shared share, so a "31,0
+    // %" next to "273,8 km" would be a percentage of a bigger distance than
+    // the number it sits beside. Better no share than a wrong one.
+    expect(history().getByText("273,8 km")).toBeInTheDocument();
+    expect(history().queryByText("31,0 %")).not.toBeInTheDocument();
+    expect(history().queryByText("29,1 %")).not.toBeInTheDocument();
+    expect(history().queryByText("39,9 %")).not.toBeInTheDocument();
+    // "Nicht erfasst" keeps its share: it is measured against the car reading,
+    // which is exactly the distance it is a part of.
+    expect(history().getByText("16,2 %")).toBeInTheDocument();
+  });
+
+  it("opens one row without opening its neighbours", async () => {
+    const user = userEvent.setup();
+    const other = { ...entry, id: "other", filledOn: "2025-10-02", carKm: 900 };
+    render(<FuelSplit fillUps={[entry, other]} />);
+
+    await user.click(
+      history().getAllByRole("button", { expanded: false })[0],
+    );
+
+    expect(history().getByText("1.052,4 km")).toBeInTheDocument();
+    expect(history().queryByText("900,0 km")).not.toBeInTheDocument();
+  });
+
+  it("leaves the delete button working while the row is open", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit fillUps={[entry]} />);
+
+    await user.click(summaryToggle());
+    // The toggle wraps the summary only, so this click must delete rather than
+    // collapse the row it sits in.
+    await user.click(
+      screen.getByRole("button", {
+        name: "Tankfüllung vom 04.11.2025 löschen",
+      }),
+    );
+
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
   });
 });
 
