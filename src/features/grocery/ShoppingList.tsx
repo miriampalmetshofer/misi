@@ -47,11 +47,11 @@ export function ShoppingList({
   categories: persistedCategories,
 }: ShoppingListProps) {
   const [drafts, setDrafts] = useState<Draft[]>([]);
-  const [categories, applyOptimistic] = useOptimistic(
+  const [categories, addOptimistic] = useOptimistic(
     persistedCategories,
     reduce,
   );
-  const { mutate } = useOptimisticMutation(applyOptimistic);
+  const { mutate } = useOptimisticMutation(addOptimistic);
   const undo = useUndo<{ item: ShoppingListItem; index: number }>();
 
   function createDraftItem(categoryId: string) {
