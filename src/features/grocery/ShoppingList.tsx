@@ -201,7 +201,6 @@ export function ShoppingList({
   );
 }
 
-/** The item with that id, plus the position it holds in its category. */
 function findItem(
   categories: OptimisticShoppingListCategory[],
   itemId: string,
