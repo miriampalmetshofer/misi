@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import type { OptimisticShoppingListItem } from "./types";
-import { useDrag } from "./drag/DragContext";
 import { useDraggableItem } from "./drag/useDraggableItem";
 
 type ShoppingItemRowProps = {
@@ -31,10 +30,9 @@ export function ShoppingItem({
   const [isEditing, setIsEditing] = useState(item.isDraft ?? false);
   const [draft, setDraft] = useState(item.name);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { draggedItemId } = useDrag();
   const isPersisted = !item.isDraft && !item.isSyncing;
-  const { dragProps, isDragging } = useDraggableItem({
-    canDrag: isPersisted && !isEditing && draggedItemId === null,
+  const { dragProps, isDragging, isDimmed } = useDraggableItem({
+    canDrag: isPersisted && !isEditing,
     itemId: item.id,
     sourceCategoryId: item.categoryId,
   });
@@ -98,8 +96,7 @@ export function ShoppingItem({
         // Elevation rather than a ring, so nothing is drawn through the
         // checkbox at the start of the row.
         isDragging && "z-20 scale-[1.02] rounded-xl bg-background shadow-lg",
-        // Everything else recedes so the lifted row reads as the thing in hand.
-        draggedItemId !== null && !isDragging && "opacity-50",
+        isDimmed && "opacity-50",
       )}
       data-dragging={isDragging || undefined}
       data-draggable={isPersisted || undefined}

@@ -39,6 +39,10 @@ export function useDraggableItem({
   // rather than state: nothing about the row renders differently for it.
   const suppressClickRef = useRef(false);
   const isDragging = draggedItemId === itemId;
+  // Everything that is not the lifted row recedes, so it reads as the thing in
+  // hand.
+  const isDimmed = draggedItemId !== null && !isDragging;
+  const canStartDrag = canDrag && draggedItemId === null;
 
   const clearPress = useCallback(() => {
     if (pressRef.current) {
@@ -74,7 +78,7 @@ export function useDraggableItem({
     // than trusting the click to arrive and clear the flag.
     suppressClickRef.current = false;
 
-    if (!canDrag || event.button !== 0) {
+    if (!canStartDrag || event.button !== 0) {
       return;
     }
 
@@ -207,6 +211,7 @@ export function useDraggableItem({
 
   return {
     isDragging,
+    isDimmed,
     dragProps: {
       onClickCapture: handleClickCapture,
       onPointerCancel: handlePointerCancel,

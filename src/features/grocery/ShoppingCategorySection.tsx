@@ -13,7 +13,7 @@ import {
 } from "./categories";
 import type { OptimisticShoppingListCategory } from "./types";
 import { ShoppingItem } from "./ShoppingItem";
-import { useDrag } from "./drag/DragContext";
+import { useDropTarget } from "./drag/useDropTarget";
 
 type ShoppingCategorySectionProps = {
   category: OptimisticShoppingListCategory;
@@ -36,13 +36,7 @@ export function ShoppingCategorySection({
   onSaveDraft,
   onUpdateDraft,
 }: ShoppingCategorySectionProps) {
-  const { draggedItemId, dropCategoryId } = useDrag();
-  // Highlighting the category the item already sits in would tell the user a
-  // drop there does something; it does not.
-  const isDropTarget =
-    draggedItemId !== null &&
-    dropCategoryId === category.id &&
-    !category.items.some((item) => item.id === draggedItemId);
+  const isDropTarget = useDropTarget(category);
 
   const existingItemNames = new Set(
     category.items.map((item) => normalizeItemName(item.name)),
