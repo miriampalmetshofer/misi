@@ -10,28 +10,10 @@ const MODE_LABELS = {
 /**
  * The readings a fill-up was calculated from, under the row that summarises it.
  *
- * The shares are recomputed rather than stored: they are a view of the same
- * numbers the euro amounts came from, and storing them would be a second copy
- * to keep in step. The amounts themselves stay as they were saved — those are
- * what was actually settled between the two of them.
  */
 export function FillUpDetails({ entry }: { entry: FuelFillUpEntry }) {
   const result = calculateFuelSplit(entry, entry.offsetMode);
 
-  /**
-   * Each row's share of the car's own distance.
-   *
-   * Measured against `carKm` rather than through the calculator's distance
-   * shares, because those follow the mode: in 50/50 the unrecorded kilometres
-   * are folded into the shared share, which would print "300,0 km 53,6 %" as
-   * "300,0 km 64,3 %" — a percentage of a distance other than the number
-   * beside it. Against the car reading every row describes its own kilometres,
-   * and the four of them add up to the whole trip in either mode.
-   *
-   * These are shares of the distance, not of the bill: nobody pays 24,4 %.
-   * What each person owes is on the row above, in euros.
-   */
-  // `addFuelFillUp` refuses a `carKm` of 0, so there is nothing to guard.
   const share = (value: number) => value / entry.carKm;
 
   return (
@@ -56,8 +38,6 @@ export function FillUpDetails({ entry }: { entry: FuelFillUpEntry }) {
         value={km.format(result.distanceOffset)}
         share={share(result.distanceOffset)}
       />
-      {/* Last of the distances, because the four rows above are its parts:
-          they add up to exactly this number, and to 100 %. */}
       <Row label="Auto" value={km.format(entry.carKm)} />
       <Row label="Verteilt" unit="" value={MODE_LABELS[entry.offsetMode]} />
     </dl>

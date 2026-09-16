@@ -17,9 +17,6 @@ type FillUpRowProps = {
 /**
  * One fill-up in the history, expandable to show the readings behind it.
  *
- * Whether a row is open is its own business — no other row and nothing above
- * reads it, so it stays here. Deleting is the opposite: the dialog is shared by
- * the whole list, so the row only reports the click upwards.
  */
 export function FillUpRow({ entry, onDelete }: FillUpRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -34,15 +31,7 @@ export function FillUpRow({ entry, onDelete }: FillUpRowProps) {
       render={<li />}
     >
       <ItemContent>
-        {/* The chevron lives inside the toggle, not beside it: an arrow that
-            says "tap me" has to be part of the target. The button stretches
-            across the row so the gap between the text and the arrow is
-            clickable too. It stays a sibling of the delete button rather than
-            wrapping it — a button inside a button is invalid and would swallow
-            the inner click. */}
         <button
-          // Only while open: the details are unmounted when shut, and pointing
-          // at an element that is not there is worse than not pointing.
           aria-controls={isExpanded ? detailsId : undefined}
           aria-expanded={isExpanded}
           className="flex w-full items-center gap-3 text-left"

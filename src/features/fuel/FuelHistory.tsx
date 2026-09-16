@@ -27,9 +27,7 @@ export function FuelHistory({
   // is about, and needs those details for as long as it is open.
   const [selected, setSelected] = useState<FuelFillUpEntry | null>(null);
   // The dialog closes when the deleted fill-up leaves `entries`, i.e. once the
-  // server has confirmed it. Derived rather than cleared on click, so the
-  // confirmation stays on screen — saying "Wird gelöscht …" — for as long as
-  // the delete is actually running.
+  // server has confirmed it saying "Wird gelöscht …" 
   const pendingDelete =
     selected && entries.some((entry) => entry.id === selected.id)
       ? selected
