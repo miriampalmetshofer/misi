@@ -144,9 +144,9 @@ first time, who wants to know why it is like this — not for a reviewer watchin
 you change it.
 
 - Most code needs no comment. Ask whether this one earns its line before writing it.
-- Comment the why, never the what. If the code is hard to follow, fix the code.
-- Keep it to a line or two. A comment longer than the code it explains is a sign the explanation belongs in a doc comment or nowhere.
-- Write about the state the code is in, not the history of how it got there. No "previously", no "now we also", no narration of the change you just made — the diff and the commit message already cover that.
+- Comment the why, not the what. If the code is hard to follow, fix the code.
+- Keep it to a line or two. A comment longer than the code it explains is a sign the explanation belongs in a doc comment.
+- Write about the state the code is in, not the history of how it got there. No "previously", no "now we also", no narration of the change you just made.
 - Do not restate a rule that the code enforces one line below.
 
 ### 5. Maintain Scope Discipline
