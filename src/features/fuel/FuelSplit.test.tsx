@@ -7,8 +7,8 @@ import { FuelSplit } from "./FuelSplit";
 async function fillSheetExample(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("Miriam"), "256,4");
   await user.type(screen.getByLabelText("Simon"), "352,2");
-  await user.type(screen.getByLabelText("Beide"), "273,8");
-  await user.type(screen.getByLabelText("Gesamt"), "1052,4");
+  await user.type(screen.getByLabelText("Gemeinsam"), "273,8");
+  await user.type(screen.getByLabelText("Auto"), "1052,4");
   await user.type(screen.getByLabelText("Betrag"), "102");
 }
 
@@ -36,7 +36,7 @@ describe("FuelSplit", () => {
     render(<FuelSplit />);
 
     expect(
-      screen.getByText(/Kilometer eintragen/),
+      screen.getByText(/Kilometer und Tachostand eintragen/),
     ).toBeInTheDocument();
   });
 
@@ -71,8 +71,8 @@ describe("FuelSplit", () => {
     // which next to 58,02 € and 61,98 € read as though the split were broken.
     await user.type(screen.getByLabelText("Miriam"), "15");
     await user.type(screen.getByLabelText("Simon"), "55");
-    await user.type(screen.getByLabelText("Beide"), "1150");
-    await user.type(screen.getByLabelText("Gesamt"), "1220");
+    await user.type(screen.getByLabelText("Gemeinsam"), "1150");
+    await user.type(screen.getByLabelText("Auto"), "1220");
     await user.type(screen.getByLabelText("Betrag"), "120");
 
     expect(result().getByText("48,4 %")).toBeInTheDocument();
@@ -97,6 +97,7 @@ describe("FuelSplit", () => {
     const miriam = screen.getByLabelText("Miriam");
     await user.type(miriam, "100.5");
     await user.type(screen.getByLabelText("Simon"), "100.5");
+    await user.type(screen.getByLabelText("Auto"), "201");
     await user.type(screen.getByLabelText("Betrag"), "50");
 
     // Phone keypads offer whichever separator they like, so a dot has to work.
@@ -140,8 +141,8 @@ describe("FuelSplit", () => {
 
     await user.type(screen.getByLabelText("Miriam"), "1.256,4");
     await user.type(screen.getByLabelText("Simon"), "352,2");
-    await user.type(screen.getByLabelText("Beide"), "273,8");
-    await user.type(screen.getByLabelText("Gesamt"), "1052,4");
+    await user.type(screen.getByLabelText("Gemeinsam"), "273,8");
+    await user.type(screen.getByLabelText("Auto"), "1052,4");
 
     // Counting the unreadable field as 0 would report a confident "626,0 km",
     // which reads as settled rather than as missing input.
@@ -185,38 +186,35 @@ describe("FuelSplit", () => {
     expect(result().queryByText("0,00 €")).not.toBeInTheDocument();
   });
 
-  it("still splits when the device counted more than the car", async () => {
+  it("refuses a tacho stand below the recorded kilometres", async () => {
     const user = userEvent.setup();
     render(<FuelSplit />);
 
     await user.type(screen.getByLabelText("Miriam"), "100");
     await user.type(screen.getByLabelText("Simon"), "100");
-    await user.type(screen.getByLabelText("Beide"), "100");
-    await user.type(screen.getByLabelText("Gesamt"), "150");
+    await user.type(screen.getByLabelText("Gemeinsam"), "100");
+    await user.type(screen.getByLabelText("Auto"), "150");
     await user.type(screen.getByLabelText("Betrag"), "90");
 
-    expect(screen.getByText("-150,0 km (-100,0 %)")).toBeInTheDocument();
-    expect(result().getAllByText("45,00 €")).toHaveLength(2);
+    expect(screen.getByText(/Tachostand prüfen/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Auto")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(result().queryByText("45,00 €")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Speichern" })).toBeDisabled();
   });
 
-  it("keeps impossible negative shared kilometres out of 50/50 mode", async () => {
+  it("refuses to split without a tacho stand", async () => {
     const user = userEvent.setup();
     render(<FuelSplit />);
 
     await user.type(screen.getByLabelText("Miriam"), "100");
     await user.type(screen.getByLabelText("Simon"), "100");
-    await user.type(screen.getByLabelText("Beide"), "100");
-    await user.type(screen.getByLabelText("Gesamt"), "150");
     await user.type(screen.getByLabelText("Betrag"), "90");
 
-    expect(result().getAllByText("45,00 €")).toHaveLength(2);
-
-    await user.click(
-      screen.getByRole("checkbox", { name: "50/50-Modus verwenden" }),
-    );
-
-    expect(screen.getByText(/50\/50 passt/)).toBeInTheDocument();
     expect(result().queryByText("45,00 €")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Speichern" })).toBeDisabled();
   });
 
   it("offers 50/50 as an explicit optional mode", async () => {
@@ -228,7 +226,7 @@ describe("FuelSplit", () => {
 
     expect(toggle).not.toBeChecked();
     expect(screen.getByText(/Standard: proportional/)).toBeInTheDocument();
-    expect(screen.getByText(/komplett zu „Beide“/)).toBeInTheDocument();
+    expect(screen.getByText(/komplett zu „Gemeinsam“/)).toBeInTheDocument();
 
     await user.click(toggle);
 

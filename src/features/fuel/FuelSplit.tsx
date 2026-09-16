@@ -18,14 +18,6 @@ type FuelSplitProps = {
   fillUps?: FuelFillUpEntry[];
 };
 
-/**
- * Writes wait for the server, unlike the shopping list's.
- *
- * A fill-up is entered once at the pump and considered, not rattled off in a
- * burst, so the round-trip costs nothing worth optimising away — and in return
- * the history only ever shows rows the database really has. Both writes show
- * their progress instead: the save on its button, the delete in its dialog.
- */
 export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
   const form = useFuelSplitForm();
   const [isSaving, startSaving] = useTransition();
@@ -85,7 +77,7 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
 
           <section aria-labelledby="geraet" className="flex flex-col gap-3">
             <h2 className="section-label" id="geraet">
-              Laut Gerät
+              Gerät
             </h2>
 
             {FIELDS.map((field) => (
@@ -101,7 +93,7 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
             ))}
 
             <Summary
-              label="Summe Gerät"
+              label="Summe"
               value={
                 form.hasInvalidDeviceKm
                   ? "—"
@@ -112,26 +104,29 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
 
           <section aria-labelledby="auto" className="flex flex-col gap-3">
             <h2 className="section-label" id="auto">
-              Laut Auto
+              Tachostand
             </h2>
 
             <NumberField
-              label="Gesamt"
+              label="Auto"
               name="kmAuto"
               unit="km"
               value={form.form.kmAuto}
-              isInvalid={form.invalidFields.includes("kmAuto")}
+              // Readable but impossible counts as invalid here too, so the mark
+              // sits on the field that needs correcting.
+              isInvalid={
+                form.invalidFields.includes("kmAuto") || form.hasImpossibleCarKm
+              }
               onChange={form.update}
             />
 
             <Summary
-              label="Differenz"
+              label="Nicht erfasst"
               value={
-                form.hasInvalidDistance
+                form.hasInvalidDistance || form.hasImpossibleCarKm
                   ? "—"
                   : `${km.format(form.result.distanceOffset)} km${
-                      // The share is relative to the car reading, so without
-                      // one there is no percentage to show — only a "0,0 %".
+                      // No car reading yet, so no percentage — only a "0,0 %".
                       form.input.carKm > 0
                         ? ` (${percent.format(form.result.distanceOffsetShare)})`
                         : ""
@@ -157,7 +152,7 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
 
           <section aria-labelledby="modus" className="flex flex-col gap-3">
             <h2 className="section-label" id="modus">
-              Differenz verteilen
+              Nicht erfasste Kilometer verteilen
             </h2>
 
             <label className="flex cursor-pointer items-center gap-3">
@@ -170,8 +165,8 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
             </label>
 
             <p className="text-sm leading-snug text-muted-foreground">
-              Standard: proportional nach Geräte-Kilometern. Im 50/50-Modus wird
-              die Differenz zwischen Auto und Gerät komplett zu „Beide“
+              Standard: proportional nach Geräte-Kilometern. Im 50/50-Modus
+              werden die nicht erfassten Kilometer komplett zu „Gemeinsam“
               gerechnet und halbiert.
             </p>
           </section>
@@ -204,11 +199,9 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
               <p className="text-body-muted mt-4">
                 {form.invalidFields.length > 0
                   ? "Bitte nur Zahlen eintragen, dann erscheint hier die Aufteilung."
-                  : form.hasImpossibleFiftyFifty
-                    ? "Die Differenz ist größer als die gemeinsamen Kilometer. 50/50 passt hier nicht; proportional funktioniert weiterhin."
-                    : form.mode === "shared"
-                      ? "Kilometer und Tachostand eintragen, dann erscheint hier die Aufteilung."
-                      : "Kilometer eintragen, dann erscheint hier die Aufteilung."}
+                  : form.hasImpossibleCarKm
+                    ? "Der Tachostand ist kleiner als die erfassten Kilometer. Bitte den Tachostand prüfen."
+                    : "Kilometer und Tachostand eintragen, dann erscheint hier die Aufteilung."}
               </p>
             )}
 
@@ -299,11 +292,7 @@ function NumberField({
       <span>{label}</span>
       <span className="flex items-baseline gap-1.5">
         <Input
-          // The label element also holds the unit, so name the input directly
-          // rather than letting the unit leak into its accessible name.
           aria-label={label}
-          // Input already styles aria-invalid, so the bad field is marked where
-          // it is rather than only in the result panel.
           aria-invalid={isInvalid}
           className="w-28 text-right tabular-nums sm:w-32"
           // `decimal` gives phones a comma/period keypad; `type=text` keeps the

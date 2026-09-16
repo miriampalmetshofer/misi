@@ -1,20 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader } from "@/components/ui/empty";
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemTitle,
-} from "@/components/ui/item";
+import { ItemGroup } from "@/components/ui/item";
 import { DeleteFillUpDialog } from "./DeleteFillUpDialog";
-import { euro, formatFillUpDate } from "./format";
+import { FillUpRow } from "./FillUpRow";
 import { HistoryPagination } from "./HistoryPagination";
 import { PAGE_SIZE, clampPage, pageCountFor } from "./paginate";
 import type { FuelFillUpEntry } from "./types";
@@ -35,11 +26,8 @@ export function FuelHistory({
   // Held as the whole entry rather than an id: the dialog names the fill-up it
   // is about, and needs those details for as long as it is open.
   const [selected, setSelected] = useState<FuelFillUpEntry | null>(null);
-
   // The dialog closes when the deleted fill-up leaves `entries`, i.e. once the
-  // server has confirmed it. Derived rather than cleared on click, so the
-  // confirmation stays on screen — saying "Wird gelöscht …" — for as long as
-  // the delete is actually running.
+  // server has confirmed it saying "Wird gelöscht …" 
   const pendingDelete =
     selected && entries.some((entry) => entry.id === selected.id)
       ? selected
@@ -70,43 +58,13 @@ export function FuelHistory({
       ) : (
         <>
           <ItemGroup className="gap-2">
-            {visible.map((entry) => {
-              const date = formatFillUpDate(entry.filledOn);
-
-              return (
-                <Item
-                  key={entry.id}
-                  variant="outline"
-                  // Rendered as an <li> so the role="list" ItemGroup sets has
-                  // real listitem children rather than bare divs.
-                  render={<li />}
-                >
-                  <ItemContent>
-                    <ItemDescription className="tabular-nums">
-                      {date}
-                    </ItemDescription>
-                    <ItemTitle className="tabular-nums">
-                      {euro.format(entry.paidAmount)}
-                    </ItemTitle>
-                    <ItemDescription className="tabular-nums">
-                      Miriam {euro.format(entry.miriamAmount)} · Simon{" "}
-                      {euro.format(entry.simonAmount)}
-                    </ItemDescription>
-                  </ItemContent>
-
-                  <ItemActions>
-                    <Button
-                      aria-label={`Tankfüllung vom ${date} löschen`}
-                      onClick={() => setSelected(entry)}
-                      size="icon"
-                      variant="ghost"
-                    >
-                      <Trash2 className="text-muted-foreground" />
-                    </Button>
-                  </ItemActions>
-                </Item>
-              );
-            })}
+            {visible.map((entry) => (
+              <FillUpRow
+                key={entry.id}
+                entry={entry}
+                onDelete={() => setSelected(entry)}
+              />
+            ))}
           </ItemGroup>
 
           {pageCount > 1 ? (
