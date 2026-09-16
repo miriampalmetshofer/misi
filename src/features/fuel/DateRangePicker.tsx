@@ -35,24 +35,27 @@ type DateRangePickerProps = {
  */
 export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  // The range being drawn right now, which is deliberately NOT seeded from the
-  // committed one. Handed a complete range, day-picker treats the next click as
-  // dragging its start and keeps the old end — so the popover would close after
-  // a single tap and the end date could never be changed. Starting empty makes
-  // the first click a fresh start and the second the end, which is what the
-  // field invites. The committed range still shows on the trigger and as the
-  // calendar's initial month, so nothing is lost by not preselecting it.
+  // The range on display: the committed one until someone starts changing it,
+  // so opening the calendar shows the period the field names rather than a
+  // blank month.
   const [draft, setDraft] = useState<DayPickerRange | undefined>(undefined);
+  const selected = draft ?? toDayPickerRange(value);
 
   function handleSelect(next: DayPickerRange | undefined) {
+    // Clicking while a whole range is on display means starting a new one.
+    // day-picker instead drags the existing start and keeps the old end, which
+    // would leave the end date unreachable, so the click is taken as a fresh
+    // start and the range reopened for its second half.
+    if (selected?.from && selected.to) {
+      setDraft({ from: pickedDay(next, selected), to: undefined });
+      return;
+    }
+
     setDraft(next);
 
-    // A range is finished once its two ends are different days. day-picker
-    // reports the opening click as `{from, to}` on the same day, and committing
-    // that would close the popover after one tap on a one-day period. Until it
-    // is finished the summary behind the popover keeps showing the period it
-    // was already showing.
-    if (!next?.from || !next.to || next.from.getTime() === next.to.getTime()) {
+    // Half a range is not a period yet: until both ends are in, the summary
+    // behind the popover keeps showing what it was already showing.
+    if (!next?.from || !next.to) {
       return;
     }
 
@@ -64,7 +67,8 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
   function handleOpenChange(open: boolean) {
     setIsOpen(open);
 
-    // Abandoning a half-made range must not leave it on screen next time.
+    // Drop a half-made range on close, so the field goes back to showing the
+    // period that is actually in effect.
     if (!open) {
       setDraft(undefined);
     }
@@ -98,9 +102,36 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
           locale={de}
           mode="range"
           onSelect={handleSelect}
-          selected={draft}
+          selected={selected}
         />
       </PopoverContent>
     </Popover>
   );
+}
+
+/** The committed range in the shape day-picker selects with. */
+function toDayPickerRange(value: DateRange): DayPickerRange | undefined {
+  const from = fromDateValue(value.from);
+  return from ? { from, to: fromDateValue(value.to) } : undefined;
+}
+
+/**
+ * The day just clicked, out of the range day-picker built from it.
+ *
+ * Dragging an existing range leaves one end untouched, so the new day is
+ * whichever end is not already in `previous` — and when a click lands on an end
+ * of the current range, day-picker collapses it to that single day.
+ */
+function pickedDay(
+  next: DayPickerRange | undefined,
+  previous: DayPickerRange,
+): Date {
+  const ends = [next?.from, next?.to].filter((date) => date !== undefined);
+  const moved = ends.find(
+    (date) =>
+      date.getTime() !== previous.from?.getTime() &&
+      date.getTime() !== previous.to?.getTime(),
+  );
+
+  return moved ?? ends[0] ?? previous.from!;
 }
