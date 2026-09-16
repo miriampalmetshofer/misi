@@ -103,10 +103,13 @@ describe("FuelSplit persistence", () => {
 
     await user.type(screen.getByLabelText("Miriam"), "100");
     await user.type(screen.getByLabelText("Simon"), "100");
+    await user.type(screen.getByLabelText("Auto"), "200");
 
     // The split is computable — it is 50/50 of nothing — but a fill-up nobody
     // paid for is not a fill-up.
-    expect(screen.queryByText(/Kilometer eintragen/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Kilometer und Tachostand eintragen/),
+    ).not.toBeInTheDocument();
     expect(saveButton()).toBeDisabled();
   });
 
