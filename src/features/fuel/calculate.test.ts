@@ -122,6 +122,8 @@ describe("calculateFuelSplit", () => {
     expect(result.sharedDistanceShare).toBe(0);
   });
 
+  // Unsaveable, but the form calculates on every keystroke and so passes
+  // half-entered readings through here.
   it("keeps a negative difference when the device sum is above the car reading", () => {
     const result = calculateFuelSplit(
       { miriamKm: 100, simonKm: 100, sharedKm: 100, carKm: 280, paidAmount: 90 },
