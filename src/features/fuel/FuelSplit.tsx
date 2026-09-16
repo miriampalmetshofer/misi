@@ -18,14 +18,6 @@ type FuelSplitProps = {
   fillUps?: FuelFillUpEntry[];
 };
 
-/**
- * Writes wait for the server, unlike the shopping list's.
- *
- * A fill-up is entered once at the pump and considered, not rattled off in a
- * burst, so the round-trip costs nothing worth optimising away — and in return
- * the history only ever shows rows the database really has. Both writes show
- * their progress instead: the save on its button, the delete in its dialog.
- */
 export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
   const form = useFuelSplitForm();
   const [isSaving, startSaving] = useTransition();
@@ -300,11 +292,7 @@ function NumberField({
       <span>{label}</span>
       <span className="flex items-baseline gap-1.5">
         <Input
-          // The label element also holds the unit, so name the input directly
-          // rather than letting the unit leak into its accessible name.
           aria-label={label}
-          // Input already styles aria-invalid, so the bad field is marked where
-          // it is rather than only in the result panel.
           aria-invalid={isInvalid}
           className="w-28 text-right tabular-nums sm:w-32"
           // `decimal` gives phones a comma/period keypad; `type=text` keeps the
