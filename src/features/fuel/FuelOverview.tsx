@@ -20,12 +20,11 @@ type FuelOverviewProps = {
  * memory. A round-trip per date keystroke would buy nothing.
  */
 export function FuelOverview({ fillUps }: FuelOverviewProps) {
-  // Lazily initialised so "three months back" is measured from the browser's
-  // clock, the same way the calculator's date field is.
+  // Lazy, so "three months back" is measured from the browser's clock.
   const [range, setRange] = useState(defaultRange);
 
-  // The picker only reports complete ranges and orders the two ends itself, so
-  // unlike a pair of free-text date fields this can never be back to front.
+  // The picker reports only complete ranges and orders the ends itself, so the
+  // period can never be back to front.
   const summary = useMemo(
     () => summarizeFillUps(filterByRange(fillUps, range)),
     [fillUps, range],

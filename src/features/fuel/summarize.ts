@@ -1,6 +1,6 @@
 import type { FuelFillUpEntry } from "./types";
 
-/** An inclusive yyyy-mm-dd range, the shape two <input type="date"> hold. */
+/** An inclusive yyyy-mm-dd date range. */
 export type DateRange = {
   from: string;
   to: string;
@@ -38,9 +38,8 @@ export type FuelSummary = {
 /**
  * Keeps the fill-ups inside an inclusive date range.
  *
- * Compared as yyyy-mm-dd strings rather than as Dates: that ordering is already
- * chronological, and it avoids the timezone shift a parsed bare date brings —
- * the same reason `formatFillUpDate` picks the date apart by hand.
+ * Compares yyyy-mm-dd strings directly: that order is chronological, and it
+ * avoids the timezone shift parsing a bare date brings.
  */
 export function filterByRange(
   entries: FuelFillUpEntry[],
@@ -52,18 +51,11 @@ export function filterByRange(
 }
 
 /**
- * Totals a set of fill-ups, the way the spreadsheet's JAHRESÜBERSICHT did.
+ * Totals a set of fill-ups over a period.
  *
- * The kilometre percentages divide by the car reading, so a driver's share is
- * their part of the distance the car really covered. The device misses some of
- * that distance on every fill-up, so the three driver shares fall short of
- * 100% — `offsetShare` is the rest, and the four together account for all of
- * it. Dividing by the device sum instead would hide that gap.
- *
- * The kilometre fields are currently not on screen: the overview leads with the
- * bill split, which is the number the page exists for. They stay because this
- * summarises a period rather than backing one panel, and because the test that
- * checks them against the original spreadsheet is what pins the arithmetic.
+ * Kilometre percentages divide by the car reading, so the three driver shares
+ * fall short of 100% by whatever the tracking device missed; `offsetShare` is
+ * that remainder, and the four together make up the whole distance.
  */
 export function summarizeFillUps(entries: FuelFillUpEntry[]): FuelSummary {
   const sum = (pick: (entry: FuelFillUpEntry) => number) =>

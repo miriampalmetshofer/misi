@@ -9,17 +9,10 @@ import { VIEWS } from "./views";
 /**
  * Switches between the calculator and the overview.
  *
- * Deliberately not built on the shadcn Tabs component. That one owns the panel
- * state and expects its triggers to be native buttons — rendering them as
- * links makes Base UI drop button semantics and put `tabindex="-1"` on the
- * inactive tab, so it stops being reachable by keyboard, and it announces a
- * `tab` whose `tabpanel` does not exist because the server renders the view.
- *
- * The view lives in the query string instead, which is what makes each tab
- * shareable, reloadable and reachable with the back button — so these are
- * plain links, styled to match the Tabs look. `scroll={false}` keeps the page
- * where it is: the two views share a header, and jumping to the top on every
- * switch would look like a full navigation.
+ * Links, not shadcn Tabs: the view lives in the query string so each tab is
+ * shareable and works with the back button, and Tabs triggers must be native
+ * buttons — as links they lose button semantics and the inactive tab gets
+ * `tabindex="-1"`, putting it out of reach of the keyboard.
  */
 export function FuelTabs({ current }: { current: FuelView }) {
   return (

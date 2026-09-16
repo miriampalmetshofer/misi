@@ -5,12 +5,10 @@ import type { DateRange } from "./summarize";
 const DEFAULT_RANGE_MONTHS = 3;
 
 /**
- * Moves a yyyy-mm-dd date back by whole months.
+ * Moves a yyyy-mm-dd date back by whole months, returning yyyy-mm-dd.
  *
- * `setMonth` overflows when the target month is shorter — 31 May back three
- * months would land on 3 March rather than on some day in February. Building
- * the date with a clamped day keeps it inside the month it names, so the range
- * never quietly reaches further back than it says.
+ * The day is clamped to the target month, so 31 May minus three months is
+ * 28 February rather than overflowing into March.
  */
 export function monthsBefore(value: string, months: number): string {
   const [year, month, day] = value.split("-").map(Number);
@@ -30,7 +28,7 @@ export function monthsBefore(value: string, months: number): string {
   return toDateValue(target);
 }
 
-/** The last `DEFAULT_RANGE_MONTHS` months, ending today. */
+/** The DateRange for the last DEFAULT_RANGE_MONTHS months, ending today. */
 export function defaultRange(): DateRange {
   const to = today();
   return { from: monthsBefore(to, DEFAULT_RANGE_MONTHS), to };

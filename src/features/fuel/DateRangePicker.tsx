@@ -22,30 +22,20 @@ type DateRangePickerProps = {
 };
 
 /**
- * Picks a period as one field rather than two date inputs.
+ * Field that opens a calendar to pick a start and an end date.
  *
- * The range is held as yyyy-mm-dd strings everywhere else, because that
- * compares chronologically and sidesteps the timezone shift a parsed bare date
- * brings. react-day-picker wants Dates, so the conversion happens here at the
- * boundary and nowhere else.
- *
- * A range is only reported once both ends are picked: day-picker hands over a
- * half-open range after the first click, and summarising that would redraw the
- * numbers for a period nobody asked for yet.
+ * Reports a range only once both ends are set, and converts between the
+ * yyyy-mm-dd strings the app stores and the Dates react-day-picker needs.
  */
 export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  // The range on display: the committed one until someone starts changing it,
-  // so opening the calendar shows the period the field names rather than a
-  // blank month.
+  // The range on display: the committed one until someone starts changing it.
   const [draft, setDraft] = useState<DayPickerRange | undefined>(undefined);
   const selected = draft ?? toDayPickerRange(value);
 
   function handleSelect(next: DayPickerRange | undefined) {
-    // Clicking while a whole range is on display means starting a new one.
-    // day-picker instead drags the existing start and keeps the old end, which
-    // would leave the end date unreachable, so the click is taken as a fresh
-    // start and the range reopened for its second half.
+    // Clicking a complete range means starting a new one. day-picker would
+    // instead drag its start and keep the old end, leaving the end unreachable.
     if (selected?.from && selected.to) {
       setDraft({ from: pickedDay(next, selected), to: undefined });
       return;
@@ -53,8 +43,8 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
 
     setDraft(next);
 
-    // Half a range is not a period yet: until both ends are in, the summary
-    // behind the popover keeps showing what it was already showing.
+    // Half a range is not a period yet, so nothing is reported until both
+    // ends are in.
     if (!next?.from || !next.to) {
       return;
     }
@@ -67,8 +57,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
   function handleOpenChange(open: boolean) {
     setIsOpen(open);
 
-    // Drop a half-made range on close, so the field goes back to showing the
-    // period that is actually in effect.
+    // Drop a half-made range on close.
     if (!open) {
       setDraft(undefined);
     }
@@ -96,8 +85,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
       <PopoverContent className="w-auto p-0">
         <Calendar
           autoFocus
-          // Opens where the range is rather than on today, so a period picked
-          // last year does not start the user a dozen swipes away from it.
+          // Open where the range is, not on today.
           defaultMonth={fromDateValue(value.from)}
           locale={de}
           mode="range"
@@ -116,11 +104,8 @@ function toDayPickerRange(value: DateRange): DayPickerRange | undefined {
 }
 
 /**
- * The day just clicked, out of the range day-picker built from it.
- *
- * Dragging an existing range leaves one end untouched, so the new day is
- * whichever end is not already in `previous` — and when a click lands on an end
- * of the current range, day-picker collapses it to that single day.
+ * The day just clicked, out of the range day-picker built from it: whichever
+ * end is not already in `previous`, or its sole end when the two collapsed.
  */
 function pickedDay(
   next: DayPickerRange | undefined,
