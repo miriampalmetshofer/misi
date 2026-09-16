@@ -47,6 +47,8 @@ const VALID = {
   paidAmount: "102",
 };
 
+const ZERO_DEVICE_KM = { miriamKm: "0", simonKm: "0", sharedKm: "0" };
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -86,6 +88,8 @@ describe("addFuelFillUp", () => {
     ["a malformed date", { filledOn: "04.11.2025" }],
     ["an impossible date", { filledOn: "2025-13-45" }],
     ["a negative amount", { paidAmount: "-5" }],
+    ["a car reading below the device sum", { carKm: "882,3" }],
+    ["a car reading of zero", { carKm: "0", ...ZERO_DEVICE_KM }],
   ])("refuses %s", async (_label, override) => {
     await addFuelFillUp(form({ ...VALID, ...override }));
 

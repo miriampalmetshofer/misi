@@ -120,18 +120,21 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
               name="kmAuto"
               unit="km"
               value={form.form.kmAuto}
-              isInvalid={form.invalidFields.includes("kmAuto")}
+              // Readable but impossible counts as invalid here too, so the mark
+              // sits on the field that needs correcting.
+              isInvalid={
+                form.invalidFields.includes("kmAuto") || form.hasImpossibleCarKm
+              }
               onChange={form.update}
             />
 
             <Summary
               label="Nicht erfasst"
               value={
-                form.hasInvalidDistance
+                form.hasInvalidDistance || form.hasImpossibleCarKm
                   ? "—"
                   : `${km.format(form.result.distanceOffset)} km${
-                      // The share is relative to the car reading, so without
-                      // one there is no percentage to show — only a "0,0 %".
+                      // No car reading yet, so no percentage — only a "0,0 %".
                       form.input.carKm > 0
                         ? ` (${percent.format(form.result.distanceOffsetShare)})`
                         : ""
@@ -204,11 +207,9 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
               <p className="text-body-muted mt-4">
                 {form.invalidFields.length > 0
                   ? "Bitte nur Zahlen eintragen, dann erscheint hier die Aufteilung."
-                  : form.hasImpossibleFiftyFifty
-                    ? "Es sind mehr Kilometer erfasst als das Auto zählt. 50/50 passt hier nicht; proportional funktioniert weiterhin."
-                    : form.mode === "shared"
-                      ? "Kilometer und Tachostand eintragen, dann erscheint hier die Aufteilung."
-                      : "Kilometer eintragen, dann erscheint hier die Aufteilung."}
+                  : form.hasImpossibleCarKm
+                    ? "Der Tachostand ist kleiner als die erfassten Kilometer. Bitte den Tachostand prüfen."
+                    : "Kilometer und Tachostand eintragen, dann erscheint hier die Aufteilung."}
               </p>
             )}
 

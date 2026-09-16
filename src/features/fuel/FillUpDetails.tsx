@@ -31,8 +31,8 @@ export function FillUpDetails({ entry }: { entry: FuelFillUpEntry }) {
    * These are shares of the distance, not of the bill: nobody pays 24,4 %.
    * What each person owes is on the row above, in euros.
    */
-  const share = (value: number) =>
-    entry.carKm > 0 ? value / entry.carKm : undefined;
+  // `addFuelFillUp` refuses a `carKm` of 0, so there is nothing to guard.
+  const share = (value: number) => value / entry.carKm;
 
   return (
     <dl className="flex basis-full flex-col gap-1.5 border-t pt-3 text-sm">

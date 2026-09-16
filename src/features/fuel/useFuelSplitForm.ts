@@ -80,18 +80,12 @@ export function useFuelSplitForm() {
   const hasInvalidDistance =
     hasInvalidDeviceKm || invalidFields.includes("kmAuto");
 
-  // 50/50 divides by the car reading, `proportional` by the device sum, so the
-  // readiness gate has to follow the basis the active mode actually uses.
-  // Otherwise a missing car reading yields a confident "0,00 €" split.
-  const basis = mode === "shared" ? input.carKm : result.deviceKmTotal;
-  const adjustedSharedKm = input.sharedKm + result.distanceOffset;
-  // The car reading has to be there before the offset means anything: without
-  // it the whole device sum reads as a negative offset, which is a missing
-  // entry rather than an impossible 50/50 split.
-  const hasImpossibleFiftyFifty =
-    mode === "shared" && input.carKm > 0 && adjustedSharedKm < 0;
+  // The device is powered by the car and cannot outcount it, so a reading
+  // below the device sum is a mistyped tacho stand.
+  const hasImpossibleCarKm =
+    input.carKm > 0 && result.distanceOffset < 0 && !hasInvalidDistance;
   const canCalculate =
-    basis > 0 && invalidFields.length === 0 && !hasImpossibleFiftyFifty;
+    input.carKm > 0 && invalidFields.length === 0 && !hasImpossibleCarKm;
 
   // Saving a fill-up nobody paid for would put a 0,00 € row in the history,
   // so the amount has to be there on top of everything the display needs.
@@ -122,7 +116,7 @@ export function useFuelSplitForm() {
     invalidFields,
     hasInvalidDeviceKm,
     hasInvalidDistance,
-    hasImpossibleFiftyFifty,
+    hasImpossibleCarKm,
     canCalculate,
     canSave,
     update,
