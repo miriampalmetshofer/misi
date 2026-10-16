@@ -21,8 +21,8 @@ function historyRow(page: Page, amount: string) {
 async function saveFillUp(page: Page, amount: string) {
   await page.getByLabel("Miriam").fill("256,4");
   await page.getByLabel("Simon").fill("352,2");
-  await page.getByLabel("Beide").fill("273,8");
-  await page.getByLabel("Gesamt").fill("1052,4");
+  await page.getByLabel("Gemeinsam").fill("273,8");
+  await page.getByLabel("Auto").fill("1052,4");
   await page.getByLabel("Betrag").fill(amount);
 
   await page.getByRole("button", { name: "Speichern" }).click();

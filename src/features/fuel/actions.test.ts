@@ -47,6 +47,8 @@ const VALID = {
   paidAmount: "102",
 };
 
+const ZERO_DEVICE_KM = { miriamKm: "0", simonKm: "0", sharedKm: "0" };
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -79,6 +81,25 @@ describe("addFuelFillUp", () => {
     );
   });
 
+  it("splits entirely unrecorded kilometres equally in shared mode", async () => {
+    await addFuelFillUp(form({ ...VALID, ...ZERO_DEVICE_KM, offsetMode: "shared" }));
+
+    expect(db.values).toHaveBeenCalledWith(
+      expect.objectContaining({ miriamAmount: 51, simonAmount: 51 }),
+    );
+  });
+
+  it.each(["proportional", "shared"])("accepts equal decimal readings in %s mode", async (offsetMode) => {
+    await addFuelFillUp(form({
+      ...VALID, offsetMode, miriamKm: "100,4", simonKm: "200,3",
+      sharedKm: "0", carKm: "300,7",
+    }));
+
+    expect(db.values).toHaveBeenCalledWith(
+      expect.objectContaining({ carKm: 300.7, miriamAmount: 34.06, simonAmount: 67.94 }),
+    );
+  });
+
   it.each([
     ["an unreadable number", { paidAmount: "hundert" }],
     ["a missing number", { carKm: "" }],
@@ -86,6 +107,9 @@ describe("addFuelFillUp", () => {
     ["a malformed date", { filledOn: "04.11.2025" }],
     ["an impossible date", { filledOn: "2025-13-45" }],
     ["a negative amount", { paidAmount: "-5" }],
+    ["a car reading below the device sum", { carKm: "882,3" }],
+    ["a car reading of zero", { carKm: "0", ...ZERO_DEVICE_KM }],
+    ["zero device kilometres in proportional mode", ZERO_DEVICE_KM],
   ])("refuses %s", async (_label, override) => {
     await addFuelFillUp(form({ ...VALID, ...override }));
 

@@ -48,10 +48,21 @@ export async function addFuelFillUp(formData: FormData) {
     return;
   }
 
-  // Recomputed here rather than taken from the form: the amounts on screen are
-  // a display of the split, but the stored ones are the record. Deriving them
-  // server-side keeps a stored fill-up consistent with its own inputs.
+  // Derive the split server-side so stored amounts agree with their inputs.
   const result = calculateFuelSplit(values, offsetMode);
+
+  // The device is powered by the car, so it cannot record kilometres the car
+  // did not drive. The history divides by `carKm`, so it must also be above 0.
+  if (
+    values.carKm <= 0 ||
+    result.distanceOffset < 0 ||
+    (offsetMode === "proportional" && result.deviceKmTotal <= 0)
+  ) {
+    console.error(
+      "addFuelFillUp: refused fill-up with implausible car reading",
+    );
+    return;
+  }
 
   await getDb()
     .insert(schema.fuelFillUps)

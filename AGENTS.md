@@ -139,6 +139,16 @@ Before finishing any implementation, ask:
 
 If you build 1000 lines and 100 would suffice, you have failed. Prefer the boring, obvious solution. Cleverness is expensive.
 
+The same applies to comments. Write them for someone reading the code for the
+first time, who wants to know why it is like this — not for a reviewer watching
+you change it.
+
+- Most code needs no comment. Ask whether this one earns its line before writing it.
+- Comment the why, not the what. If the code is hard to follow, fix the code.
+- Keep it to a line or two. A comment longer than the code it explains is a sign the explanation belongs in a doc comment.
+- Write about the state the code is in, not the history of how it got there. No "previously", no "now we also", no narration of the change you just made.
+- Do not restate a rule that the code enforces one line below.
+
 ### 5. Maintain Scope Discipline
 
 Touch only what you're asked to touch.

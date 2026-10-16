@@ -72,7 +72,10 @@ export function calculateFuelSplit(
 ): FuelSplitResult {
   const { miriamKm, simonKm, sharedKm, carKm, paidAmount } = input;
   const deviceKmTotal = miriamKm + simonKm + sharedKm;
-  const distanceOffset = carKm - deviceKmTotal;
+  const rawOffset = carKm - deviceKmTotal;
+  // Decimal readings can leave a tiny rounding remainder even when they match.
+  const tolerance = Number.EPSILON * Math.max(carKm, deviceKmTotal) * 4;
+  const distanceOffset = Math.abs(rawOffset) <= tolerance ? 0 : rawOffset;
 
   // The reference distance the shares divide by. `shared` measures against the
   // car, `proportional` against the device — under proportional scaling those
