@@ -217,6 +217,36 @@ describe("FuelSplit", () => {
     expect(screen.getByRole("button", { name: "Speichern" })).toBeDisabled();
   });
 
+  it("requires device kilometres for proportional mode but can share an unrecorded trip", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit />);
+    await user.type(screen.getByLabelText("Auto"), "300");
+    await user.type(screen.getByLabelText("Betrag"), "90");
+
+    expect(result().queryByText("0,00 €")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Speichern" })).toBeDisabled();
+
+    await user.click(screen.getByRole("checkbox", { name: "50/50-Modus verwenden" }));
+
+    expect(result().getAllByText("45,00 €")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Speichern" })).toBeEnabled();
+  });
+
+  it("accepts decimal readings whose sum equals the car reading", async () => {
+    const user = userEvent.setup();
+    render(<FuelSplit />);
+    await user.type(screen.getByLabelText("Miriam"), "100,4");
+    await user.type(screen.getByLabelText("Simon"), "200,3");
+    await user.type(screen.getByLabelText("Auto"), "300,7");
+    await user.type(screen.getByLabelText("Betrag"), "102");
+
+    expect(screen.getByLabelText("Auto")).toHaveAttribute("aria-invalid", "false");
+    expect(screen.getByText("0,0 km (0,0 %)")).toBeInTheDocument();
+    expect(result().getByText("34,06 €")).toBeInTheDocument();
+    expect(result().getByText("67,94 €")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Speichern" })).toBeEnabled();
+  });
+
   it("offers 50/50 as an explicit optional mode", async () => {
     const user = userEvent.setup();
     render(<FuelSplit />);

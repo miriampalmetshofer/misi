@@ -85,7 +85,10 @@ export function useFuelSplitForm() {
   const hasImpossibleCarKm =
     input.carKm > 0 && result.distanceOffset < 0 && !hasInvalidDistance;
   const canCalculate =
-    input.carKm > 0 && invalidFields.length === 0 && !hasImpossibleCarKm;
+    input.carKm > 0 &&
+    (mode === "shared" || result.deviceKmTotal > 0) &&
+    invalidFields.length === 0 &&
+    !hasImpossibleCarKm;
 
   // Saving a fill-up nobody paid for would put a 0,00 € row in the history,
   // so the amount has to be there on top of everything the display needs.
