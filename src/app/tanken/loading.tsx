@@ -16,6 +16,10 @@ export default function TankenLoading() {
 
         <h1 className="page-headline">Tanken</h1>
 
+        {/* Matches the FuelTabs row so the content below does not shift down
+            once the page loads. */}
+        <Skeleton aria-hidden="true" className="mt-6 h-12 rounded-xl sm:mt-8" />
+
         <div aria-hidden="true" className="mt-8 flex flex-col gap-8 sm:mt-12">
           {/* Date row: label left, input right, as in the form. */}
           <div className="flex items-center justify-between gap-3">
