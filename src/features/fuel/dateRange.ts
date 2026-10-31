@@ -1,4 +1,4 @@
-import { today } from "./useFuelSplitForm";
+import { today } from "@/lib/date";
 import type { DateRange } from "./summarize";
 
 /** How far back the overview reaches until someone picks a range themselves. */

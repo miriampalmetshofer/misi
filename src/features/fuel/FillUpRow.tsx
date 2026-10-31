@@ -5,8 +5,9 @@ import { ChevronDown, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Item, ItemActions, ItemContent } from "@/components/ui/item";
+import { euro } from "@/lib/format";
+import { formatDate } from "@/lib/date";
 import { FillUpDetails } from "./FillUpDetails";
-import { euro, formatFillUpDate } from "./format";
 import type { FuelFillUpEntry } from "./types";
 
 type FillUpRowProps = {
@@ -21,7 +22,7 @@ type FillUpRowProps = {
 export function FillUpRow({ entry, onDelete }: FillUpRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const detailsId = useId();
-  const date = formatFillUpDate(entry.filledOn);
+  const date = formatDate(entry.filledOn);
 
   return (
     <Item

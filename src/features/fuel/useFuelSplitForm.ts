@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { today } from "@/lib/date";
 import { calculateFuelSplit, type OffsetMode } from "./calculate";
 import { parseNumber } from "./parseNumber";
 
@@ -23,13 +24,6 @@ const EMPTY_FORM: Record<FieldName, string> = {
   kmAuto: "",
   bezahlt: "",
 };
-
-/** Today as yyyy-mm-dd in local time, which is what <input type="date"> wants. */
-export function today() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60_000;
-  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
-}
 
 /**
  * Holds the calculator's form state and everything derived from it.

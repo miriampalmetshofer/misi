@@ -11,9 +11,9 @@ const modules = [
     href: "/einkauf",
   },
   {
-    title: "Tanken",
-    description: "Spritkosten nach gefahrenen Kilometern aufteilen.",
-    href: "/tanken",
+    title: "Auto",
+    description: "Tanken, Reparaturen und Einkäufe gemeinsam aufteilen.",
+    href: "/auto",
   },
 ];
 

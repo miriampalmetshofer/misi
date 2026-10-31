@@ -1,6 +1,7 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   date,
   index,
   integer,
@@ -114,3 +115,41 @@ export const fuelFillUps = pgTable(
 
 export type FuelFillUp = typeof fuelFillUps.$inferSelect;
 export type NewFuelFillUp = typeof fuelFillUps.$inferInsert;
+
+export const carExpenses = pgTable(
+  "car_expense",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    spentOn: date("spent_on").notNull(),
+    description: varchar("description", { length: 200 }).notNull(),
+    totalAmount: euros("total_amount").notNull(),
+    miriamPercent: numeric("miriam_percent", {
+      precision: 5,
+      scale: 2,
+      mode: "number",
+    }).notNull(),
+    miriamAmount: euros("miriam_amount").notNull(),
+    simonAmount: euros("simon_amount").notNull(),
+    note: varchar("note", { length: 2000 }).notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("car_expense_spent_on_idx").on(table.spentOn),
+    check("car_expense_positive_total", sql`${table.totalAmount} > 0`),
+    check(
+      "car_expense_percent_range",
+      sql`${table.miriamPercent} between 0 and 100`,
+    ),
+    check(
+      "car_expense_amounts_match",
+      sql`${table.miriamAmount} >= 0 and ${table.simonAmount} >= 0 and ${table.miriamAmount} + ${table.simonAmount} = ${table.totalAmount}`,
+    ),
+  ],
+);
+
+export type CarExpense = typeof carExpenses.$inferSelect;

@@ -12,8 +12,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { formatDate } from "@/lib/date";
 import { fromDateValue, toDateValue } from "./dateRange";
-import { formatFillUpDate } from "./format";
 import type { DateRange } from "./summarize";
 
 type DateRangePickerProps = {
@@ -72,7 +72,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
             variant="outline"
           >
             <span>
-              {formatFillUpDate(value.from)} – {formatFillUpDate(value.to)}
+              {formatDate(value.from)} – {formatDate(value.to)}
             </span>
             <CalendarIcon
               aria-hidden="true"

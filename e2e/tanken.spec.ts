@@ -22,7 +22,7 @@ async function saveFillUp(page: Page, amount: string) {
   await page.getByLabel("Miriam").fill("256,4");
   await page.getByLabel("Simon").fill("352,2");
   await page.getByLabel("Gemeinsam").fill("273,8");
-  await page.getByLabel("Auto").fill("1052,4");
+  await page.getByLabel("Auto", { exact: true }).fill("1052,4");
   await page.getByLabel("Betrag").fill(amount);
 
   await page.getByRole("button", { name: "Speichern" }).click();
@@ -34,7 +34,7 @@ async function saveFillUp(page: Page, amount: string) {
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/tanken");
-  await expect(page.getByRole("heading", { name: "Tanken" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Auto", exact: true })).toBeVisible();
 });
 
 test("a saved fill-up survives a reload", async ({ page }) => {
