@@ -1,7 +1,7 @@
-/** The two views the Tanken page offers, in the order the tabs show them. */
+/** The fuel views within Auto, in the order the tabs show them. */
 export const VIEWS = [
-  { id: "berechnen", label: "Berechnen", href: "/tanken" },
-  { id: "uebersicht", label: "Übersicht", href: "/tanken?ansicht=uebersicht" },
+  { id: "berechnen", label: "Berechnen", href: "/auto" },
+  { id: "uebersicht", label: "Übersicht", href: "/auto?ansicht=uebersicht" },
 ] as const;
 
 export type FuelView = (typeof VIEWS)[number]["id"];

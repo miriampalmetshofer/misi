@@ -7,7 +7,7 @@ import { getDb, schema } from "@/db";
 import { calculateFuelSplit, isOffsetMode } from "./calculate";
 import { parseNumber } from "./parseNumber";
 
-const FUEL_PATH = "/tanken";
+const FUEL_PATH = "/auto";
 
 /** Guards against a fat-fingered reading becoming a numeric overflow. */
 const MAX_KM = 1_000_000;
