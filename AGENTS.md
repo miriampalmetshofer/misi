@@ -224,6 +224,53 @@ AI development work uses the separate GitHub account `mip-ai-bot`, which is invi
 - Rebase the branch onto the latest `main` before opening a PR.
 - Open PRs as ready for review after local verification passes; use drafts only for unfinished or exploratory work.
 
+## Code Review Rules
+
+- Report actionable correctness and maintainability problems introduced by the
+  change. Explain the concrete failure or maintenance cost; avoid speculative
+  issues, style preferences, and checks already enforced by lint or typecheck.
+- Review code and report findings; do not implement fixes as part of a review.
+
+### Architecture, Simplicity, and Code Clarity
+
+- Flag workarounds that hide a broken invariant, swallow errors, duplicate state,
+  or depend on arbitrary timing instead of fixing the underlying cause.
+- Check that responsibilities and data flow remain clear and follow the feature
+  boundaries in `docs/architecture.md`. Flag misplaced business logic, unnecessary
+  coupling, and duplicated rules that can diverge; justified direct dependencies
+  between features are allowed.
+- Prefer the simplest complete solution. Flag abstractions, indirection, special
+  cases, or compatibility layers whose complexity does not serve a current need.
+- Check that names, control flow, and types make behavior understandable. Flag
+  misleading names, hidden side effects, and type escapes that obscure a real
+  contract. Explain what becomes harder to understand or change and suggest a
+  focused simplification; do not request broad refactors or personal style changes.
+
+### Persistence and Shared Household State
+
+- Trace mutations through the server action and database query. An optimistic UI
+  update is not proof of persistence; flag failures that lose writes, leave the
+  UI inconsistent after an error, or overwrite concurrent household edits.
+- This app serves one shared household. Shared access between its members is
+  intentional; do not require multi-tenant isolation without a product change.
+
+### Migrations
+
+- Check that migrations preserve intended existing data and produce the schema
+  the application expects. Destructive schema changes may ship with the code
+  that uses them because migrations and deployment are one release step.
+- Do not request expand/contract migrations solely for compatibility with the
+  previous deploy. Keep generated migration history rather than squashing it.
+
+### Privacy and Deployment Boundaries
+
+- Flag changes that expose secrets or household data through client bundles,
+  logs, public responses, or unrestricted app/preview access. Public source code
+  does not imply public access to household data.
+- Preview databases may branch from production by explicit project decision;
+  flag writes to production from preview/PR workflows or production credential
+  exposure, rather than the existence of a production-derived preview branch.
+
 ### Pull Request Review Handling
 
 - Always answer questions in PR review comments by replying directly to the GitHub comment thread. Do not treat question comments as resolved until the answer is visible in the thread and the user has had a chance to decide whether it is sufficient.
