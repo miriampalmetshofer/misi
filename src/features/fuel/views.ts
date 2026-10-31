@@ -1,10 +1,4 @@
-/** The fuel views within Auto, in the order the tabs show them. */
-export const VIEWS = [
-  { id: "berechnen", label: "Berechnen", href: "/auto" },
-  { id: "uebersicht", label: "Übersicht", href: "/auto?ansicht=uebersicht" },
-] as const;
-
-export type FuelView = (typeof VIEWS)[number]["id"];
+export type FuelView = "berechnen" | "uebersicht";
 
 /**
  * Reads the view out of the `ansicht` query parameter.

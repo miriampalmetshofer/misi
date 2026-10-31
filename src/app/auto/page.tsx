@@ -6,7 +6,6 @@ import { CarTabs } from "@/features/car/CarTabs";
 import { getCarExpenses } from "@/features/car/queries";
 import { FuelOverview } from "@/features/fuel/FuelOverview";
 import { FuelSplit } from "@/features/fuel/FuelSplit";
-import { FuelTabs } from "@/features/fuel/FuelTabs";
 import { getFuelFillUps } from "@/features/fuel/queries";
 import { viewFromParam } from "@/features/fuel/views";
 
@@ -38,7 +37,7 @@ export default async function AutoPage({
           <span>Home</span>
         </Link>
         <h1 className="page-headline">Auto</h1>
-        <CarTabs expenses={expenses} />
+        <CarTabs current={expenses ? "ausgaben" : view} />
         {content}
       </main>
     </div>
@@ -51,14 +50,9 @@ async function FuelContent({
   view: ReturnType<typeof viewFromParam>;
 }) {
   const fillUps = await getFuelFillUps();
-  return (
-    <>
-      <FuelTabs current={view} />
-      {view === "uebersicht" ? (
-        <FuelOverview fillUps={fillUps} />
-      ) : (
-        <FuelSplit fillUps={fillUps} />
-      )}
-    </>
+  return view === "uebersicht" ? (
+    <FuelOverview fillUps={fillUps} />
+  ) : (
+    <FuelSplit fillUps={fillUps} />
   );
 }
