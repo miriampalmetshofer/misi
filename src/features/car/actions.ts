@@ -60,7 +60,8 @@ export async function saveCarExpense(form: FormData) {
     } else {
       await getDb().insert(schema.carExpenses).values(values);
     }
-  } catch {
+  } catch (error) {
+    logExpenseFailure("saveCarExpense", error);
     return {
       error:
         "Speichern fehlgeschlagen. Deine Eingaben bleiben erhalten. Bitte erneut versuchen.",
@@ -76,9 +77,32 @@ export async function deleteCarExpense(id: string) {
     await getDb()
       .delete(schema.carExpenses)
       .where(eq(schema.carExpenses.id, id));
-  } catch {
+  } catch (error) {
+    logExpenseFailure("deleteCarExpense", error);
     return { error: "Löschen fehlgeschlagen. Bitte erneut versuchen." };
   }
   revalidatePath("/auto");
   return { error: null };
+}
+
+function logExpenseFailure(operation: string, error: unknown) {
+  const cause = error instanceof Error ? error.cause : undefined;
+  const databaseError = cause ?? error;
+  const code =
+    databaseError &&
+    typeof databaseError === "object" &&
+    "code" in databaseError
+      ? databaseError.code
+      : undefined;
+
+  // Drizzle errors contain SQL and parameters; log only a category and SQLSTATE.
+  console.error(operation, {
+    type:
+      databaseError instanceof TypeError
+        ? "TypeError"
+        : databaseError instanceof Error
+          ? "Error"
+          : "UnknownError",
+    ...(typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? { code } : {}),
+  });
 }

@@ -21,6 +21,7 @@ vi.mock("@/db", async () => ({
 }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
+import { DrizzleQueryError } from "drizzle-orm/errors";
 import { saveCarExpense, deleteCarExpense } from "./actions";
 
 const id = "11111111-1111-1111-1111-111111111111";
@@ -39,6 +40,7 @@ const form = (fields: Record<string, string>) => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.spyOn(console, "error").mockImplementation(() => {});
   db.returning.mockResolvedValue([{ id: "saved" }]);
 });
 
@@ -104,6 +106,26 @@ describe("saveCarExpense", () => {
     expect((await saveCarExpense(form(valid))).error).toBeNull();
   });
 
+  it("logs SQLSTATE without SQL, household values or connection details", async () => {
+    const cause = Object.assign(new Error("private database detail"), {
+      code: "42P01",
+    });
+    db.values.mockRejectedValueOnce(
+      new DrizzleQueryError(
+        "insert into car_expense ...",
+        ["Winterreifen", "private note"],
+        cause,
+      ),
+    );
+
+    await saveCarExpense(form(valid));
+
+    expect(console.error).toHaveBeenCalledExactlyOnceWith("saveCarExpense", {
+      type: "Error",
+      code: "42P01",
+    });
+  });
+
   it("does not silently succeed when an edited entry disappeared", async () => {
     db.returning.mockResolvedValueOnce([]);
     expect((await saveCarExpense(form({ ...valid, id }))).error).toContain(
@@ -120,5 +142,21 @@ describe("deleteCarExpense", () => {
   it("deletes an existing entry", async () => {
     expect((await deleteCarExpense(id)).error).toBeNull();
     expect(db.delete).toHaveBeenCalled();
+  });
+
+  it("reports delete failures without logging the exception message or arbitrary codes", async () => {
+    db.delete.mockImplementationOnce(() => {
+      throw Object.assign(
+        new TypeError("https://user:password@database/private"),
+        { code: "private connection detail" },
+      );
+    });
+
+    expect((await deleteCarExpense(id)).error).toContain(
+      "Löschen fehlgeschlagen",
+    );
+    expect(console.error).toHaveBeenCalledExactlyOnceWith("deleteCarExpense", {
+      type: "TypeError",
+    });
   });
 });
