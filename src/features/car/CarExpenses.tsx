@@ -14,7 +14,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { euro, formatFillUpDate } from "@/features/fuel/format";
+import { euro } from "@/lib/format";
+import { formatDate } from "@/lib/date";
 import { deleteCarExpense } from "./actions";
 import { ExpenseForm } from "./ExpenseForm";
 import { toField, type CarExpenseEntry } from "./expense";
@@ -65,7 +66,7 @@ export function CarExpenses({ entries }: { entries: CarExpenseEntry[] }) {
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="text-sm text-muted-foreground">
-                    {formatFillUpDate(entry.spentOn)}
+                    {formatDate(entry.spentOn)}
                   </span>
                   <span className="shrink-0 font-semibold tabular-nums">
                     {euro.format(entry.totalAmount)}
@@ -123,7 +124,7 @@ export function CarExpenses({ entries }: { entries: CarExpenseEntry[] }) {
             <AlertDialogTitle>Eintrag löschen?</AlertDialogTitle>
             <AlertDialogDescription>
               {deleting
-                ? `${deleting.description} · ${formatFillUpDate(deleting.spentOn)} · ${euro.format(deleting.totalAmount)}`
+                ? `${deleting.description} · ${formatDate(deleting.spentOn)} · ${euro.format(deleting.totalAmount)}`
                 : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>

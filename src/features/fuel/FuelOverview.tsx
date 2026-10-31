@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 
+import { euro } from "@/lib/format";
+import { formatDate } from "@/lib/date";
 import { defaultRange } from "./dateRange";
 import { DateRangePicker } from "./DateRangePicker";
-import { euro, formatFillUpDate, km, percent } from "./format";
+import { km, percent } from "./format";
 import { filterByRange, summarizeFillUps } from "./summarize";
 import type { FuelFillUpEntry } from "./types";
 
@@ -59,17 +61,13 @@ export function FuelOverview({ fillUps }: FuelOverviewProps) {
             <Row
               label="Erste Tankung"
               value={
-                summary.firstFilledOn
-                  ? formatFillUpDate(summary.firstFilledOn)
-                  : "—"
+                summary.firstFilledOn ? formatDate(summary.firstFilledOn) : "—"
               }
             />
             <Row
               label="Letzte Tankung"
               value={
-                summary.lastFilledOn
-                  ? formatFillUpDate(summary.lastFilledOn)
-                  : "—"
+                summary.lastFilledOn ? formatDate(summary.lastFilledOn) : "—"
               }
             />
             <Row

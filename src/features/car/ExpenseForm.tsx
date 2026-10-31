@@ -4,8 +4,8 @@ import { useId, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { euro } from "@/features/fuel/format";
-import { today } from "@/features/fuel/useFuelSplitForm";
+import { euro } from "@/lib/format";
+import { today } from "@/lib/date";
 import { saveCarExpense } from "./actions";
 import {
   isExpenseDate,

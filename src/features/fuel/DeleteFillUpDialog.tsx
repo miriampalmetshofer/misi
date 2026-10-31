@@ -10,7 +10,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { euro, formatFillUpDate } from "./format";
+import { euro } from "@/lib/format";
+import { formatDate } from "@/lib/date";
 import type { FuelFillUpEntry } from "./types";
 
 type DeleteFillUpDialogProps = {
@@ -48,8 +49,7 @@ export function DeleteFillUpDialog({
           <AlertDialogDescription>
             {entry ? (
               <>
-                {formatFillUpDate(entry.filledOn)} ·{" "}
-                {euro.format(entry.paidAmount)}
+                {formatDate(entry.filledOn)} · {euro.format(entry.paidAmount)}
                 <br />
                 Miriam {euro.format(entry.miriamAmount)} · Simon{" "}
                 {euro.format(entry.simonAmount)}
