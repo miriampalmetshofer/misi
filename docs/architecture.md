@@ -167,9 +167,9 @@ Security rules:
 
 Migration rule:
 
-- Prefer expand/contract changes. A production migration must be compatible with both the currently deployed app and the new app version.
-- Additive migrations can deploy with the code that uses them.
-- Destructive cleanup, such as dropping renamed columns or removing old tables, should happen in a later PR after production code no longer depends on the old shape.
+- Production migrations and the application deploy ship together as one release step. Brief downtime is acceptable; migrations do not need to support the previously deployed app.
+- Additive and destructive schema changes may ship in the same PR as the code that uses the resulting schema. Expand/contract or multi-phase migrations are not required solely to avoid a mid-deploy mismatch.
+- Call out destructive changes explicitly: rolling back to the previous application version also requires reverting the schema. Preserve intended existing data and keep generated migrations rather than squashing their history.
 
 ## Deferred Decisions
 
