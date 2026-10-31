@@ -13,4 +13,5 @@ export type FuelFillUpEntry = {
   offsetMode: OffsetMode;
   miriamAmount: number;
   simonAmount: number;
+  isSettled: boolean;
 };

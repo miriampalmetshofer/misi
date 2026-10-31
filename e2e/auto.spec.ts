@@ -24,7 +24,16 @@ test("an expense can be created, edited and deleted across reloads", async ({
   await page.reload();
   await expect(row).toContainText("24.10.2026");
   await expect(row).toContainText("480,00");
+  await row.getByRole("button", { expanded: false }).click();
   await expect(row).toContainText("Werkstatt");
+  await row.getByRole("checkbox", { name: "Zahlung beglichen" }).click();
+  await expect(row.getByRole("checkbox")).toBeChecked();
+  await page.reload();
+  await expect(row.getByRole("button", { expanded: false })).toContainText(
+    "Zahlung beglichen",
+  );
+  await row.getByRole("button", { expanded: false }).click();
+  await expect(row.getByRole("checkbox")).toBeChecked();
 
   await row.getByRole("button", { name: /bearbeiten/ }).click();
   await expect(page.getByLabel("Anteil Miriam", { exact: true })).toHaveValue(
@@ -37,9 +46,19 @@ test("an expense can be created, edited and deleted across reloads", async ({
   await expect(row).toContainText("500,00");
   await page.reload();
   await expect(row).toContainText("25.10.2026");
+  await row.getByRole("button", { expanded: false }).click();
   await expect(row).toContainText("Miriam · 75 %");
   await expect(row).toContainText("375,00");
   await expect(row).toContainText("125,00");
+  await expect(row.getByRole("checkbox")).toBeChecked();
+  await row.getByRole("checkbox").click();
+  await expect(row.getByRole("checkbox")).not.toBeChecked();
+  await page.reload();
+  await expect(row.getByRole("button", { expanded: false })).not.toContainText(
+    "Zahlung beglichen",
+  );
+  await row.getByRole("button", { expanded: false }).click();
+  await expect(row.getByRole("checkbox")).not.toBeChecked();
 
   await row.getByRole("button", { name: /bearbeiten/ }).click();
   await page

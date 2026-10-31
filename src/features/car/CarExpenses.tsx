@@ -18,7 +18,8 @@ import { euro } from "@/lib/format";
 import { formatDate } from "@/lib/date";
 import { deleteCarExpense } from "./actions";
 import { ExpenseForm } from "./ExpenseForm";
-import { toField, type CarExpenseEntry } from "./expense";
+import type { CarExpenseEntry } from "./expense";
+import { ExpenseRow } from "./ExpenseRow";
 
 export function CarExpenses({ entries }: { entries: CarExpenseEntry[] }) {
   const [editing, setEditing] = useState<CarExpenseEntry | null | undefined>();
@@ -60,54 +61,12 @@ export function CarExpenses({ entries }: { entries: CarExpenseEntry[] }) {
         ) : (
           <ul className="flex flex-col gap-3">
             {entries.map((entry) => (
-              <li
+              <ExpenseRow
                 key={entry.id}
-                className="flex flex-col gap-3 rounded-xl border p-4 sm:p-5"
-              >
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-sm text-muted-foreground">
-                    {formatDate(entry.spentOn)}
-                  </span>
-                  <span className="shrink-0 font-semibold tabular-nums">
-                    {euro.format(entry.totalAmount)}
-                  </span>
-                </div>
-                <p className="font-medium break-words">{entry.description}</p>
-                <dl className="grid gap-1 text-sm text-muted-foreground">
-                  <div className="flex justify-between gap-2">
-                    <dt>Miriam · {toField(entry.miriamPercent)} %</dt>
-                    <dd className="tabular-nums">
-                      {euro.format(entry.miriamAmount)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <dt>
-                      Simon ·{" "}
-                      {toField(
-                        Math.round((100 - entry.miriamPercent) * 100) / 100,
-                      )}{" "}
-                      %
-                    </dt>
-                    <dd className="tabular-nums">
-                      {euro.format(entry.simonAmount)}
-                    </dd>
-                  </div>
-                </dl>
-                {entry.note ? (
-                  <p className="text-sm text-muted-foreground break-words">
-                    {entry.note}
-                  </p>
-                ) : null}
-                <Button
-                  variant="outline"
-                  className="self-start"
-                  disabled={editing !== undefined}
-                  onClick={() => setEditing(entry)}
-                  aria-label={`${entry.description} bearbeiten`}
-                >
-                  Bearbeiten
-                </Button>
-              </li>
+                entry={entry}
+                isEditing={editing !== undefined}
+                onEdit={() => setEditing(entry)}
+              />
             ))}
           </ul>
         )}

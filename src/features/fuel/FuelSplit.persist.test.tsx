@@ -36,6 +36,7 @@ vi.mock("./actions", () => ({
 
 const entry: FuelFillUpEntry = {
   id: "11111111-1111-1111-1111-111111111111",
+  isSettled: false,
   filledOn: "2025-11-04",
   miriamKm: 256.4,
   simonKm: 352.2,
@@ -324,7 +325,7 @@ describe("history details", () => {
 
     // The history is a list to scan, so a row shows what was settled and not
     // the six numbers behind it.
-    expect(history().queryByText("256,4 km")).not.toBeInTheDocument();
+    expect(history().getByText("256,4 km")).not.toBeVisible();
     expect(summaryToggle()).toHaveAttribute("aria-expanded", "false");
   });
 
@@ -398,7 +399,7 @@ describe("history details", () => {
     await user.click(summaryToggle());
     await user.click(history().getByRole("button", { expanded: true }));
 
-    expect(history().queryByText("256,4 km")).not.toBeInTheDocument();
+    expect(history().getByText("256,4 km")).not.toBeVisible();
   });
 
   it("names the mode a 50/50 fill-up was settled under", async () => {
@@ -451,7 +452,7 @@ describe("history details", () => {
     );
 
     expect(history().getByText("1.052,4 km")).toBeInTheDocument();
-    expect(history().queryByText("900,0 km")).not.toBeInTheDocument();
+    expect(history().getByText("900,0 km")).not.toBeVisible();
   });
 
   it("leaves the delete button working while the row is open", async () => {
