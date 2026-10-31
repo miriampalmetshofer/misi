@@ -34,7 +34,9 @@ async function saveFillUp(page: Page, amount: string) {
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/tanken");
-  await expect(page.getByRole("heading", { name: "Auto", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Auto", exact: true }),
+  ).toBeVisible();
 });
 
 test("a saved fill-up survives a reload", async ({ page }) => {
@@ -43,7 +45,26 @@ test("a saved fill-up survives a reload", async ({ page }) => {
   await saveFillUp(page, amount);
   await page.reload();
 
-  await expect(historyRow(page, amount)).toBeVisible();
+  const row = historyRow(page, amount);
+  await expect(row).toBeVisible();
+  await row.getByRole("button", { expanded: false }).click();
+  await expect(
+    row.getByRole("checkbox", { name: "Zahlung beglichen" }),
+  ).not.toBeChecked();
+  await row.getByRole("checkbox").click();
+  await expect(row.getByRole("checkbox")).toBeChecked();
+  await page.reload();
+  await expect(row.getByRole("button", { expanded: false })).toContainText(
+    "Zahlung beglichen",
+  );
+  await row.getByRole("button", { expanded: false }).click();
+  await expect(row.getByRole("checkbox")).toBeChecked();
+  await row.getByRole("checkbox").click();
+  await expect(row.getByRole("checkbox")).not.toBeChecked();
+  await page.reload();
+  await expect(row.getByRole("button", { expanded: false })).not.toContainText(
+    "Zahlung beglichen",
+  );
 });
 
 test("a saved fill-up keeps the split that was on screen", async ({ page }) => {

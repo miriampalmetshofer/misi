@@ -9,6 +9,7 @@ export type CarExpenseEntry = {
   miriamAmount: number;
   simonAmount: number;
   note: string;
+  isSettled: boolean;
 };
 
 export function parseDecimal(value: string, max: number) {

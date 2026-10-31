@@ -36,6 +36,7 @@ vi.mock("./actions", () => ({
 
 const entry: FuelFillUpEntry = {
   id: "11111111-1111-1111-1111-111111111111",
+  isSettled: false,
   filledOn: "2025-11-04",
   miriamKm: 256.4,
   simonKm: 352.2,

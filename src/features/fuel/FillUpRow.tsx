@@ -5,6 +5,10 @@ import { ChevronDown, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Item, ItemActions, ItemContent } from "@/components/ui/item";
+import {
+  PaymentSettledMark,
+  PaymentStatus,
+} from "@/features/payments/PaymentStatus";
 import { euro } from "@/lib/format";
 import { formatDate } from "@/lib/date";
 import { FillUpDetails } from "./FillUpDetails";
@@ -46,8 +50,9 @@ export function FillUpRow({ entry, onDelete }: FillUpRowProps) {
             <span className="text-sm leading-normal text-muted-foreground tabular-nums">
               {date}
             </span>
-            <span className="text-sm leading-snug font-medium tabular-nums">
+            <span className="flex items-center gap-2 text-sm leading-snug font-medium tabular-nums">
               {euro.format(entry.paidAmount)}
+              {entry.isSettled ? <PaymentSettledMark /> : null}
             </span>
             <span className="text-sm leading-normal text-muted-foreground tabular-nums">
               Miriam {euro.format(entry.miriamAmount)} · Simon{" "}
@@ -76,8 +81,9 @@ export function FillUpRow({ entry, onDelete }: FillUpRowProps) {
       </ItemActions>
 
       {isExpanded ? (
-        <div className="basis-full" id={detailsId}>
+        <div className="flex basis-full flex-col gap-3" id={detailsId}>
           <FillUpDetails entry={entry} />
+          <PaymentStatus kind="fuel" id={entry.id} isSettled={entry.isSettled} />
         </div>
       ) : null}
     </Item>

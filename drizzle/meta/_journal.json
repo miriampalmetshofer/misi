@@ -57,6 +57,13 @@
       "when": 1793453336593,
       "tag": "0007_fair_captain_stacy",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793457845609,
+      "tag": "0008_clear_leech",
+      "breakpoints": true
     }
   ]
 }

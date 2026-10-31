@@ -11,6 +11,7 @@ import { CarExpenses } from "./CarExpenses";
 
 const entry = {
   id: "11111111-1111-1111-1111-111111111111",
+  isSettled: false,
   spentOn: "2026-10-24",
   description: "Winterreifen",
   totalAmount: 480,
@@ -62,6 +63,7 @@ it.each([33.33, 66.67, 99.99])(
   async (miriamPercent) => {
     const user = userEvent.setup();
     render(<CarExpenses entries={[{ ...entry, miriamPercent }]} />);
+    await user.click(screen.getByRole("button", { expanded: false }));
     await user.click(
       screen.getByRole("button", { name: "Winterreifen bearbeiten" }),
     );
@@ -78,6 +80,7 @@ it("opens existing data for editing and preserves it when saving fails", async (
     error: "Speichern fehlgeschlagen",
   });
   render(<CarExpenses entries={[entry]} />);
+  await user.click(screen.getByRole("button", { expanded: false }));
   await user.click(
     screen.getByRole("button", { name: "Winterreifen bearbeiten" }),
   );
@@ -101,6 +104,7 @@ it("opens existing data for editing and preserves it when saving fails", async (
 it("requires confirmation before deleting and supports cancellation", async () => {
   const user = userEvent.setup();
   render(<CarExpenses entries={[entry]} />);
+  await user.click(screen.getByRole("button", { expanded: false }));
   await user.click(
     screen.getByRole("button", { name: "Winterreifen bearbeiten" }),
   );

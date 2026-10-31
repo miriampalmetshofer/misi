@@ -103,6 +103,8 @@ export const fuelFillUps = pgTable(
     miriamAmount: euros("miriam_amount").notNull(),
     simonAmount: euros("simon_amount").notNull(),
 
+    isSettled: boolean("is_settled").notNull().default(false),
+
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -131,6 +133,7 @@ export const carExpenses = pgTable(
     miriamAmount: euros("miriam_amount").notNull(),
     simonAmount: euros("simon_amount").notNull(),
     note: varchar("note", { length: 2000 }).notNull().default(""),
+    isSettled: boolean("is_settled").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

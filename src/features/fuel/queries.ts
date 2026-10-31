@@ -43,5 +43,6 @@ export async function getFuelFillUps(): Promise<FuelFillUpEntry[]> {
     offsetMode: isOffsetMode(row.offsetMode) ? row.offsetMode : "proportional",
     miriamAmount: row.miriamAmount,
     simonAmount: row.simonAmount,
+    isSettled: row.isSettled,
   }));
 }
