@@ -51,8 +51,8 @@ export function ExpenseRow({
         />
       </button>
 
-      {isExpanded ? (
-        <div id={detailsId} className="flex flex-col gap-3">
+      <div hidden={!isExpanded} id={detailsId}>
+        <div className="flex flex-col gap-3">
           <dl className="grid gap-1 border-t pt-3 text-sm text-muted-foreground">
             <div className="flex justify-between gap-2">
               <dt>Miriam · {toField(entry.miriamPercent)} %</dt>
@@ -88,7 +88,7 @@ export function ExpenseRow({
             Bearbeiten
           </Button>
         </div>
-      ) : null}
+      </div>
     </li>
   );
 }

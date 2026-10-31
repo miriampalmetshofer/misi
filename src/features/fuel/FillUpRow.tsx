@@ -80,12 +80,12 @@ export function FillUpRow({ entry, onDelete }: FillUpRowProps) {
         </Button>
       </ItemActions>
 
-      {isExpanded ? (
-        <div className="flex basis-full flex-col gap-3" id={detailsId}>
+      <div hidden={!isExpanded} className="basis-full" id={detailsId}>
+        <div className="flex flex-col gap-3">
           <FillUpDetails entry={entry} />
           <PaymentStatus kind="fuel" id={entry.id} isSettled={entry.isSettled} />
         </div>
-      ) : null}
+      </div>
     </Item>
   );
 }

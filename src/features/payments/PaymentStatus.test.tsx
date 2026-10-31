@@ -52,7 +52,11 @@ it.each(["fuel", "expense"] as const)(
         />
       );
     const { rerender } = render(row(false));
-    expect(screen.queryByText("Zahlung beglichen")).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole("button", { expanded: false })).queryByText(
+        "Zahlung beglichen",
+      ),
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { expanded: false }));
     await user.click(
@@ -71,7 +75,11 @@ it.each(["fuel", "expense"] as const)(
       ),
     ).toBeInTheDocument();
     rerender(row(false));
-    expect(screen.queryByText("Zahlung beglichen")).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole("button", { expanded: false })).queryByText(
+        "Zahlung beglichen",
+      ),
+    ).not.toBeInTheDocument();
   },
 );
 
@@ -104,3 +112,61 @@ it("blocks repeated changes while saving and lets a failed payment update be ret
   expect(setPaymentSettled).toHaveBeenCalledTimes(2);
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
+
+it.each([
+  ["fuel", "returned"],
+  ["expense", "returned"],
+  ["fuel", "thrown"],
+  ["expense", "thrown"],
+] as const)(
+  "preserves %s pending state and a %s failure across collapse and reopen",
+  async (kind, failure) => {
+    const user = userEvent.setup();
+    let fail!: () => void;
+    vi.mocked(setPaymentSettled).mockReturnValueOnce(
+      new Promise((resolve, reject) => {
+        fail = () =>
+          failure === "returned"
+            ? resolve({ error: "Speichern fehlgeschlagen" })
+            : reject(new Error("offline"));
+      }),
+    );
+    render(
+      kind === "fuel" ? (
+        <FillUpRow entry={fuel} onDelete={() => {}} />
+      ) : (
+        <ExpenseRow entry={expense} isEditing={false} onEdit={() => {}} />
+      ),
+    );
+
+    await user.click(screen.getByRole("button", { expanded: false }));
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { expanded: true }));
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { expanded: false }));
+    expect(screen.getByRole("checkbox")).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    await user.click(screen.getByRole("checkbox"));
+    expect(setPaymentSettled).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole("button", { expanded: true }));
+    await act(async () => {
+      fail();
+    });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { expanded: false }));
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      failure === "returned" ? "Speichern fehlgeschlagen" : "nicht gespeichert",
+    );
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(screen.getByRole("checkbox")).not.toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    await user.click(screen.getByRole("checkbox"));
+    expect(setPaymentSettled).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  },
+);
