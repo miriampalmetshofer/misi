@@ -207,3 +207,31 @@ describe("withDrafts", () => {
     expect(next[1].items[0].name).toBe("Semmeln");
   });
 });
+
+describe("uncategorized items", () => {
+  const uncategorized = { id: "uncategorized", name: "Noch nicht zugeordnet", icon: "🏷️", items: [] };
+
+  it("adds uncategorized rows optimistically with a null category", () => {
+    const next = reduce([...categories(), uncategorized], {
+      type: "add", itemId: "pending-1", name: "Tomate", categoryId: null,
+    });
+    expect(next[2].items[0]).toMatchObject({ name: "Tomate", categoryId: null, isSyncing: true });
+  });
+
+  it("moves rows into and out of the uncategorized section", () => {
+    const moved = reduce([...categories(), uncategorized], {
+      type: "move", itemId: "apfel", categoryId: null,
+    });
+    expect(moved[0].items).toHaveLength(0);
+    expect(moved[2].items[0].categoryId).toBeNull();
+    const assigned = reduce(moved, { type: "move", itemId: "apfel", categoryId: "gebaeck" });
+    expect(assigned[1].items[0].categoryId).toBe("gebaeck");
+    expect(assigned[2].items).toHaveLength(0);
+  });
+
+  it("restores an uncategorized checked item to its own section", () => {
+    const item = { id: "tomate", name: "Tomate", categoryId: null, isChecked: false };
+    const restored = reduce([...categories(), uncategorized], { type: "restore", item, index: 0 });
+    expect(restored[2].items).toEqual([item]);
+  });
+});

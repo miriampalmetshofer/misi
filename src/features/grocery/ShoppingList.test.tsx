@@ -284,7 +284,7 @@ describe("adding an item", () => {
     await user.click(addButton("Obst"));
     await user.click(addButton("Gebäck"));
 
-    await waitFor(() => expect(screen.getAllByRole("textbox")).toHaveLength(1));
+    await waitFor(() => expect(screen.getAllByRole("textbox", { name: /bearbeiten/ })).toHaveLength(1));
     expect(within(section("Gebäck")).getByRole("textbox")).toBeInTheDocument();
   });
 
@@ -315,7 +315,7 @@ describe("renaming an item", () => {
     const { user } = renderList();
 
     await user.click(screen.getByRole("button", { name: "Äpfel" }));
-    const input = screen.getByRole("textbox");
+    const input = screen.getByRole("textbox", { name: /bearbeiten/ });
     await user.clear(input);
     await user.type(input, "Grüne Äpfel{Enter}");
 
@@ -334,14 +334,14 @@ describe("renaming an item", () => {
 
     await user.click(screen.getByRole("button", { name: "Äpfel" }));
 
-    expect(screen.getByRole("textbox")).toHaveValue("Äpfel");
+    expect(screen.getByRole("textbox", { name: /bearbeiten/ })).toHaveValue("Äpfel");
   });
 
   it("reverts on Escape without calling the server", async () => {
     const { user } = renderList();
 
     await user.click(screen.getByRole("button", { name: "Äpfel" }));
-    await user.type(screen.getByRole("textbox"), " kaputt{Escape}");
+    await user.type(screen.getByRole("textbox", { name: /bearbeiten/ }), " kaputt{Escape}");
 
     expect(await screen.findByText("Äpfel")).toBeInTheDocument();
     expect(actions.renameGroceryItem).not.toHaveBeenCalled();
@@ -354,7 +354,7 @@ describe("renaming an item", () => {
     await user.keyboard("{Enter}");
 
     await waitFor(() =>
-      expect(screen.queryByRole("textbox")).not.toBeInTheDocument(),
+      expect(screen.queryByRole("textbox", { name: /bearbeiten/ })).not.toBeInTheDocument(),
     );
     expect(actions.renameGroceryItem).not.toHaveBeenCalled();
   });
@@ -363,7 +363,7 @@ describe("renaming an item", () => {
     const { user } = renderList();
 
     await user.click(screen.getByRole("button", { name: "Äpfel" }));
-    await user.clear(screen.getByRole("textbox"));
+    await user.clear(screen.getByRole("textbox", { name: /bearbeiten/ }));
     await user.keyboard("{Enter}");
 
     expect(await screen.findByText("Äpfel")).toBeInTheDocument();
@@ -408,7 +408,7 @@ describe("deleting an item", () => {
     const { user } = renderList();
 
     await user.click(screen.getByRole("button", { name: "Äpfel" }));
-    const input = screen.getByRole("textbox");
+    const input = screen.getByRole("textbox", { name: /bearbeiten/ });
     await user.clear(input);
     await user.type(input, "Birnen");
 
@@ -485,7 +485,7 @@ describe("moving an item between categories", () => {
     fireEvent.click(editButton);
 
     expect(row).not.toHaveAttribute("data-dragging", "true");
-    expect(screen.getByRole("textbox")).toHaveValue("Äpfel");
+    expect(screen.getByRole("textbox", { name: /bearbeiten/ })).toHaveValue("Äpfel");
     expect(actions.moveGroceryItem).not.toHaveBeenCalled();
   });
 
@@ -729,7 +729,7 @@ describe("moving an item between categories", () => {
     fireEvent.pointerUp(row, { clientX: 12, clientY: 12, pointerId: 1 });
     fireEvent.click(screen.getByRole("button", { name: "Äpfel" }));
 
-    expect(screen.getByRole("textbox")).toHaveValue("Äpfel");
+    expect(screen.getByRole("textbox", { name: /bearbeiten/ })).toHaveValue("Äpfel");
   });
 
   // iOS begins selecting text during the long press itself and shows its

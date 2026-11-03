@@ -18,12 +18,14 @@ import type {
 import { ShoppingListView } from "./ShoppingListView";
 import { useOptimisticMutation } from "@/lib/useOptimisticMutation";
 import { useUndo } from "./useUndo";
+import { categorySectionId, UNCATEGORIZED_ID } from "./categories";
 
 type ShoppingListProps = {
   categories: ShoppingListCategory[];
+  categoryPreferences?: Record<string, string>;
 };
 
-type Draft = { id: string; categoryId: string; name: string };
+type Draft = { id: string; categoryId: string | null; name: string };
 
 // Ids the client makes up for rows the database does not have yet: an open
 // draft row, and an added item still waiting for its server-assigned uuid.
@@ -37,14 +39,15 @@ function isClientOnlyId(itemId: string) {
 }
 
 type OptimisticAction =
-  | { type: "add"; itemId: string; name: string; categoryId: string }
-  | { type: "move"; itemId: string; categoryId: string }
+  | { type: "add"; itemId: string; name: string; categoryId: string | null }
+  | { type: "move"; itemId: string; categoryId: string | null }
   | { type: "rename"; itemId: string; name: string }
   | { type: "remove"; itemId: string }
   | { type: "restore"; item: ShoppingListItem; index: number };
 
 export function ShoppingList({
   categories: persistedCategories,
+  categoryPreferences = {},
 }: ShoppingListProps) {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [categories, addOptimistic] = useOptimistic(
@@ -54,7 +57,7 @@ export function ShoppingList({
   const { mutate } = useOptimisticMutation(addOptimistic);
   const undo = useUndo<{ item: ShoppingListItem; index: number }>();
 
-  function createDraftItem(categoryId: string) {
+  function createDraftItem(categoryId: string | null) {
     const currentDraft = drafts[0];
 
     if (currentDraft) {
@@ -73,7 +76,7 @@ export function ShoppingList({
     return draftId;
   }
 
-  function quickAddItem(name: string, categoryId: string) {
+  function quickAddItem(name: string, categoryId: string | null) {
     const currentDraft = drafts[0];
 
     if (currentDraft) {
@@ -100,16 +103,20 @@ export function ShoppingList({
     );
   }
 
-  function addItem(name: string, categoryId: string) {
+  function addItem(name: string, categoryId: string | null, rememberCategory = true) {
     const itemId = `${PENDING_ID_PREFIX}${crypto.randomUUID()}`;
     mutate(
       addGroceryItem,
-      { name, categoryId },
+      {
+        name,
+        categoryId: categoryId ?? "",
+        ...(rememberCategory ? {} : { rememberCategory: "false" }),
+      },
       { type: "add", itemId, name, categoryId },
     );
   }
 
-  function saveDraftItem(draftId: string, name: string, categoryId: string) {
+  function saveDraftItem(draftId: string, name: string, categoryId: string | null) {
     removeDraft(draftId);
 
     const nextName = name.trim();
@@ -131,12 +138,12 @@ export function ShoppingList({
     );
   }
 
-  function moveItem(itemId: string, categoryId: string) {
+  function moveItem(itemId: string, categoryId: string | null) {
     if (isClientOnlyId(itemId)) return;
 
     mutate(
       moveGroceryItem,
-      { itemId, categoryId },
+      { itemId, categoryId: categoryId ?? "" },
       { type: "move", itemId, categoryId },
     );
   }
@@ -187,6 +194,8 @@ export function ShoppingList({
   return (
     <ShoppingListView
       categories={withDrafts(categories, drafts)}
+      categoryPreferences={categoryPreferences}
+      onQuickEntry={addItem}
       onAddDraft={createDraftItem}
       onCheckItem={checkItem}
       onDeleteItem={deleteItem}
@@ -227,7 +236,7 @@ export function withDrafts(
 
   return categories.map((category) => {
     const categoryDrafts = drafts.filter(
-      (draft) => draft.categoryId === category.id,
+      (draft) => categorySectionId(draft.categoryId) === category.id,
     );
     if (categoryDrafts.length === 0) {
       return category;
@@ -258,7 +267,7 @@ export function reduce(
   switch (action.type) {
     case "add":
       return categories.map((category) => {
-        if (category.id !== action.categoryId) {
+        if (category.id !== categorySectionId(action.categoryId)) {
           return category;
         }
 
@@ -285,7 +294,7 @@ export function reduce(
       }));
     case "move": {
       const targetCategoryExists = categories.some(
-        (category) => category.id === action.categoryId,
+        (category) => category.id === categorySectionId(action.categoryId),
       );
 
       if (!targetCategoryExists) {
@@ -301,7 +310,7 @@ export function reduce(
       }
 
       return categories.map((category) => {
-        if (category.id === action.categoryId) {
+        if (category.id === categorySectionId(action.categoryId)) {
           return {
             ...category,
             items: [
@@ -337,11 +346,10 @@ export function reduce(
         return categories;
       }
 
-      // The item's category can have been removed during the undo window, so
-      // fall back to the same last category the server assigns orphans to.
+      // Deleted categories leave their items uncategorized.
       const target =
-        categories.find((category) => category.id === action.item.categoryId) ??
-        categories.at(-1);
+        categories.find((category) => category.id === categorySectionId(action.item.categoryId)) ??
+        categories.find((category) => category.id === UNCATEGORIZED_ID) ?? categories.at(-1);
 
       return categories.map((category) => {
         if (category !== target) {

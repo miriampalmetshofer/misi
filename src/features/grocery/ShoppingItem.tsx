@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import type { OptimisticShoppingListItem } from "./types";
+import { UNCATEGORIZED_ID } from "./categories";
 import { useDraggableItem } from "./drag/useDraggableItem";
 
 type ShoppingItemRowProps = {
@@ -15,7 +16,7 @@ type ShoppingItemRowProps = {
   onCheck: (itemId: string) => void;
   onDelete: (itemId: string) => void;
   onRename: (itemId: string, name: string) => void;
-  onSaveDraft: (draftId: string, name: string, categoryId: string) => void;
+  onSaveDraft: (draftId: string, name: string, categoryId: string | null) => void;
   onUpdateDraft: (draftId: string, name: string) => void;
 };
 
@@ -34,7 +35,7 @@ export function ShoppingItem({
   const { dragProps, isDragging, isDimmed } = useDraggableItem({
     canDrag: isPersisted && !isEditing,
     itemId: item.id,
-    sourceCategoryId: item.categoryId,
+    sourceCategoryId: item.categoryId ?? UNCATEGORIZED_ID,
   });
 
   useEffect(() => {
