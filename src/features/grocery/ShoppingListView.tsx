@@ -66,8 +66,8 @@ export function ShoppingListView({
           <span>Home</span>
         </Link>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="page-headline">Einkaufsliste</h1>
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 sm:mt-10">
+          <h1 className="page-headline mt-0 sm:mt-0">Einkaufsliste</h1>
           <Button
             variant={shoppingMode ? "secondary" : "outline"}
             aria-pressed={shoppingMode}
@@ -145,11 +145,13 @@ export function ShoppingListView({
             <UndoBar key={undo.id} label={undo.label} onUndo={onUndoCheck} />
           )}
         </div>
-        {!shoppingMode && <GroceryQuickEntry
-          categories={categories.filter((category) => category.id !== UNCATEGORIZED_ID)}
-          categoryPreferences={categoryPreferences}
-          onAdd={onQuickEntry}
-        />}
+        <div hidden={shoppingMode}>
+          <GroceryQuickEntry
+            categories={categories.filter((category) => category.id !== UNCATEGORIZED_ID)}
+            categoryPreferences={categoryPreferences}
+            onAdd={onQuickEntry}
+          />
+        </div>
       </footer>
     </div>
   );

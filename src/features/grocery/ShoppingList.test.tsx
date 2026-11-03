@@ -901,3 +901,16 @@ describe("shopping mode", () => {
     expect(screen.getByText("Äpfel")).toBeInTheDocument();
   });
 });
+
+
+it("preserves unfinished quick entry and its category across shopping mode toggles", async () => {
+  const { user } = renderList();
+  await user.type(screen.getByRole("textbox", { name: /^Artikel hinzufügen$/ }), "Hafermilch");
+  await user.selectOptions(screen.getByRole("combobox", { name: "Kategorie für neuen Artikel" }), "obst");
+  await user.click(screen.getByRole("button", { name: "Einkaufsmodus" }));
+  expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Einkaufsmodus" }));
+  expect(screen.getByRole("textbox", { name: /^Artikel hinzufügen$/ })).toHaveValue("Hafermilch");
+  expect(screen.getByRole("combobox", { name: "Kategorie für neuen Artikel" })).toHaveValue("obst");
+});
