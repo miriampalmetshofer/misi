@@ -210,7 +210,7 @@ describe("withDrafts", () => {
 });
 
 describe("uncategorized items", () => {
-  const uncategorized = { id: "uncategorized", name: "Noch nicht zugeordnet", icon: "🏷️", items: [] };
+  const uncategorized = { id: "uncategorized", name: "Noch nicht zugeordnet", icon: "🏷️", quickAddItems: [], items: [] };
 
   it("adds uncategorized rows optimistically with a null category", () => {
     const next = reduce([...categories(), uncategorized], {

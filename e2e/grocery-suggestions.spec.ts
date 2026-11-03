@@ -5,9 +5,12 @@ test("category suggestions can be changed, used and cleared after reload", async
   const section = page.getByRole("region", { name: "Gebäck", exact: true });
   const name = `Testgebäck-${Date.now()}`;
   await section.getByRole("button", { name: "Gebäck: Vorschläge bearbeiten" }).click();
-  await section.getByRole("textbox", { name: "Ein Vorschlag pro Zeile" }).fill(`${name}\nSemmeln\n semmeln `);
-  await section.getByRole("button", { name: "Speichern", exact: true }).click();
-  await expect(section.getByRole("textbox")).toHaveCount(0);
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("textbox", { name: "Neuer Vorschlag" }).fill(name);
+  await dialog.getByRole("button", { name: "Vorschlag hinzufügen" }).click();
+  await dialog.getByRole("textbox", { name: "Neuer Vorschlag" }).fill("Semmeln");
+  await dialog.getByRole("button", { name: "Speichern", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
   await page.reload();
   await expect(section.getByRole("button", { name: `${name} schnell hinzufügen`, exact: true })).toBeVisible();
   await expect(section.getByRole("button", { name: "Semmeln schnell hinzufügen", exact: true })).toHaveCount(1);
@@ -19,9 +22,11 @@ test("category suggestions can be changed, used and cleared after reload", async
   await expect(row).toBeVisible();
   await expect(section.getByRole("button", { name: `${name} schnell hinzufügen`, exact: true })).toHaveCount(0);
   await section.getByRole("button", { name: "Gebäck: Vorschläge bearbeiten" }).click();
-  await section.getByRole("textbox").fill("");
-  await section.getByRole("button", { name: "Speichern", exact: true }).click();
-  await expect(section.getByRole("textbox")).toHaveCount(0);
+  while (await dialog.getByRole("button", { name: /entfernen$/ }).count()) {
+    await dialog.getByRole("button", { name: /entfernen$/ }).first().click();
+  }
+  await dialog.getByRole("button", { name: "Speichern", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
   await page.reload();
   await expect(section.getByRole("button", { name: "Semmeln schnell hinzufügen", exact: true })).toHaveCount(0);
   await expect(section.getByRole("button", { name: "Gebäck: Vorschläge bearbeiten" })).toBeVisible();
@@ -34,14 +39,16 @@ test("a concurrent edit does not overwrite the other person's suggestions", asyn
   const section = page.getByRole("region", { name: "Haushalt", exact: true });
   const otherSection = other.getByRole("region", { name: "Haushalt", exact: true });
   await section.getByRole("button", { name: "Haushalt: Vorschläge bearbeiten" }).click();
-  await section.getByRole("textbox").fill("Eigene Änderung");
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("textbox", { name: "Neuer Vorschlag" }).fill("Eigene Änderung");
   await otherSection.getByRole("button", { name: "Haushalt: Vorschläge bearbeiten" }).click();
-  await otherSection.getByRole("textbox").fill("Geteilte Änderung");
-  await otherSection.getByRole("button", { name: "Speichern", exact: true }).click();
-  await expect(otherSection.getByRole("textbox")).toHaveCount(0);
-  await section.getByRole("button", { name: "Speichern", exact: true }).click();
-  await expect(section.getByRole("alert")).toContainText("inzwischen geändert");
-  await expect(section.getByRole("textbox")).toHaveValue("Eigene Änderung");
+  const otherDialog = other.getByRole("dialog");
+  await otherDialog.getByRole("textbox", { name: "Neuer Vorschlag" }).fill("Geteilte Änderung");
+  await otherDialog.getByRole("button", { name: "Speichern", exact: true }).click();
+  await expect(otherDialog).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Speichern", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toContainText("inzwischen geändert");
+  await expect(dialog.getByRole("textbox", { name: "Neuer Vorschlag" })).toHaveValue("Eigene Änderung");
   await page.reload();
   await expect(section.getByRole("button", { name: "Geteilte Änderung schnell hinzufügen", exact: true })).toBeVisible();
   await other.close();

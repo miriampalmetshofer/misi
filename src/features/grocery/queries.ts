@@ -42,7 +42,7 @@ export async function getShoppingListData(): Promise<ShoppingListData> {
     ),
     categories: [
       ...categories,
-      { id: UNCATEGORIZED_ID, name: "Noch nicht zugeordnet", icon: "🏷️" },
+      { id: UNCATEGORIZED_ID, name: "Noch nicht zugeordnet", icon: "🏷️", quickAddItems: [] },
     ].map((category) => ({
       id: category.id,
       name: category.name,

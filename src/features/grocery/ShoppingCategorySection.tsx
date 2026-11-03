@@ -64,7 +64,7 @@ export function ShoppingCategorySection({
     <section
       aria-labelledby={`category-${category.id}`}
       className={cn(
-        "overflow-hidden rounded-xl border bg-card",
+        !isUncategorized && "overflow-hidden rounded-xl border bg-card",
         "transition-[box-shadow,scale] duration-200",
         // The target lights up in its own colour rather than filling with grey,
         // which would read as disabled, and keeps its own background. Just the
@@ -77,30 +77,38 @@ export function ShoppingCategorySection({
       data-category-id={category.id}
       data-drop-target={isDropTarget || undefined}
     >
-      <div className={`flex items-center gap-3 px-3 py-2.5 ${headerStyle}`}>
-        <span
-          aria-hidden="true"
-          className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background/70 text-lg"
-        >
-          {category.icon}
-        </span>
+      <div className={cn("flex items-center gap-3 px-3 py-2.5", !isUncategorized && headerStyle)}>
+        {!isUncategorized && (
+          <span
+            aria-hidden="true"
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background/70 text-lg"
+          >
+            {category.icon}
+          </span>
+        )}
 
         <h2
-          className="min-w-0 flex-1 text-sm font-bold uppercase tracking-wider break-words"
+          className={cn(
+            "min-w-0 flex-1 text-sm break-words",
+            isUncategorized ? "font-medium text-muted-foreground" : "font-bold uppercase tracking-wider",
+          )}
           id={`category-${category.id}`}
         >
           {category.name}
         </h2>
 
         {openItemCount > 0 && (
-          <span className="shrink-0 rounded-full border bg-background/70 px-2 py-0.5 text-xs tabular-nums text-muted-foreground">
+          <span className={cn(
+            "shrink-0 text-xs tabular-nums text-muted-foreground",
+            !isUncategorized && "rounded-full border bg-background/70 px-2 py-0.5",
+          )}>
             {openItemCount}
           </span>
         )}
       </div>
 
       {category.items.length > 0 && (
-        <ul className="divide-y border-b">
+        <ul className={cn("divide-y", isUncategorized ? "rounded-xl border bg-card" : "border-b")}>
           {category.items.map((item) => (
             <ShoppingItem
               item={item}
@@ -116,41 +124,43 @@ export function ShoppingCategorySection({
       )}
 
       {!isUncategorized && (
-      <div className="px-3 py-2">
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            className="h-10 min-w-0 flex-1 justify-start px-2 font-normal text-muted-foreground hover:text-foreground"
-            onPointerDown={(event) => event.preventDefault()}
-            onClick={() => onAddDraft(itemCategoryId(category.id))}
-          >
-            <Plus aria-hidden="true" />
-            Eigener Artikel
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-10 text-muted-foreground"
-            aria-label={`${category.name}: Vorschläge bearbeiten`}
-            aria-expanded={isEditingSuggestions}
-            onClick={() => setEditingSuggestions(true)}
-            disabled={isEditingSuggestions}
-          >
-            <Pencil aria-hidden="true" />
-          </Button>
-        </div>
+        <div className="px-3 py-2">
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              className="h-10 min-w-0 flex-1 justify-start px-2 font-normal text-muted-foreground hover:text-foreground"
+              onPointerDown={(event) => event.preventDefault()}
+              onClick={() => onAddDraft(itemCategoryId(category.id))}
+            >
+              <Plus aria-hidden="true" />
+              Eigener Artikel
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-10 text-muted-foreground"
+              aria-label={`${category.name}: Vorschläge bearbeiten`}
+              aria-haspopup="dialog"
+              aria-expanded={isEditingSuggestions}
+              onClick={() => setEditingSuggestions(true)}
+              disabled={isEditingSuggestions}
+            >
+              <Pencil aria-hidden="true" />
+            </Button>
+          </div>
 
-        {(quickAddItems.length > 0 || isEditingSuggestions) && (
-          <div className="mt-3 px-2 pb-1">
-            <p className="section-label">Vorschläge</p>
+          {isEditingSuggestions && (
+            <GrocerySuggestionsEditor
+              categoryId={category.id}
+              categoryName={category.name}
+              suggestions={category.quickAddItems}
+              onClose={() => setEditingSuggestions(false)}
+            />
+          )}
 
-            {isEditingSuggestions ? (
-              <GrocerySuggestionsEditor
-                categoryId={category.id}
-                suggestions={category.quickAddItems}
-                onClose={() => setEditingSuggestions(false)}
-              />
-            ) : (
+          {quickAddItems.length > 0 && (
+            <div className="mt-3 px-2 pb-1">
+              <p className="section-label">Vorschläge</p>
               <div
                 aria-label={`${category.name} schnell hinzufügen`}
                 className="mt-2 flex flex-wrap gap-2"
@@ -170,10 +180,9 @@ export function ShoppingCategorySection({
                   </Button>
                 ))}
               </div>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
       )}
     </section>
   );
