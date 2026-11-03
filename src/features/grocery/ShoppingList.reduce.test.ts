@@ -9,9 +9,10 @@ function categories(): OptimisticShoppingListCategory[] {
       id: "obst",
       name: "Obst",
       icon: "🍎",
+      quickAddItems: ["Bananen", "Nektarinen"],
       items: [{ id: "apfel", name: "Äpfel", isChecked: false, categoryId: "obst" }],
     },
-    { id: "gebaeck", name: "Gebäck", icon: "🥐", items: [] },
+    { id: "gebaeck", name: "Gebäck", icon: "🥐", quickAddItems: [], items: [] },
   ];
 }
 

@@ -21,6 +21,7 @@ export const groceryCategories = pgTable(
     name: text("name").notNull(),
     icon: text("icon").notNull().default("📦"),
     sortOrder: integer("sort_order").notNull().default(0),
+    quickAddItems: text("quick_add_items").array().notNull().default(sql`'{}'::text[]`),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
