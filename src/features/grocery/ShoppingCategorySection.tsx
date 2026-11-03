@@ -77,7 +77,7 @@ export function ShoppingCategorySection({
       data-category-id={category.id}
       data-drop-target={isDropTarget || undefined}
     >
-      <div className={cn("flex items-center gap-3 px-3 py-2.5", !isUncategorized && headerStyle)}>
+      <div className={cn("flex items-center gap-3 px-3 py-1.5", !isUncategorized && headerStyle)}>
         {!isUncategorized && (
           <span
             aria-hidden="true"
@@ -88,10 +88,7 @@ export function ShoppingCategorySection({
         )}
 
         <h2
-          className={cn(
-            "min-w-0 flex-1 text-sm break-words",
-            isUncategorized ? "font-medium text-muted-foreground" : "font-bold uppercase tracking-wider",
-          )}
+          className="min-w-0 flex-1 text-sm font-normal text-muted-foreground break-words"
           id={`category-${category.id}`}
         >
           {category.name}
@@ -104,6 +101,20 @@ export function ShoppingCategorySection({
           )}>
             {openItemCount}
           </span>
+        )}
+        {!isUncategorized && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-10 text-muted-foreground"
+            aria-label={`${category.name}: Vorschläge bearbeiten`}
+            aria-haspopup="dialog"
+            aria-expanded={isEditingSuggestions}
+            onClick={() => setEditingSuggestions(true)}
+            disabled={isEditingSuggestions}
+          >
+            <Pencil aria-hidden="true" />
+          </Button>
         )}
       </div>
 
@@ -125,29 +136,15 @@ export function ShoppingCategorySection({
 
       {!isUncategorized && (
         <div className="px-3 py-2">
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              className="h-10 min-w-0 flex-1 justify-start px-2 font-normal text-muted-foreground hover:text-foreground"
-              onPointerDown={(event) => event.preventDefault()}
-              onClick={() => onAddDraft(itemCategoryId(category.id))}
-            >
-              <Plus aria-hidden="true" />
-              Eigener Artikel
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-10 text-muted-foreground"
-              aria-label={`${category.name}: Vorschläge bearbeiten`}
-              aria-haspopup="dialog"
-              aria-expanded={isEditingSuggestions}
-              onClick={() => setEditingSuggestions(true)}
-              disabled={isEditingSuggestions}
-            >
-              <Pencil aria-hidden="true" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            className="h-10 w-full justify-start px-2 font-normal text-muted-foreground hover:text-foreground"
+            onPointerDown={(event) => event.preventDefault()}
+            onClick={() => onAddDraft(itemCategoryId(category.id))}
+          >
+            <Plus aria-hidden="true" />
+            Eigener Artikel
+          </Button>
 
           {isEditingSuggestions && (
             <GrocerySuggestionsEditor
