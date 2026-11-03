@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import type { OptimisticShoppingListItem } from "./types";
+import { UNCATEGORIZED_ID } from "./categories";
 import { useDraggableItem } from "./drag/useDraggableItem";
 
 type ShoppingItemRowProps = {
@@ -34,7 +35,7 @@ export function ShoppingItem({
   const { dragProps, isDragging, isDimmed } = useDraggableItem({
     canDrag: isPersisted && !isEditing,
     itemId: item.id,
-    sourceCategoryId: item.categoryId,
+    sourceCategoryId: item.categoryId ?? UNCATEGORIZED_ID,
   });
 
   useEffect(() => {
@@ -55,7 +56,7 @@ export function ShoppingItem({
         setIsEditing(false);
       }
 
-      onSaveDraft(item.id, nextName, item.categoryId);
+      onSaveDraft(item.id, nextName, item.categoryId ?? UNCATEGORIZED_ID);
       return;
     }
 

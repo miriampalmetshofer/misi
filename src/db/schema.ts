@@ -53,6 +53,13 @@ export const groceryItems = pgTable(
   ],
 );
 
+export const groceryCategoryPreferences = pgTable("grocery_category_preference", {
+  normalizedName: text("normalized_name").primaryKey(),
+  categoryId: uuid("category_id").notNull().references(() => groceryCategories.id, {
+    onDelete: "cascade",
+  }),
+});
+
 export const groceryCategoriesRelations = relations(
   groceryCategories,
   ({ many }) => ({

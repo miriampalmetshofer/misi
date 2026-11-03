@@ -18,9 +18,11 @@ import type {
 import { ShoppingListView } from "./ShoppingListView";
 import { useOptimisticMutation } from "@/lib/useOptimisticMutation";
 import { useUndo } from "./useUndo";
+import { UNCATEGORIZED_ID } from "./categories";
 
 type ShoppingListProps = {
   categories: ShoppingListCategory[];
+  categoryPreferences?: Record<string, string>;
 };
 
 type Draft = { id: string; categoryId: string; name: string };
@@ -45,6 +47,7 @@ type OptimisticAction =
 
 export function ShoppingList({
   categories: persistedCategories,
+  categoryPreferences = {},
 }: ShoppingListProps) {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [categories, addOptimistic] = useOptimistic(
@@ -100,11 +103,15 @@ export function ShoppingList({
     );
   }
 
-  function addItem(name: string, categoryId: string) {
+  function addItem(name: string, categoryId: string, rememberCategory = true) {
     const itemId = `${PENDING_ID_PREFIX}${crypto.randomUUID()}`;
     mutate(
       addGroceryItem,
-      { name, categoryId },
+      {
+        name,
+        categoryId: categoryId === UNCATEGORIZED_ID ? "" : categoryId,
+        ...(rememberCategory ? {} : { rememberCategory: "false" }),
+      },
       { type: "add", itemId, name, categoryId },
     );
   }
@@ -136,7 +143,7 @@ export function ShoppingList({
 
     mutate(
       moveGroceryItem,
-      { itemId, categoryId },
+      { itemId, categoryId: categoryId === UNCATEGORIZED_ID ? "" : categoryId },
       { type: "move", itemId, categoryId },
     );
   }
@@ -187,6 +194,8 @@ export function ShoppingList({
   return (
     <ShoppingListView
       categories={withDrafts(categories, drafts)}
+      categoryPreferences={categoryPreferences}
+      onQuickEntry={addItem}
       onAddDraft={createDraftItem}
       onCheckItem={checkItem}
       onDeleteItem={deleteItem}
@@ -240,7 +249,7 @@ export function withDrafts(
         ...categoryDrafts.map(
           (draft): OptimisticShoppingListItem => ({
             id: draft.id,
-            categoryId: draft.categoryId,
+            categoryId: draft.categoryId === UNCATEGORIZED_ID ? null : draft.categoryId,
             isChecked: false,
             isDraft: true,
             name: draft.name,
@@ -268,7 +277,7 @@ export function reduce(
             ...category.items,
             {
               id: action.itemId,
-              categoryId: action.categoryId,
+              categoryId: action.categoryId === UNCATEGORIZED_ID ? null : action.categoryId,
               isChecked: false,
               isSyncing: true,
               name: action.name,
@@ -296,7 +305,7 @@ export function reduce(
         .flatMap((category) => category.items)
         .find((item) => item.id === action.itemId);
 
-      if (!movedItem || movedItem.categoryId === action.categoryId) {
+      if (!movedItem || (movedItem.categoryId ?? UNCATEGORIZED_ID) === action.categoryId) {
         return categories;
       }
 
@@ -308,7 +317,7 @@ export function reduce(
               ...category.items,
               {
                 ...movedItem,
-                categoryId: action.categoryId,
+                categoryId: action.categoryId === UNCATEGORIZED_ID ? null : action.categoryId,
                 isSyncing: true,
               },
             ],
@@ -337,11 +346,10 @@ export function reduce(
         return categories;
       }
 
-      // The item's category can have been removed during the undo window, so
-      // fall back to the same last category the server assigns orphans to.
+      // Deleted categories leave their items uncategorized.
       const target =
-        categories.find((category) => category.id === action.item.categoryId) ??
-        categories.at(-1);
+        categories.find((category) => category.id === (action.item.categoryId ?? UNCATEGORIZED_ID)) ??
+        categories.find((category) => category.id === UNCATEGORIZED_ID) ?? categories.at(-1);
 
       return categories.map((category) => {
         if (category !== target) {

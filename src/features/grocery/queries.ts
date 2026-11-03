@@ -5,7 +5,7 @@ import { asc, eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import {
   DEFAULT_GROCERY_CATEGORIES,
-  FALLBACK_GROCERY_CATEGORY,
+  UNCATEGORIZED_ID,
 } from "./categories";
 import type { ShoppingListData, ShoppingListItem } from "./types";
 
@@ -24,34 +24,25 @@ export async function getShoppingListData(): Promise<ShoppingListData> {
     .where(eq(schema.groceryItems.isChecked, false))
     .orderBy(asc(schema.groceryItems.createdAt));
 
-  const categoryIds = new Set(categories.map((category) => category.id));
-  const fallbackCategoryId =
-    categories.find((category) => category.name === FALLBACK_GROCERY_CATEGORY)
-      ?.id ?? categories.at(-1)?.id;
   const categoryItems = new Map<string, ShoppingListItem[]>();
 
   for (const item of items) {
-    const categoryId =
-      item.categoryId && categoryIds.has(item.categoryId)
-        ? item.categoryId
-        : fallbackCategoryId;
-
-    if (!categoryId) {
-      continue;
-    }
-
-    const existing = categoryItems.get(categoryId) ?? [];
-    existing.push({
-      id: item.id,
-      name: item.name,
-      isChecked: item.isChecked,
-      categoryId,
-    });
-    categoryItems.set(categoryId, existing);
+    const key = item.categoryId ?? UNCATEGORIZED_ID;
+    const existing = categoryItems.get(key) ?? [];
+    existing.push(item);
+    categoryItems.set(key, existing);
   }
 
+  const preferences = await db.select().from(schema.groceryCategoryPreferences);
+
   return {
-    categories: categories.map((category) => ({
+    categoryPreferences: Object.fromEntries(
+      preferences.map((preference) => [preference.normalizedName, preference.categoryId]),
+    ),
+    categories: [
+      ...categories,
+      { id: UNCATEGORIZED_ID, name: "Noch nicht zugeordnet", icon: "🏷️" },
+    ].map((category) => ({
       id: category.id,
       name: category.name,
       icon: category.icon,

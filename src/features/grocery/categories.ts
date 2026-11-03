@@ -1,4 +1,8 @@
-export const FALLBACK_GROCERY_CATEGORY = "Sonstiges";
+export const UNCATEGORIZED_ID = "uncategorized";
+
+export function normalizeItemName(name: string) {
+  return name.trim().replace(/\s+/g, " ").toLocaleLowerCase("de-AT");
+}
 
 export const DEFAULT_GROCERY_CATEGORIES = [
   { name: "Obst", icon: "🍎", sortOrder: 10 },
