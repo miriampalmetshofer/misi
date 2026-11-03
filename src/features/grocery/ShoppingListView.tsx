@@ -55,8 +55,8 @@ export function ShoppingListView({
     // stops with the finger a little past the end of the content, so a clip
     // flush against the box would cut the row off exactly while the user is
     // aiming at the last category.
-    <div className="min-h-screen overflow-clip [overflow-clip-margin:6rem] bg-background text-base text-foreground">
-      <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-5 pb-52 pt-6 sm:px-8 sm:pt-10">
+    <div className="flex min-h-dvh flex-col overflow-clip [overflow-clip-margin:6rem] bg-background text-base text-foreground">
+      <main className="mx-auto flex flex-1 w-full max-w-3xl flex-col px-5 pb-8 pt-6 sm:px-8 sm:pt-10">
         <Link href="/" className="page-back-link">
           <ChevronLeft aria-hidden="true" className="size-4" />
           <span>Home</span>
@@ -93,7 +93,7 @@ export function ShoppingListView({
         </DragProvider>
       </main>
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50">
+      <footer className="pointer-events-none sticky bottom-0 z-50 shrink-0">
         {/* Keep the live region mounted so new undo offers are announced. */}
         <div aria-live="polite" className="flex justify-center px-5 pb-3 sm:px-8">
           {undo && (
@@ -105,7 +105,7 @@ export function ShoppingListView({
           categoryPreferences={categoryPreferences}
           onAdd={onQuickEntry}
         />
-      </div>
+      </footer>
     </div>
   );
 }
