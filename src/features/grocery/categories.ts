@@ -1,5 +1,13 @@
 export const UNCATEGORIZED_ID = "uncategorized";
 
+export function categorySectionId(categoryId: string | null) {
+  return categoryId ?? UNCATEGORIZED_ID;
+}
+
+export function itemCategoryId(sectionId: string) {
+  return sectionId === UNCATEGORIZED_ID ? null : sectionId;
+}
+
 export function normalizeItemName(name: string) {
   return name.trim().replace(/\s+/g, " ").toLocaleLowerCase("de-AT");
 }

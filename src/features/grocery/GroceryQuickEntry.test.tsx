@@ -26,7 +26,7 @@ describe("grocery quick entry", () => {
   it("adds an unknown item without a category and keeps focus ready for the next", async () => {
     const { user, onAdd, input, select } = setup();
     await user.type(input, "Tomate{Enter}");
-    expect(onAdd).toHaveBeenCalledWith("Tomate", UNCATEGORIZED_ID, false);
+    expect(onAdd).toHaveBeenCalledWith("Tomate", null, false);
     expect(input).toHaveValue("");
     expect(input).toHaveFocus();
     expect(select).toHaveValue(UNCATEGORIZED_ID);
@@ -59,7 +59,7 @@ describe("grocery quick entry", () => {
     await user.type(input, "Tomate");
     await user.selectOptions(select, UNCATEGORIZED_ID);
     await user.click(screen.getByRole("button"));
-    expect(onAdd).toHaveBeenLastCalledWith("Tomate", UNCATEGORIZED_ID, false);
+    expect(onAdd).toHaveBeenLastCalledWith("Tomate", null, false);
   });
 
   it("keeps a deliberate category selection while completing the item name", async () => {

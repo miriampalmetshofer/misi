@@ -8,19 +8,19 @@ import { ShoppingCategorySection } from "./ShoppingCategorySection";
 import { DragProvider } from "./drag/DragContext";
 import { UndoBar } from "./UndoBar";
 import { GroceryQuickEntry } from "./GroceryQuickEntry";
-import { UNCATEGORIZED_ID } from "./categories";
+import { itemCategoryId, UNCATEGORIZED_ID } from "./categories";
 
 type ShoppingListViewProps = {
   categories: OptimisticShoppingListCategory[];
   categoryPreferences: Record<string, string>;
-  onQuickEntry: (name: string, categoryId: string, rememberCategory: boolean) => void;
-  onAddDraft: (categoryId: string) => void;
+  onQuickEntry: (name: string, categoryId: string | null, rememberCategory: boolean) => void;
+  onAddDraft: (categoryId: string | null) => void;
   onCheckItem: (itemId: string) => void;
   onDeleteItem: (itemId: string) => void;
-  onMoveItem: (itemId: string, categoryId: string) => void;
-  onQuickAddItem: (name: string, categoryId: string) => void;
+  onMoveItem: (itemId: string, categoryId: string | null) => void;
+  onQuickAddItem: (name: string, categoryId: string | null) => void;
   onRenameItem: (itemId: string, name: string) => void;
-  onSaveDraft: (draftId: string, name: string, categoryId: string) => void;
+  onSaveDraft: (draftId: string, name: string, categoryId: string | null) => void;
   onUndoCheck: () => void;
   onUpdateDraft: (draftId: string, name: string) => void;
   undo: { id: string; label: string } | null;
@@ -72,7 +72,7 @@ export function ShoppingListView({
             : `${openItemCount} Artikel offen`}
         </p>
 
-        <DragProvider onMoveItem={onMoveItem}>
+        <DragProvider onMoveItem={(itemId, sectionId) => onMoveItem(itemId, itemCategoryId(sectionId))}>
           <div className="mt-8 space-y-3 sm:mt-12 sm:space-y-4">
             {categories.filter((category) =>
               category.id !== UNCATEGORIZED_ID || category.items.length > 0,

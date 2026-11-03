@@ -19,6 +19,8 @@ export default async function globalSetup() {
     { encoding: "utf8" },
   ).trim();
 
+  process.env.E2E_DATABASE_URL = connectionUri;
+
   // drizzle.config.ts loads the .env files itself, which would override
   // DATABASE_URL_UNPOOLED back to dev/miriam. DRIZZLE_MIGRATE_URL wins there.
   execFileSync("npx", ["drizzle-kit", "migrate"], {

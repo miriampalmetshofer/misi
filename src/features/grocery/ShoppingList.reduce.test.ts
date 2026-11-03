@@ -213,14 +213,14 @@ describe("uncategorized items", () => {
 
   it("adds uncategorized rows optimistically with a null category", () => {
     const next = reduce([...categories(), uncategorized], {
-      type: "add", itemId: "pending-1", name: "Tomate", categoryId: "uncategorized",
+      type: "add", itemId: "pending-1", name: "Tomate", categoryId: null,
     });
     expect(next[2].items[0]).toMatchObject({ name: "Tomate", categoryId: null, isSyncing: true });
   });
 
   it("moves rows into and out of the uncategorized section", () => {
     const moved = reduce([...categories(), uncategorized], {
-      type: "move", itemId: "apfel", categoryId: "uncategorized",
+      type: "move", itemId: "apfel", categoryId: null,
     });
     expect(moved[0].items).toHaveLength(0);
     expect(moved[2].items[0].categoryId).toBeNull();

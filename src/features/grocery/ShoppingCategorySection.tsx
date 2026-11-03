@@ -10,6 +10,7 @@ import {
   FALLBACK_CATEGORY_DROP_GLOW_STYLE,
   FALLBACK_CATEGORY_HEADER_STYLE,
   QUICK_ADD_GROCERY_ITEMS,
+  itemCategoryId,
   UNCATEGORIZED_ID,
 } from "./categories";
 import type { OptimisticShoppingListCategory } from "./types";
@@ -18,12 +19,12 @@ import { useDropTarget } from "./drag/useDropTarget";
 
 type ShoppingCategorySectionProps = {
   category: OptimisticShoppingListCategory;
-  onAddDraft: (categoryId: string) => void;
+  onAddDraft: (categoryId: string | null) => void;
   onCheckItem: (itemId: string) => void;
   onDeleteItem: (itemId: string) => void;
-  onQuickAddItem: (name: string, categoryId: string) => void;
+  onQuickAddItem: (name: string, categoryId: string | null) => void;
   onRenameItem: (itemId: string, name: string) => void;
-  onSaveDraft: (draftId: string, name: string, categoryId: string) => void;
+  onSaveDraft: (draftId: string, name: string, categoryId: string | null) => void;
   onUpdateDraft: (draftId: string, name: string) => void;
 };
 
@@ -126,7 +127,7 @@ export function ShoppingCategorySection({
             variant="ghost"
             className="h-9 w-full justify-start px-2 font-normal text-muted-foreground hover:text-foreground"
             onPointerDown={(event) => event.preventDefault()}
-            onClick={() => onAddDraft(category.id)}
+            onClick={() => onAddDraft(itemCategoryId(category.id))}
           >
             <Plus aria-hidden="true" />
             Eigener Artikel
@@ -148,7 +149,7 @@ export function ShoppingCategorySection({
                     className="h-9 rounded-lg border-dashed px-3 font-normal text-muted-foreground shadow-none hover:text-foreground"
                     key={itemName}
                     onPointerDown={(event) => event.preventDefault()}
-                    onClick={() => onQuickAddItem(itemName, category.id)}
+                    onClick={() => onQuickAddItem(itemName, itemCategoryId(category.id))}
                   >
                     <Plus aria-hidden="true" />
                     {itemName}

@@ -16,7 +16,7 @@ type ShoppingItemRowProps = {
   onCheck: (itemId: string) => void;
   onDelete: (itemId: string) => void;
   onRename: (itemId: string, name: string) => void;
-  onSaveDraft: (draftId: string, name: string, categoryId: string) => void;
+  onSaveDraft: (draftId: string, name: string, categoryId: string | null) => void;
   onUpdateDraft: (draftId: string, name: string) => void;
 };
 
@@ -56,7 +56,7 @@ export function ShoppingItem({
         setIsEditing(false);
       }
 
-      onSaveDraft(item.id, nextName, item.categoryId ?? UNCATEGORIZED_ID);
+      onSaveDraft(item.id, nextName, item.categoryId);
       return;
     }
 

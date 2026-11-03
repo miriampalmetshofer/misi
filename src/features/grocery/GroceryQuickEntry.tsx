@@ -5,13 +5,13 @@ import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { normalizeItemName, UNCATEGORIZED_ID } from "./categories";
+import { itemCategoryId, normalizeItemName, UNCATEGORIZED_ID } from "./categories";
 import type { ShoppingListCategory } from "./types";
 
 type Props = {
   categories: ShoppingListCategory[];
   categoryPreferences: Record<string, string>;
-  onAdd: (name: string, categoryId: string, rememberCategory: boolean) => void;
+  onAdd: (name: string, categoryId: string | null, rememberCategory: boolean) => void;
 };
 
 export function GroceryQuickEntry({
@@ -39,7 +39,7 @@ export function GroceryQuickEntry({
           if (!trimmed || trimmed.length > 80) return;
           onAdd(
             trimmed,
-            categoryId,
+            itemCategoryId(categoryId),
             selection !== null && categoryId !== UNCATEGORIZED_ID,
           );
           setName("");

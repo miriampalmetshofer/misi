@@ -5,7 +5,7 @@ import { and, eq, isNotNull, sql } from "drizzle-orm";
 
 import { getDb, schema } from "@/db";
 import { getGroceryCategories } from "./queries";
-import { normalizeItemName } from "./categories";
+import { normalizeItemNameSql } from "./itemNameSql";
 
 const MAX_ITEM_NAME_LENGTH = 80;
 const SHOPPING_LIST_PATH = "/einkauf";
@@ -36,10 +36,13 @@ export async function addGroceryItem(formData: FormData) {
       name: schema.groceryItems.name,
     });
 
-  const [[item]] = categoryId && getString(formData, "rememberCategory") !== "false"
-    ? await db.batch([insertItem, rememberCategory(name, categoryId)])
-    : [await insertItem];
+  if (categoryId && getString(formData, "rememberCategory") !== "false") {
+    const [items] = await db.batch([insertItem, rememberCategory(name, categoryId)]);
+    revalidatePath(SHOPPING_LIST_PATH);
+    return items[0];
+  }
 
+  const [item] = await insertItem;
   revalidatePath(SHOPPING_LIST_PATH);
   return item;
 }
@@ -132,7 +135,7 @@ function getString(formData: FormData, key: string) {
 
 function rememberCategory(name: string, categoryId: string) {
   return getDb().insert(schema.groceryCategoryPreferences)
-    .values({ normalizedName: normalizeItemName(name), categoryId })
+    .values({ normalizedName: normalizeItemNameSql(sql`${name}`), categoryId })
     .onConflictDoUpdate({
       target: schema.groceryCategoryPreferences.normalizedName,
       set: { categoryId },
@@ -142,7 +145,7 @@ function rememberCategory(name: string, categoryId: string) {
 function rememberItemCategory(itemId: string) {
   return getDb().insert(schema.groceryCategoryPreferences)
     .select(getDb().select({
-      normalizedName: sql<string>`lower(trim(regexp_replace(${schema.groceryItems.name}, '\\s+', ' ', 'g')))`.as("normalized_name"),
+      normalizedName: normalizeItemNameSql(schema.groceryItems.name).as("normalized_name"),
       categoryId: sql<string>`${schema.groceryItems.categoryId}`.as("category_id"),
     }).from(schema.groceryItems).where(and(
       eq(schema.groceryItems.id, itemId),
