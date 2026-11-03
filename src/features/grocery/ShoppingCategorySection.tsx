@@ -10,6 +10,7 @@ import {
   FALLBACK_CATEGORY_DROP_GLOW_STYLE,
   FALLBACK_CATEGORY_HEADER_STYLE,
   QUICK_ADD_GROCERY_ITEMS,
+  UNCATEGORIZED_ID,
 } from "./categories";
 import type { OptimisticShoppingListCategory } from "./types";
 import { ShoppingItem } from "./ShoppingItem";
@@ -37,6 +38,7 @@ export function ShoppingCategorySection({
   onUpdateDraft,
 }: ShoppingCategorySectionProps) {
   const isDropTarget = useDropTarget(category);
+  const isUncategorized = category.id === UNCATEGORIZED_ID;
 
   const existingItemNames = new Set(
     category.items.map((item) => normalizeItemName(item.name)),
@@ -59,7 +61,7 @@ export function ShoppingCategorySection({
     <section
       aria-labelledby={`category-${category.id}`}
       className={cn(
-        "overflow-hidden rounded-xl border bg-card",
+        !isUncategorized && "overflow-hidden rounded-xl border bg-card",
         "transition-[box-shadow,scale] duration-200",
         // The target lights up in its own colour rather than filling with grey,
         // which would read as disabled, and keeps its own background. Just the
@@ -72,30 +74,38 @@ export function ShoppingCategorySection({
       data-category-id={category.id}
       data-drop-target={isDropTarget || undefined}
     >
-      <div className={`flex items-center gap-3 px-3 py-2.5 ${headerStyle}`}>
-        <span
-          aria-hidden="true"
-          className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background/70 text-lg"
-        >
-          {category.icon}
-        </span>
+      <div className={cn("flex items-center gap-3 px-3 py-2.5", !isUncategorized && headerStyle)}>
+        {!isUncategorized && (
+          <span
+            aria-hidden="true"
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background/70 text-lg"
+          >
+            {category.icon}
+          </span>
+        )}
 
         <h2
-          className="min-w-0 flex-1 text-sm font-bold uppercase tracking-wider break-words"
+          className={cn(
+            "min-w-0 flex-1 text-sm break-words",
+            isUncategorized ? "font-medium text-muted-foreground" : "font-bold uppercase tracking-wider",
+          )}
           id={`category-${category.id}`}
         >
           {category.name}
         </h2>
 
         {openItemCount > 0 && (
-          <span className="shrink-0 rounded-full border bg-background/70 px-2 py-0.5 text-xs tabular-nums text-muted-foreground">
+          <span className={cn(
+            "shrink-0 text-xs tabular-nums text-muted-foreground",
+            !isUncategorized && "rounded-full border bg-background/70 px-2 py-0.5",
+          )}>
             {openItemCount}
           </span>
         )}
       </div>
 
       {category.items.length > 0 && (
-        <ul className="divide-y border-b">
+        <ul className={cn("divide-y", isUncategorized ? "rounded-xl border bg-card" : "border-b")}>
           {category.items.map((item) => (
             <ShoppingItem
               item={item}
@@ -110,43 +120,45 @@ export function ShoppingCategorySection({
         </ul>
       )}
 
-      <div className="px-3 py-2">
-        <Button
-          variant="ghost"
-          className="h-9 w-full justify-start px-2 font-normal text-muted-foreground hover:text-foreground"
-          onPointerDown={(event) => event.preventDefault()}
-          onClick={() => onAddDraft(category.id)}
-        >
-          <Plus aria-hidden="true" />
-          Eigener Artikel
-        </Button>
+      {!isUncategorized && (
+        <div className="px-3 py-2">
+          <Button
+            variant="ghost"
+            className="h-9 w-full justify-start px-2 font-normal text-muted-foreground hover:text-foreground"
+            onPointerDown={(event) => event.preventDefault()}
+            onClick={() => onAddDraft(category.id)}
+          >
+            <Plus aria-hidden="true" />
+            Eigener Artikel
+          </Button>
 
-        {quickAddItems.length > 0 && (
-          <div className="mt-3 px-2 pb-1">
-            <p className="section-label">Vorschläge</p>
+          {quickAddItems.length > 0 && (
+            <div className="mt-3 px-2 pb-1">
+              <p className="section-label">Vorschläge</p>
 
-            <div
-              aria-label={`${category.name} schnell hinzufügen`}
-              className="mt-2 flex flex-wrap gap-2"
-            >
-              {quickAddItems.map((itemName) => (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  aria-label={`${itemName} schnell hinzufügen`}
-                  className="h-9 rounded-lg border-dashed px-3 font-normal text-muted-foreground shadow-none hover:text-foreground"
-                  key={itemName}
-                  onPointerDown={(event) => event.preventDefault()}
-                  onClick={() => onQuickAddItem(itemName, category.id)}
-                >
-                  <Plus aria-hidden="true" />
-                  {itemName}
-                </Button>
-              ))}
+              <div
+                aria-label={`${category.name} schnell hinzufügen`}
+                className="mt-2 flex flex-wrap gap-2"
+              >
+                {quickAddItems.map((itemName) => (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-label={`${itemName} schnell hinzufügen`}
+                    className="h-9 rounded-lg border-dashed px-3 font-normal text-muted-foreground shadow-none hover:text-foreground"
+                    key={itemName}
+                    onPointerDown={(event) => event.preventDefault()}
+                    onClick={() => onQuickAddItem(itemName, category.id)}
+                  >
+                    <Plus aria-hidden="true" />
+                    {itemName}
+                  </Button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </section>
   );
 }
