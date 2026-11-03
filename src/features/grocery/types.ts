@@ -9,6 +9,7 @@ export type ShoppingListCategory = {
   id: string;
   name: string;
   icon: string;
+  quickAddItems: string[];
   items: ShoppingListItem[];
 };
 

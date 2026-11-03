@@ -79,6 +79,7 @@ function categories(): ShoppingListCategory[] {
       id: "obst",
       name: "Obst",
       icon: "🍎",
+      quickAddItems: ["Bananen", "Nektarinen"],
       items: [
         { id: "apfel", name: "Äpfel", isChecked: false, categoryId: "obst" },
         {
@@ -89,7 +90,7 @@ function categories(): ShoppingListCategory[] {
         },
       ],
     },
-    { id: "gebaeck", name: "Gebäck", icon: "🥐", items: [] },
+    { id: "gebaeck", name: "Gebäck", icon: "🥐", quickAddItems: [], items: [] },
   ];
 }
 

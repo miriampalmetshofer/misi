@@ -156,3 +156,51 @@ function rememberItemCategory(itemId: string) {
       set: { categoryId: sql`excluded.category_id` },
     });
 }
+
+export async function saveGrocerySuggestions(formData: FormData) {
+  const categoryId = getString(formData, "categoryId");
+  const names = getString(formData, "suggestions")
+    .split("\n")
+    .map((name) => name.trim())
+    .filter(Boolean);
+
+  if (names.length > 30 || names.some((name) => name.length > MAX_ITEM_NAME_LENGTH)) {
+    return { error: "Bitte höchstens 30 Vorschläge mit je maximal 80 Zeichen eingeben." };
+  }
+
+  const categories = await getGroceryCategories();
+  if (!categories.some((category) => category.id === categoryId)) {
+    return { error: "Diese Kategorie wurde nicht gefunden." };
+  }
+
+  let original: unknown;
+  try {
+    original = JSON.parse(getString(formData, "original"));
+  } catch {
+    return { error: "Bitte die Seite neu laden und erneut versuchen." };
+  }
+  if (!Array.isArray(original) || !original.every((name): name is string => typeof name === "string")) {
+    return { error: "Bitte die Seite neu laden und erneut versuchen." };
+  }
+
+  const seen = new Set<string>();
+  const quickAddItems = names.filter((name) => {
+    const key = name.toLocaleLowerCase("de-AT");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  const updated = await getDb().update(schema.groceryCategories)
+    .set({ quickAddItems, updatedAt: new Date() })
+    .where(and(
+      eq(schema.groceryCategories.id, categoryId),
+      eq(schema.groceryCategories.quickAddItems, original),
+    ))
+    .returning({ id: schema.groceryCategories.id });
+  if (!updated.length) {
+    return { error: "Die Vorschläge wurden inzwischen geändert. Bitte neu laden und erneut bearbeiten." };
+  }
+  revalidatePath(SHOPPING_LIST_PATH);
+  return { success: true };
+}

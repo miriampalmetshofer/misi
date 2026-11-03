@@ -9,9 +9,10 @@ function categories(): OptimisticShoppingListCategory[] {
       id: "obst",
       name: "Obst",
       icon: "🍎",
+      quickAddItems: ["Bananen", "Nektarinen"],
       items: [{ id: "apfel", name: "Äpfel", isChecked: false, categoryId: "obst" }],
     },
-    { id: "gebaeck", name: "Gebäck", icon: "🥐", items: [] },
+    { id: "gebaeck", name: "Gebäck", icon: "🥐", quickAddItems: [], items: [] },
   ];
 }
 
@@ -209,7 +210,7 @@ describe("withDrafts", () => {
 });
 
 describe("uncategorized items", () => {
-  const uncategorized = { id: "uncategorized", name: "Noch nicht zugeordnet", icon: "🏷️", items: [] };
+  const uncategorized = { id: "uncategorized", name: "Noch nicht zugeordnet", icon: "🏷️", quickAddItems: [], items: [] };
 
   it("adds uncategorized rows optimistically with a null category", () => {
     const next = reduce([...categories(), uncategorized], {

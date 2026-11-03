@@ -6,6 +6,7 @@ import { getDb, schema } from "@/db";
 import {
   DEFAULT_GROCERY_CATEGORIES,
   UNCATEGORIZED_ID,
+  QUICK_ADD_GROCERY_ITEMS,
 } from "./categories";
 import type { ShoppingListData, ShoppingListItem } from "./types";
 
@@ -41,11 +42,12 @@ export async function getShoppingListData(): Promise<ShoppingListData> {
     ),
     categories: [
       ...categories,
-      { id: UNCATEGORIZED_ID, name: "Noch nicht zugeordnet", icon: "🏷️" },
+      { id: UNCATEGORIZED_ID, name: "Noch nicht zugeordnet", icon: "🏷️", quickAddItems: [] },
     ].map((category) => ({
       id: category.id,
       name: category.name,
       icon: category.icon,
+      quickAddItems: category.quickAddItems,
       items: categoryItems.get(category.id) ?? [],
     })),
   };
@@ -63,7 +65,10 @@ export async function getGroceryCategories() {
   // onConflictDoNothing guards the rare concurrent-create case.
   await db
     .insert(schema.groceryCategories)
-    .values(DEFAULT_GROCERY_CATEGORIES.map((category) => ({ ...category })))
+    .values(DEFAULT_GROCERY_CATEGORIES.map((category) => ({
+      ...category,
+      quickAddItems: QUICK_ADD_GROCERY_ITEMS[category.name] ?? [],
+    })))
     .onConflictDoNothing();
 
   return selectGroceryCategories();

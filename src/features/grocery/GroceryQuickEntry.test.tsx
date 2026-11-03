@@ -9,8 +9,8 @@ function setup(preferences: Record<string, string> = {}) {
   const onAdd = vi.fn();
   render(<GroceryQuickEntry
     categories={[
-      { id: "veg", name: "Gemüse", icon: "🥦", items: [] },
-      { id: "other", name: "Sonstiges", icon: "📦", items: [] },
+      { id: "veg", name: "Gemüse", icon: "🥦", quickAddItems: [], items: [] },
+      { id: "other", name: "Sonstiges", icon: "📦", quickAddItems: [], items: [] },
     ]}
     categoryPreferences={preferences}
     onAdd={onAdd}
