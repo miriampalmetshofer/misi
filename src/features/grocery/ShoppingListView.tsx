@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronLeft } from "lucide-react";
 
 import type { OptimisticShoppingListCategory } from "./types";
@@ -41,6 +44,7 @@ export function ShoppingListView({
   onUpdateDraft,
   undo,
 }: ShoppingListViewProps) {
+  const [shoppingMode, setShoppingMode] = useState(false);
   const openItemCount = categories.reduce(
     (total, category) =>
       total + category.items.filter((item) => !item.isDraft).length,
@@ -62,7 +66,16 @@ export function ShoppingListView({
           <span>Home</span>
         </Link>
 
-        <h1 className="page-headline">Einkaufsliste</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="page-headline">Einkaufsliste</h1>
+          <Button
+            variant={shoppingMode ? "secondary" : "outline"}
+            aria-pressed={shoppingMode}
+            onClick={() => setShoppingMode((active) => !active)}
+          >
+            Einkaufsmodus
+          </Button>
+        </div>
 
         {/* Checked items never reach the client (queries.ts), so a
             "done of total" pair would always read zero. */}
@@ -72,25 +85,57 @@ export function ShoppingListView({
             : `${openItemCount} Artikel offen`}
         </p>
 
-        <DragProvider onMoveItem={(itemId, sectionId) => onMoveItem(itemId, itemCategoryId(sectionId))}>
-          <div className="mt-8 space-y-3 sm:mt-12 sm:space-y-4">
-            {categories.filter((category) =>
-              category.id !== UNCATEGORIZED_ID || category.items.length > 0,
-            ).map((category) => (
-              <ShoppingCategorySection
-                category={category}
-                key={category.id}
-                onAddDraft={onAddDraft}
-                onCheckItem={onCheckItem}
-                onDeleteItem={onDeleteItem}
-                onQuickAddItem={onQuickAddItem}
-                onRenameItem={onRenameItem}
-                onSaveDraft={onSaveDraft}
-                onUpdateDraft={onUpdateDraft}
-              />
-            ))}
+        {shoppingMode ? (
+          <div className="mt-8 space-y-6">
+            {categories.map((category) => {
+              const items = category.items.filter((item) => !item.isDraft);
+              if (items.length === 0) return null;
+              return (
+                <section key={category.id} aria-labelledby={`shopping-${category.id}`}>
+                  <h2 id={`shopping-${category.id}`} className="mb-1 text-sm font-medium text-muted-foreground">
+                    {category.name}
+                  </h2>
+                  <ul className="divide-y">
+                    {items.map((item) => (
+                      <li key={item.id} data-syncing={item.isSyncing} className="data-[syncing=true]:opacity-70">
+                        <label className="flex min-h-12 cursor-pointer items-center gap-3 py-3">
+                          <Checkbox
+                            aria-label={`${item.name} erledigt markieren`}
+                            className="size-5 shrink-0 rounded-full border-muted-foreground"
+                            disabled={item.isSyncing}
+                            checked={false}
+                            onCheckedChange={() => onCheckItem(item.id)}
+                          />
+                          <span className="min-w-0 break-words">{item.name}</span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              );
+            })}
           </div>
-        </DragProvider>
+        ) : (
+          <DragProvider onMoveItem={(itemId, sectionId) => onMoveItem(itemId, itemCategoryId(sectionId))}>
+            <div className="mt-8 space-y-3 sm:mt-12 sm:space-y-4">
+              {categories.filter((category) =>
+                category.id !== UNCATEGORIZED_ID || category.items.length > 0,
+              ).map((category) => (
+                <ShoppingCategorySection
+                  category={category}
+                  key={category.id}
+                  onAddDraft={onAddDraft}
+                  onCheckItem={onCheckItem}
+                  onDeleteItem={onDeleteItem}
+                  onQuickAddItem={onQuickAddItem}
+                  onRenameItem={onRenameItem}
+                  onSaveDraft={onSaveDraft}
+                  onUpdateDraft={onUpdateDraft}
+                />
+              ))}
+            </div>
+          </DragProvider>
+        )}
       </main>
 
       <footer className="pointer-events-none sticky bottom-0 z-50 shrink-0">
@@ -100,11 +145,11 @@ export function ShoppingListView({
             <UndoBar key={undo.id} label={undo.label} onUndo={onUndoCheck} />
           )}
         </div>
-        <GroceryQuickEntry
+        {!shoppingMode && <GroceryQuickEntry
           categories={categories.filter((category) => category.id !== UNCATEGORIZED_ID)}
           categoryPreferences={categoryPreferences}
           onAdd={onQuickEntry}
-        />
+        />}
       </footer>
     </div>
   );

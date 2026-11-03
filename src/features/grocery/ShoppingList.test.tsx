@@ -881,3 +881,23 @@ describe("taking a check-off back", () => {
   // would mean fake timers, and the action mocks deliberately never resolve, so
   // the transition would wait on a clock the test has frozen.
 });
+
+describe("shopping mode", () => {
+  it("hides planning controls and empty categories, checks off items and keeps undo across toggles", async () => {
+    const { user } = renderList();
+    const toggle = screen.getByRole("button", { name: "Einkaufsmodus" });
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByText("Vorschläge")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Eigener Artikel" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Gebäck" })).not.toBeInTheDocument();
+    await user.click(screen.getByText("Äpfel"));
+    expect(screen.queryByText("Äpfel")).not.toBeInTheDocument();
+    expect(fieldsOf(actions.setGroceryItemChecked)).toEqual({ itemId: "apfel", isChecked: "true" });
+    await user.click(toggle);
+    expect(screen.getByRole("heading", { name: "Gebäck" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Rückgängig" }));
+    expect(screen.getByText("Äpfel")).toBeInTheDocument();
+  });
+});
