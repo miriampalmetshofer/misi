@@ -176,7 +176,7 @@ export function MealForm({
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="mt-3 flex flex-wrap gap-2">
                     <Button
                       type="submit"
                       disabled={!name.trim() || !hasPerson || pending}

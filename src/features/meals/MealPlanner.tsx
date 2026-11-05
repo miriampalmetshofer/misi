@@ -55,6 +55,7 @@ export function MealPlanner({
         </div>
         <div className="flex items-center gap-1">
           <Button
+            nativeButton={false}
             render={<Link href={weekHref(-7)} />}
             variant="outline"
             size="icon-lg"
@@ -63,6 +64,7 @@ export function MealPlanner({
             <ChevronLeft />
           </Button>
           <Button
+            nativeButton={false}
             render={<Link href={`/speiseplan?woche=${weekStart(today)}`} />}
             variant="outline"
             size="lg"
@@ -70,6 +72,7 @@ export function MealPlanner({
             Diese Woche
           </Button>
           <Button
+            nativeButton={false}
             render={<Link href={weekHref(7)} />}
             variant="outline"
             size="icon-lg"
