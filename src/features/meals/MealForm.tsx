@@ -1,9 +1,11 @@
 "use client";
 
-import { useId, useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition } from "react";
 import { Dialog } from "@base-ui/react/dialog";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { saveMeal, deleteMeal } from "./actions";
 import {
   personLabels,
@@ -26,6 +28,7 @@ export function MealForm({
   context: string;
 }) {
   const id = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(entry?.name ?? "");
   const [selected, setSelected] = useState({
     miriam: entry?.person !== "simon",
@@ -78,15 +81,31 @@ export function MealForm({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/30" />
+        <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 duration-150 motion-safe:data-open:animate-in motion-safe:data-open:fade-in-0" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <Dialog.Popup
-            initialFocus
-            className="max-h-full w-full max-w-md overflow-y-auto rounded-2xl border bg-popover p-5 text-popover-foreground shadow-lg outline-none sm:p-6"
+            initialFocus={inputRef}
+            className="max-h-full w-full max-w-md overflow-y-auto rounded-2xl border bg-popover p-5 text-popover-foreground shadow-lg outline-none duration-150 motion-safe:data-open:animate-in motion-safe:data-open:fade-in-0 motion-safe:data-open:zoom-in-95 sm:p-6"
           >
-            <Dialog.Title className="text-lg font-semibold">
-              {entry ? "Essen bearbeiten" : "Essen eintragen"}
-            </Dialog.Title>
+            <div className="flex items-center justify-between gap-3">
+              <Dialog.Title className="text-lg font-semibold">
+                {entry ? "Essen bearbeiten" : "Essen eintragen"}
+              </Dialog.Title>
+              <Dialog.Close
+                aria-label="Schließen"
+                disabled={pending}
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="-mr-2 -mt-1 size-10"
+                  />
+                }
+              >
+                <X aria-hidden="true" />
+              </Dialog.Close>
+            </div>
             <Dialog.Description className="mb-5 mt-1 text-sm text-muted-foreground">
               {context}
             </Dialog.Description>
@@ -107,6 +126,7 @@ export function MealForm({
                     Gericht oder Essen
                   </span>
                   <Input
+                    ref={inputRef}
                     id={`${id}-name`}
                     required
                     maxLength={200}
@@ -122,20 +142,18 @@ export function MealForm({
                   {(["miriam", "simon"] as const).map((value) => (
                     <label
                       key={value}
-                      className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm has-checked:border-foreground has-checked:bg-muted"
+                      data-selected={selected[value]}
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm data-[selected=true]:border-foreground data-[selected=true]:bg-muted"
                     >
-                      <input
-                        type="checkbox"
+                      <Checkbox
+                        disabled={pending}
                         name={`${id}-${value}`}
                         value={value}
                         checked={selected[value]}
-                        onChange={(event) =>
-                          setSelected({
-                            ...selected,
-                            [value]: event.target.checked,
-                          })
+                        onCheckedChange={(checked) =>
+                          setSelected({ ...selected, [value]: checked })
                         }
-                        className="size-4 accent-foreground"
+                        className="size-5 border-muted-foreground"
                       />
                       {personLabels[value]}
                     </label>

@@ -4,7 +4,14 @@ import Link from "next/link";
 import { useState } from "react";
 import { format, getISOWeek, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Moon, Plus, Sun } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Moon,
+  Plus,
+  Sun,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -30,6 +37,8 @@ export function MealPlanner({
   entries: MealEntry[];
 }) {
   const [editing, setEditing] = useState<Editing | null>(null);
+  const [expandedDays, setExpandedDays] = useState<string[]>([]);
+  const currentWeek = start === weekStart(today);
   const end = shiftDate(start, 6);
   const dateLabel = (date: string, pattern: string) =>
     format(parseISO(date), pattern, { locale: de });
@@ -55,6 +64,7 @@ export function MealPlanner({
         </div>
         <div className="flex items-center gap-1">
           <Button
+            role="link"
             nativeButton={false}
             render={<Link href={weekHref(-7)} />}
             variant="outline"
@@ -64,6 +74,7 @@ export function MealPlanner({
             <ChevronLeft />
           </Button>
           <Button
+            role="link"
             nativeButton={false}
             render={<Link href={`/speiseplan?woche=${weekStart(today)}`} />}
             variant="outline"
@@ -72,6 +83,7 @@ export function MealPlanner({
             Diese Woche
           </Button>
           <Button
+            role="link"
             nativeButton={false}
             render={<Link href={weekHref(7)} />}
             variant="outline"
@@ -86,6 +98,16 @@ export function MealPlanner({
         {Array.from({ length: 7 }, (_, index) => {
           const day = shiftDate(start, index);
           const isToday = day === today;
+          const collapsible = currentWeek && day < today;
+          const collapsed = collapsible && !expandedDays.includes(day);
+          const title = (
+            <>
+              {dateLabel(day, "EEEE")}{" "}
+              <span className="ml-1 text-sm font-normal text-muted-foreground">
+                {dateLabel(day, "d. MMM")}
+              </span>
+            </>
+          );
           return (
             <section
               key={day}
@@ -95,20 +117,51 @@ export function MealPlanner({
                 isToday && "border-foreground/40",
               )}
             >
-              <header className="flex items-center justify-between gap-2 border-b bg-muted/40 px-4 py-3">
-                <h3 className="font-semibold">
-                  {dateLabel(day, "EEEE")}{" "}
-                  <span className="ml-1 text-sm font-normal text-muted-foreground">
-                    {dateLabel(day, "d. MMM")}
-                  </span>
+              <header
+                className={cn(
+                  "flex items-center justify-between gap-2 bg-muted/40",
+                  !collapsed && "border-b",
+                )}
+              >
+                <h3 className="flex-1 font-semibold">
+                  {collapsible ? (
+                    <button
+                      type="button"
+                      aria-expanded={!collapsed}
+                      aria-controls={`meals-${day}`}
+                      className="flex min-h-12 w-full items-center justify-between gap-2 px-4 py-3 text-left hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+                      onClick={() =>
+                        setExpandedDays((days) =>
+                          collapsed
+                            ? [...days, day]
+                            : days.filter((value) => value !== day),
+                        )
+                      }
+                    >
+                      <span>{title}</span>
+                      <ChevronDown
+                        aria-hidden="true"
+                        className={cn(
+                          "size-4 text-muted-foreground",
+                          !collapsed && "rotate-180",
+                        )}
+                      />
+                    </button>
+                  ) : (
+                    <span className="block px-4 py-3">{title}</span>
+                  )}
                 </h3>
                 {isToday ? (
-                  <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
+                  <span className="mr-4 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
                     Heute
                   </span>
                 ) : null}
               </header>
-              <div className="divide-y px-4">
+              <div
+                id={`meals-${day}`}
+                hidden={collapsed}
+                className="divide-y px-4"
+              >
                 {(["lunch", "dinner"] as const).map((mealTime) => {
                   const Icon = mealTime === "lunch" ? Sun : Moon;
                   const meals = entries.filter(

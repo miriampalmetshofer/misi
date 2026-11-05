@@ -11,6 +11,15 @@ test("independent meals and people persist across reloads and week navigation", 
   await page.getByRole("link", { name: /^Speiseplan/ }).click();
   await page.goto("/speiseplan?woche=2026-11-02");
   const monday = page.getByRole("region", { name: "Montag, 2. November" });
+  async function expandMonday() {
+    await expect(monday).toBeVisible();
+    const toggle = monday.getByRole("button", {
+      name: /Montag/,
+      expanded: false,
+    });
+    if (await toggle.count()) await toggle.click();
+  }
+  await expandMonday();
   const lunch = monday.getByRole("region", { name: "Mittag", exact: true });
   const dinner = monday.getByRole("region", { name: "Abend", exact: true });
   const lunchCount = await lunch.getByRole("listitem").count();
@@ -27,6 +36,7 @@ test("independent meals and people persist across reloads and week navigation", 
   const entry = page.getByRole("button", { name: `${name} bearbeiten` });
   await expect(entry).toBeVisible();
   await page.reload();
+  await expandMonday();
   await expect(entry).toContainText("Beide");
   await expect(lunch.getByRole("listitem")).toHaveCount(lunchCount);
   const tuesday = page.getByRole("region", { name: "Dienstag, 3. November" });
@@ -51,6 +61,7 @@ test("independent meals and people persist across reloads and week navigation", 
     lunch.getByRole("button", { name: `${pasta} bearbeiten` }),
   ).toBeVisible();
   await page.reload();
+  await expandMonday();
   await expect(lunch).toContainText("Miriam");
   await expect(lunch).toContainText("Simon");
   await expect(lunch.getByRole("listitem")).toHaveCount(lunchCount + 2);
@@ -64,12 +75,14 @@ test("independent meals and people persist across reloads and week navigation", 
   });
   await expect(edited).toContainText("Simon");
   await page.reload();
+  await expandMonday();
   await expect(edited).toContainText("Simon");
 
   await page.getByRole("link", { name: "Nächste Woche" }).click();
   await expect(page).toHaveURL(/woche=2026-11-09/);
   await expect(edited).toHaveCount(0);
   await page.goBack();
+  await expandMonday();
   await expect(edited).toBeVisible();
   await edited.click();
   await page.getByRole("button", { name: "Löschen", exact: true }).click();
@@ -81,6 +94,7 @@ test("independent meals and people persist across reloads and week navigation", 
   await page.getByRole("button", { name: "Endgültig löschen" }).click();
   await expect(edited).toHaveCount(0);
   await page.reload();
+  await expandMonday();
   await expect(edited).toHaveCount(0);
   await expect(lunch.getByRole("listitem")).toHaveCount(lunchCount + 2);
 });

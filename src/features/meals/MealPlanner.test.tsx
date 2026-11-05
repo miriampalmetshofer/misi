@@ -5,7 +5,7 @@ import { MealPlanner } from "./MealPlanner";
 import { saveMeal, deleteMeal } from "./actions";
 
 vi.mock("./actions", () => ({ saveMeal: vi.fn(), deleteMeal: vi.fn() }));
-const props = { start: "2026-11-02", today: "2026-11-05", entries: [] };
+const props = { start: "2026-11-02", today: "2026-11-02", entries: [] };
 beforeEach(() => {
   vi.mocked(saveMeal).mockReset().mockResolvedValue({ error: null });
   vi.mocked(deleteMeal).mockReset().mockResolvedValue({ error: null });
@@ -102,4 +102,40 @@ it("requires at least one person", async () => {
   expect(saveMeal).not.toHaveBeenCalled();
   await user.click(screen.getByRole("checkbox", { name: "Miriam" }));
   expect(screen.getByRole("button", { name: "Speichern" })).toBeEnabled();
+});
+
+it("collapses only past days in the current week and lets them be reopened", async () => {
+  const user = userEvent.setup();
+  render(<MealPlanner {...props} today="2026-11-05" />);
+  const monday = within(
+    screen.getByRole("region", { name: "Montag, 2. November" }),
+  );
+  const toggle = monday.getByRole("button", { name: /Montag/ });
+  expect(toggle).toHaveAttribute("aria-expanded", "false");
+  expect(
+    monday.queryByRole("button", { name: "Mittagessen eintragen" }),
+  ).not.toBeInTheDocument();
+  const thursday = within(
+    screen.getByRole("region", { name: "Donnerstag, 5. November" }),
+  );
+  expect(
+    thursday.getByRole("button", { name: "Mittagessen eintragen" }),
+  ).toBeVisible();
+  await user.click(toggle);
+  expect(toggle).toHaveAttribute("aria-expanded", "true");
+  expect(
+    monday.getByRole("button", { name: "Mittagessen eintragen" }),
+  ).toBeVisible();
+  await user.click(toggle);
+  expect(toggle).toHaveAttribute("aria-expanded", "false");
+});
+
+it("keeps days expanded when browsing a different week", () => {
+  render(<MealPlanner {...props} start="2026-10-26" today="2026-11-05" />);
+  expect(
+    screen.getAllByRole("button", { name: "Mittagessen eintragen" }),
+  ).toHaveLength(7);
+  expect(
+    screen.queryByRole("button", { expanded: false }),
+  ).not.toBeInTheDocument();
 });
