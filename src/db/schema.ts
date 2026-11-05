@@ -164,3 +164,32 @@ export const carExpenses = pgTable(
 );
 
 export type CarExpense = typeof carExpenses.$inferSelect;
+
+export const mealEntries = pgTable(
+  "meal_entry",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    plannedOn: date("planned_on").notNull(),
+    mealTime: text("meal_time").$type<"lunch" | "dinner">().notNull(),
+    person: text("person")
+      .$type<"both" | "miriam" | "simon">()
+      .notNull()
+      .default("both"),
+    name: varchar("name", { length: 200 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("meal_entry_planned_on_idx").on(table.plannedOn),
+    check("meal_entry_time_valid", sql`${table.mealTime} in ('lunch', 'dinner')`),
+    check(
+      "meal_entry_person_valid",
+      sql`${table.person} in ('both', 'miriam', 'simon')`,
+    ),
+    check("meal_entry_name_not_empty", sql`length(trim(${table.name})) > 0`),
+  ],
+);
