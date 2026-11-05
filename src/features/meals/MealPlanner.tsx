@@ -50,19 +50,8 @@ export function MealPlanner({
       className="mt-6 flex flex-col gap-5 sm:mt-8"
       aria-label="Wochenplan"
     >
-      <nav
-        aria-label="Wochenauswahl"
-        className="flex flex-wrap items-center justify-between gap-3"
-      >
-        <div>
-          <h2 className="font-semibold tabular-nums">
-            {dateLabel(start, "d. MMM")} – {dateLabel(end, "d. MMM yyyy")}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Kalenderwoche {getISOWeek(parseISO(start))}
-          </p>
-        </div>
-        <div className="flex items-center gap-1">
+      <nav aria-label="Wochenauswahl" className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-3">
           <Button
             role="link"
             nativeButton={false}
@@ -73,15 +62,22 @@ export function MealPlanner({
           >
             <ChevronLeft />
           </Button>
-          <Button
-            role="link"
-            nativeButton={false}
-            render={<Link href={`/speiseplan?woche=${weekStart(today)}`} />}
-            variant="outline"
-            size="lg"
-          >
-            Diese Woche
-          </Button>
+          <div className="min-w-0 text-center">
+            <h2 className="text-sm font-semibold tabular-nums sm:text-base">
+              {dateLabel(
+                start,
+                start.slice(0, 7) === end.slice(0, 7)
+                  ? "d."
+                  : start.slice(0, 4) === end.slice(0, 4)
+                    ? "d. MMM"
+                    : "d. MMM yyyy",
+              )}
+              –{dateLabel(end, "d. MMM yyyy")}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Kalenderwoche {getISOWeek(parseISO(start))}
+            </p>
+          </div>
           <Button
             role="link"
             nativeButton={false}
@@ -93,6 +89,14 @@ export function MealPlanner({
             <ChevronRight />
           </Button>
         </div>
+        {!currentWeek ? (
+          <Link
+            href={`/speiseplan?woche=${weekStart(today)}`}
+            className="self-center rounded px-2 py-1 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            Zur aktuellen Woche
+          </Link>
+        ) : null}
       </nav>
       <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 7 }, (_, index) => {
@@ -172,9 +176,9 @@ export function MealPlanner({
                     <section
                       key={mealTime}
                       aria-label={mealLabels[mealTime]}
-                      className="flex flex-col gap-2 py-3"
+                      className="flex flex-col py-3"
                     >
-                      <h4 className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      <h4 className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                         <Icon className="size-3.5" aria-hidden="true" />
                         {mealLabels[mealTime]}
                       </h4>
@@ -195,9 +199,9 @@ export function MealPlanner({
                                     entry,
                                   })
                                 }
-                                className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-2 py-2 text-left hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-default"
+                                className="flex min-h-10 w-full items-center justify-between gap-3 rounded-lg px-2 py-1 text-left hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-default"
                               >
-                                <span className="min-w-0 break-words text-sm">
+                                <span className="min-w-0 break-words text-lg font-medium">
                                   {entry.name}
                                 </span>
                                 <span
@@ -221,7 +225,10 @@ export function MealPlanner({
                       <Button
                         variant="ghost"
                         aria-haspopup="dialog"
-                        className="min-h-10 justify-start text-muted-foreground"
+                        className={cn(
+                          "justify-start text-muted-foreground",
+                          meals.length ? "h-8" : "min-h-10",
+                        )}
                         disabled={editing !== null}
                         onClick={() => setEditing({ plannedOn: day, mealTime })}
                       >

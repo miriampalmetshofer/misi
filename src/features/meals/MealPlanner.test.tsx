@@ -139,3 +139,17 @@ it("keeps days expanded when browsing a different week", () => {
     screen.queryByRole("button", { expanded: false }),
   ).not.toBeInTheDocument();
 });
+
+it("shows the viewed range between the arrows and a separate return link only outside the current week", () => {
+  const { rerender } = render(<MealPlanner {...props} />);
+  expect(
+    screen.queryByRole("link", { name: "Zur aktuellen Woche" }),
+  ).not.toBeInTheDocument();
+  rerender(<MealPlanner {...props} start="2026-11-09" />);
+  expect(
+    screen.getByRole("heading", { name: "9.–15. Nov. 2026" }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("link", { name: "Zur aktuellen Woche" }),
+  ).toHaveAttribute("href", "/speiseplan?woche=2026-11-02");
+});
