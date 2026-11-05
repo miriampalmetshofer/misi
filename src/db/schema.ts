@@ -170,6 +170,7 @@ export const mealEntries = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     plannedOn: date("planned_on").notNull(),
+    version: integer("version").notNull().default(1),
     mealTime: text("meal_time").$type<"lunch" | "dinner">().notNull(),
     person: text("person")
       .$type<"both" | "miriam" | "simon">()

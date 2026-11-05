@@ -58,7 +58,10 @@ export function MealForm({
           name,
         }))
           form.set(key, value);
-        if (entry) form.set("id", entry.id);
+        if (entry) {
+          form.set("id", entry.id);
+          form.set("version", String(entry.version));
+        }
         const result =
           remove && entry ? await deleteMeal(entry.id) : await saveMeal(form);
         if (result.error) setError(result.error);

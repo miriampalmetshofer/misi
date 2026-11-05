@@ -9,6 +9,7 @@ export async function getWeekMeals(start: string): Promise<MealEntry[]> {
   return getDb()
     .select({
       id: table.id,
+      version: table.version,
       plannedOn: table.plannedOn,
       mealTime: table.mealTime,
       person: table.person,

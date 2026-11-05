@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { getDb, schema } from "@/db";
@@ -15,12 +15,17 @@ export async function saveMeal(form: FormData) {
     return typeof value === "string" ? value.trim() : "";
   };
   const id = read("id");
+  const version = Number(read("version"));
   const plannedOn = read("plannedOn");
   const mealTime = read("mealTime");
   const person = read("person");
   const name = read("name");
   if (
-    (id && !validId(id)) ||
+    (id &&
+      (!validId(id) ||
+        !Number.isInteger(version) ||
+        version < 1 ||
+        version >= 2147483647)) ||
     !isMealDate(plannedOn) ||
     (mealTime !== "lunch" && mealTime !== "dinner") ||
     (person !== "both" && person !== "miriam" && person !== "simon") ||
@@ -29,18 +34,32 @@ export async function saveMeal(form: FormData) {
   ) {
     return { error: "Bitte Gericht, Datum, Mahlzeit und Person prüfen." };
   }
-  const values: Omit<MealEntry, "id"> = { plannedOn, mealTime, person, name };
+  const values: Omit<MealEntry, "id" | "version"> = {
+    plannedOn,
+    mealTime,
+    person,
+    name,
+  };
   try {
     if (id) {
       const rows = await getDb()
         .update(schema.mealEntries)
-        .set({ ...values, updatedAt: new Date() })
-        .where(eq(schema.mealEntries.id, id))
+        .set({
+          ...values,
+          version: sql`${schema.mealEntries.version} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(schema.mealEntries.id, id),
+            eq(schema.mealEntries.version, version),
+          ),
+        )
         .returning({ id: schema.mealEntries.id });
       if (!rows.length)
         return {
           error:
-            "Dieser Eintrag existiert nicht mehr. Bitte die Seite neu laden.",
+            "Dieser Eintrag wurde inzwischen geändert oder gelöscht. Deine Eingaben bleiben erhalten. Bitte schließe das Fenster und lade die Seite neu.",
         };
     } else {
       await getDb().insert(schema.mealEntries).values(values);

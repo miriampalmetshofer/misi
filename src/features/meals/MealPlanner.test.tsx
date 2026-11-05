@@ -68,6 +68,7 @@ it("edits an existing meal and confirms deletion before writing", async () => {
       entries={[
         {
           id: "meal-1",
+          version: 1,
           plannedOn: "2026-11-02",
           mealTime: "dinner",
           person: "simon",
@@ -152,4 +153,43 @@ it("shows the viewed range between the arrows and a separate return link only ou
   expect(
     screen.getByRole("link", { name: "Zur aktuellen Woche" }),
   ).toHaveAttribute("href", "/speiseplan?woche=2026-11-02");
+});
+
+it("retains the older form and its inputs when another edit won", async () => {
+  vi.mocked(saveMeal).mockResolvedValueOnce({
+    error: "Dieser Eintrag wurde inzwischen geändert oder gelöscht.",
+  });
+  const user = userEvent.setup();
+  render(
+    <MealPlanner
+      {...props}
+      entries={[
+        {
+          id: "meal-1",
+          version: 3,
+          plannedOn: "2026-11-02",
+          mealTime: "dinner",
+          person: "both",
+          name: "Pasta",
+        },
+      ]}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "Pasta bearbeiten" }));
+  await user.click(screen.getByRole("checkbox", { name: "Miriam" }));
+  await user.click(screen.getByRole("button", { name: "Speichern" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "inzwischen geändert",
+  );
+  expect(screen.getByLabelText("Gericht oder Essen")).toHaveValue("Pasta");
+  expect(screen.getByRole("checkbox", { name: "Simon" })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: "Miriam" })).not.toBeChecked();
+  expect(
+    Object.fromEntries(vi.mocked(saveMeal).mock.calls[0][0]),
+  ).toMatchObject({
+    id: "meal-1",
+    version: "3",
+    name: "Pasta",
+    person: "simon",
+  });
 });

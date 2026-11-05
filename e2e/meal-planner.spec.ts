@@ -98,3 +98,51 @@ test("independent meals and people persist across reloads and week navigation", 
   await expect(edited).toHaveCount(0);
   await expect(lunch.getByRole("listitem")).toHaveCount(lunchCount + 2);
 });
+
+test("an older edit cannot overwrite a newer meal", async ({ page }) => {
+  const original = `Pasta ${Date.now()}`;
+  const changed = `Curry ${Date.now()}`;
+  await page.goto("/speiseplan");
+  const day = page.getByRole("region").filter({ hasText: "Heute" }).last();
+  const dinner = day.getByRole("region", { name: "Abend", exact: true });
+  await dinner
+    .getByRole("button", { name: /Abendessen eintragen|Eintrag hinzufügen/ })
+    .click();
+  await page.getByLabel("Gericht oder Essen").fill(original);
+  await page.getByRole("button", { name: "Speichern", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: `${original} bearbeiten` }),
+  ).toBeVisible();
+
+  const other = await page.context().newPage();
+  try {
+    await other.goto("/speiseplan");
+    await other.getByRole("button", { name: `${original} bearbeiten` }).click();
+    await page.getByRole("button", { name: `${original} bearbeiten` }).click();
+    await page.getByLabel("Gericht oder Essen").fill(changed);
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await expect(
+      page.getByRole("button", { name: `${changed} bearbeiten` }),
+    ).toBeVisible();
+
+    await other.getByRole("checkbox", { name: "Miriam" }).uncheck();
+    await other.getByRole("button", { name: "Speichern", exact: true }).click();
+    await expect(other.getByRole("alert")).toContainText(
+      "inzwischen geändert oder gelöscht",
+    );
+    await expect(other.getByLabel("Gericht oder Essen")).toHaveValue(original);
+    await expect(other.getByRole("checkbox", { name: "Simon" })).toBeChecked();
+    await expect(
+      other.getByRole("checkbox", { name: "Miriam" }),
+    ).not.toBeChecked();
+    await other.getByRole("button", { name: "Schließen" }).click();
+    await other.reload();
+    const saved = other.getByRole("button", { name: `${changed} bearbeiten` });
+    await expect(saved).toContainText("Beide");
+    await expect(
+      other.getByRole("button", { name: `${original} bearbeiten` }),
+    ).toHaveCount(0);
+  } finally {
+    await other.close();
+  }
+});

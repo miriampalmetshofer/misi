@@ -61,6 +61,10 @@ describe("meal persistence", () => {
     { name: "  " },
     { name: "x".repeat(201) },
     { id: "bad" },
+    { id, version: "" },
+    { id, version: "0" },
+    { id, version: "1.5" },
+    { id, version: "2147483647" },
   ])("rejects invalid fields: %j", async (override) => {
     expect(
       (await saveMeal(form({ ...valid, ...override }))).error,
@@ -70,7 +74,8 @@ describe("meal persistence", () => {
   });
   it("updates only the selected entry and detects a concurrent deletion", async () => {
     expect(
-      (await saveMeal(form({ ...valid, id, person: "simon" }))).error,
+      (await saveMeal(form({ ...valid, id, version: "1", person: "simon" })))
+        .error,
     ).toBeNull();
     expect(db.insert).not.toHaveBeenCalled();
     expect(db.where).toHaveBeenCalledTimes(1);
@@ -78,9 +83,9 @@ describe("meal persistence", () => {
       expect.objectContaining({ ...valid, person: "simon" }),
     );
     db.returning.mockResolvedValueOnce([]);
-    expect((await saveMeal(form({ ...valid, id }))).error).toContain(
-      "existiert nicht mehr",
-    );
+    expect(
+      (await saveMeal(form({ ...valid, id, version: "1" }))).error,
+    ).toContain("inzwischen geändert oder gelöscht");
   });
   it("reports save failures without leaking database details and permits retry", async () => {
     db.values.mockRejectedValueOnce(

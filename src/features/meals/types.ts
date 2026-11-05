@@ -10,6 +10,7 @@ export type MealTime = keyof typeof mealLabels;
 export type MealPerson = keyof typeof personLabels;
 export type MealEntry = {
   id: string;
+  version: number;
   plannedOn: string;
   mealTime: MealTime;
   person: MealPerson;
