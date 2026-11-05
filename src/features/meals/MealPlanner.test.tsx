@@ -193,3 +193,30 @@ it("retains the older form and its inputs when another edit won", async () => {
     person: "simon",
   });
 });
+
+it("focuses the input only when adding a meal", async () => {
+  const user = userEvent.setup();
+  render(
+    <MealPlanner
+      {...props}
+      entries={[
+        {
+          id: "meal-1",
+          version: 1,
+          plannedOn: "2026-11-02",
+          mealTime: "dinner",
+          person: "both",
+          name: "Pasta",
+        },
+      ]}
+    />,
+  );
+  await user.click(
+    screen.getAllByRole("button", { name: "Mittagessen eintragen" })[0],
+  );
+  expect(screen.getByLabelText("Gericht oder Essen")).toHaveFocus();
+  await user.click(screen.getByRole("button", { name: "Schließen" }));
+  await user.click(screen.getByRole("button", { name: "Pasta bearbeiten" }));
+  expect(screen.getByLabelText("Gericht oder Essen")).not.toHaveFocus();
+  expect(screen.getByRole("dialog")).toHaveFocus();
+});

@@ -29,6 +29,7 @@ test("independent meals and people persist across reloads and week navigation", 
   await expect(
     page.getByRole("dialog", { name: "Essen eintragen" }),
   ).toContainText("Montag Abend");
+  await expect(page.getByLabel("Gericht oder Essen")).toBeFocused();
   await page.getByLabel("Gericht oder Essen").fill(name);
   await expect(page.getByRole("checkbox", { name: "Miriam" })).toBeChecked();
   await expect(page.getByRole("checkbox", { name: "Simon" })).toBeChecked();
@@ -67,6 +68,8 @@ test("independent meals and people persist across reloads and week navigation", 
   await expect(lunch.getByRole("listitem")).toHaveCount(lunchCount + 2);
 
   await entry.click();
+  await expect(page.getByRole("dialog")).toBeFocused();
+  await expect(page.getByLabel("Gericht oder Essen")).not.toBeFocused();
   await page.getByLabel("Gericht oder Essen").fill(`${name} geändert`);
   await page.getByRole("checkbox", { name: "Miriam", exact: true }).uncheck();
   await page.getByRole("button", { name: "Speichern", exact: true }).click();

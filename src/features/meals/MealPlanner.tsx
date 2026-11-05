@@ -201,7 +201,7 @@ export function MealPlanner({
                                 }
                                 className="flex min-h-10 w-full items-center justify-between gap-3 rounded-lg px-2 py-1 text-left hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-default"
                               >
-                                <span className="min-w-0 break-words text-lg">
+                                <span className="min-w-0 break-words text-base">
                                   {entry.name}
                                 </span>
                                 <span

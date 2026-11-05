@@ -29,6 +29,7 @@ export function MealForm({
 }) {
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
   const [name, setName] = useState(entry?.name ?? "");
   const [selected, setSelected] = useState({
     miriam: entry?.person !== "simon",
@@ -87,7 +88,8 @@ export function MealForm({
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 duration-150 motion-safe:data-open:animate-in motion-safe:data-open:fade-in-0" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <Dialog.Popup
-            initialFocus={inputRef}
+            ref={popupRef}
+            initialFocus={entry ? popupRef : inputRef}
             className="max-h-full w-full max-w-md overflow-y-auto rounded-2xl border bg-popover p-5 text-popover-foreground shadow-lg outline-none duration-150 motion-safe:data-open:animate-in motion-safe:data-open:fade-in-0 motion-safe:data-open:zoom-in-95 sm:p-6"
           >
             <div className="flex items-center justify-between gap-3">
@@ -130,6 +132,7 @@ export function MealForm({
                   </span>
                   <Input
                     ref={inputRef}
+                    autoFocus={!entry}
                     id={`${id}-name`}
                     required
                     maxLength={200}
