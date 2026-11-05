@@ -149,3 +149,62 @@ test("an older edit cannot overwrite a newer meal", async ({ page }) => {
     await other.close();
   }
 });
+
+test("the meal overlay fits the visible area when a keyboard opens", async ({
+  page,
+}) => {
+  await page.goto("/speiseplan");
+  const day = page.getByRole("region").filter({ hasText: "Heute" }).last();
+  await day
+    .getByRole("region", { name: "Mittag", exact: true })
+    .getByRole("button", { name: /Mittagessen eintragen|Eintrag hinzufügen/ })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await expect(page.getByLabel("Gericht oder Essen")).toBeFocused();
+  await page.getByLabel("Gericht oder Essen").fill("Pasta");
+
+  await page.evaluate(() => {
+    const viewport = window.visualViewport!;
+    Object.defineProperty(viewport, "height", {
+      configurable: true,
+      value: 360,
+    });
+    Object.defineProperty(viewport, "offsetTop", {
+      configurable: true,
+      value: 48,
+    });
+    viewport.dispatchEvent(new Event("resize"));
+  });
+  await expect
+    .poll(async () => {
+      const box = await dialog.boundingBox();
+      return box !== null && box.y >= 64 && box.y + box.height <= 392;
+    })
+    .toBe(true);
+  await expect(
+    dialog.getByRole("button", { name: "Speichern", exact: true }),
+  ).toBeInViewport();
+
+  await page.evaluate(() => {
+    const viewport = window.visualViewport!;
+    Object.defineProperty(viewport, "height", {
+      configurable: true,
+      value: 260,
+    });
+    Object.defineProperty(viewport, "offsetTop", {
+      configurable: true,
+      value: 80,
+    });
+    viewport.dispatchEvent(new Event("scroll"));
+  });
+  await expect
+    .poll(async () => {
+      const box = await dialog.boundingBox();
+      return box !== null && box.y >= 96 && box.y + box.height <= 324;
+    })
+    .toBe(true);
+  const save = dialog.getByRole("button", { name: "Speichern", exact: true });
+  await save.scrollIntoViewIfNeeded();
+  await expect(save).toBeInViewport();
+  await page.getByRole("button", { name: "Schließen" }).click();
+});

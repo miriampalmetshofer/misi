@@ -86,7 +86,10 @@ export function MealForm({
     >
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 duration-150 motion-safe:data-open:animate-in motion-safe:data-open:fade-in-0" />
-        <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <Dialog.Viewport
+          ref={fitVisualViewport}
+          className="fixed inset-x-0 top-0 z-50 flex h-dvh items-center justify-center p-4"
+        >
           <Dialog.Popup
             ref={popupRef}
             initialFocus={entry ? popupRef : inputRef}
@@ -231,4 +234,21 @@ export function MealForm({
       </Dialog.Portal>
     </Dialog.Root>
   );
+}
+
+// iOS keyboards shrink the visual viewport without resizing fixed-position layouts.
+function fitVisualViewport(node: HTMLDivElement | null) {
+  const viewport = window.visualViewport;
+  if (!node || !viewport) return;
+  const update = () => {
+    node.style.top = `${viewport.offsetTop}px`;
+    node.style.height = `${viewport.height}px`;
+  };
+  update();
+  viewport.addEventListener("resize", update);
+  viewport.addEventListener("scroll", update);
+  return () => {
+    viewport.removeEventListener("resize", update);
+    viewport.removeEventListener("scroll", update);
+  };
 }
