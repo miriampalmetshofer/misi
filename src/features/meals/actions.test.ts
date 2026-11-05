@@ -97,12 +97,27 @@ describe("meal persistence", () => {
     expect((await saveMeal(form(valid))).error).toBeNull();
   });
   it("validates deletions and reports failure", async () => {
-    expect((await deleteMeal("bad")).error).toBeTruthy();
+    expect((await deleteMeal("bad", 1)).error).toBeTruthy();
     expect(db.delete).not.toHaveBeenCalled();
-    expect((await deleteMeal(id)).error).toBeNull();
+    expect((await deleteMeal(id, 1)).error).toBeNull();
     db.delete.mockImplementationOnce(() => {
       throw new Error("offline");
     });
-    expect((await deleteMeal(id)).error).toContain("Löschen fehlgeschlagen");
+    expect((await deleteMeal(id, 1)).error).toContain("Löschen fehlgeschlagen");
   });
+});
+
+it.each([0, -1, 1.5, NaN, Infinity, 2147483647])(
+  "rejects deleting with invalid version %s",
+  async (version) => {
+    expect((await deleteMeal(id, version)).error).toBeTruthy();
+    expect(db.delete).not.toHaveBeenCalled();
+  },
+);
+
+it("reports a delete conflict instead of success when no version matches", async () => {
+  db.returning.mockResolvedValueOnce([]);
+  expect((await deleteMeal(id, 1)).error).toContain(
+    "inzwischen geändert oder gelöscht",
+  );
 });

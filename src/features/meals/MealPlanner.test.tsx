@@ -86,8 +86,17 @@ it("edits an existing meal and confirms deletion before writing", async () => {
   expect(deleteMeal).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Pasta bearbeiten" }));
   await user.click(screen.getByRole("button", { name: "Löschen" }));
+  vi.mocked(deleteMeal).mockResolvedValueOnce({
+    error: "Dieser Eintrag wurde inzwischen geändert oder gelöscht.",
+  });
   await user.click(screen.getByRole("button", { name: "Endgültig löschen" }));
-  expect(deleteMeal).toHaveBeenCalledWith("meal-1");
+  expect(deleteMeal).toHaveBeenCalledWith("meal-1", 1);
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "inzwischen geändert",
+  );
+  expect(screen.getByLabelText("Gericht oder Essen")).toHaveValue("Pasta");
+  await user.click(screen.getByRole("button", { name: "Endgültig löschen" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
 it("requires at least one person", async () => {

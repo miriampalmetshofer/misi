@@ -64,7 +64,9 @@ export function MealForm({
           form.set("version", String(entry.version));
         }
         const result =
-          remove && entry ? await deleteMeal(entry.id) : await saveMeal(form);
+          remove && entry
+            ? await deleteMeal(entry.id, entry.version)
+            : await saveMeal(form);
         if (result.error) setError(result.error);
         else onClose();
       } catch {

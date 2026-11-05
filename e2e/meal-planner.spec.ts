@@ -102,7 +102,9 @@ test("independent meals and people persist across reloads and week navigation", 
   await expect(lunch.getByRole("listitem")).toHaveCount(lunchCount + 2);
 });
 
-test("an older edit cannot overwrite a newer meal", async ({ page }) => {
+test("an older edit cannot overwrite or delete a newer meal", async ({
+  page,
+}) => {
   const original = `Pasta ${Date.now()}`;
   const changed = `Curry ${Date.now()}`;
   await page.goto("/speiseplan");
@@ -138,6 +140,12 @@ test("an older edit cannot overwrite a newer meal", async ({ page }) => {
     await expect(
       other.getByRole("checkbox", { name: "Miriam" }),
     ).not.toBeChecked();
+    await other.getByRole("button", { name: "Löschen", exact: true }).click();
+    await other.getByRole("button", { name: "Endgültig löschen" }).click();
+    await expect(other.getByRole("alert")).toContainText(
+      "inzwischen geändert oder gelöscht",
+    );
+    await expect(other.getByLabel("Gericht oder Essen")).toHaveValue(original);
     await other.getByRole("button", { name: "Schließen" }).click();
     await other.reload();
     const saved = other.getByRole("button", { name: `${changed} bearbeiten` });

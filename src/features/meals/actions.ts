@@ -8,6 +8,10 @@ import { isMealDate, type MealEntry } from "./types";
 
 const validId = (id: string) =>
   /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id);
+const validVersion = (version: number) =>
+  Number.isInteger(version) && version > 0 && version < 2147483647;
+const conflictMessage =
+  "Dieser Eintrag wurde inzwischen geändert oder gelöscht. Deine Eingaben bleiben erhalten. Bitte schließe das Fenster und lade die Seite neu.";
 
 export async function saveMeal(form: FormData) {
   const read = (key: string) => {
@@ -21,11 +25,7 @@ export async function saveMeal(form: FormData) {
   const person = read("person");
   const name = read("name");
   if (
-    (id &&
-      (!validId(id) ||
-        !Number.isInteger(version) ||
-        version < 1 ||
-        version >= 2147483647)) ||
+    (id && (!validId(id) || !validVersion(version))) ||
     !isMealDate(plannedOn) ||
     (mealTime !== "lunch" && mealTime !== "dinner") ||
     (person !== "both" && person !== "miriam" && person !== "simon") ||
@@ -56,11 +56,7 @@ export async function saveMeal(form: FormData) {
           ),
         )
         .returning({ id: schema.mealEntries.id });
-      if (!rows.length)
-        return {
-          error:
-            "Dieser Eintrag wurde inzwischen geändert oder gelöscht. Deine Eingaben bleiben erhalten. Bitte schließe das Fenster und lade die Seite neu.",
-        };
+      if (!rows.length) return { error: conflictMessage };
     } else {
       await getDb().insert(schema.mealEntries).values(values);
     }
@@ -74,12 +70,20 @@ export async function saveMeal(form: FormData) {
   return { error: null };
 }
 
-export async function deleteMeal(id: string) {
-  if (!validId(id)) return { error: "Ungültiger Eintrag." };
+export async function deleteMeal(id: string, version: number) {
+  if (!validId(id) || !validVersion(version))
+    return { error: "Ungültiger Eintrag." };
   try {
-    await getDb()
+    const rows = await getDb()
       .delete(schema.mealEntries)
-      .where(eq(schema.mealEntries.id, id));
+      .where(
+        and(
+          eq(schema.mealEntries.id, id),
+          eq(schema.mealEntries.version, version),
+        ),
+      )
+      .returning({ id: schema.mealEntries.id });
+    if (!rows.length) return { error: conflictMessage };
   } catch {
     return { error: "Löschen fehlgeschlagen. Bitte erneut versuchen." };
   }
