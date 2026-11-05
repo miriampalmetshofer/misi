@@ -85,7 +85,7 @@ export function MealForm({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 duration-150 motion-safe:data-open:animate-in motion-safe:data-open:fade-in-0" />
+        <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 transition-opacity duration-150 data-starting-style:opacity-0 motion-reduce:transition-none" />
         <Dialog.Viewport
           ref={fitVisualViewport}
           className="fixed inset-x-0 top-0 z-50 flex h-dvh items-center justify-center p-4"
@@ -93,7 +93,7 @@ export function MealForm({
           <Dialog.Popup
             ref={popupRef}
             initialFocus={entry ? popupRef : inputRef}
-            className="max-h-full w-full max-w-md overflow-y-auto rounded-2xl border bg-popover p-5 text-popover-foreground shadow-lg outline-none duration-150 motion-safe:data-open:animate-in motion-safe:data-open:fade-in-0 motion-safe:data-open:zoom-in-95 sm:p-6"
+            className="max-h-full w-full max-w-md overflow-y-auto rounded-2xl border bg-popover p-5 text-popover-foreground shadow-lg outline-none transition-opacity duration-150 data-starting-style:opacity-0 motion-reduce:transition-none sm:p-6"
           >
             <div className="flex items-center justify-between gap-3">
               <Dialog.Title className="text-lg font-semibold">
@@ -144,7 +144,7 @@ export function MealForm({
                     onChange={(event) => setName(event.target.value)}
                   />
                 </label>
-                <fieldset className="flex flex-wrap gap-2">
+                <fieldset className="flex flex-wrap items-start gap-2">
                   <legend className="mb-1.5 text-sm font-medium">
                     Für wen?
                   </legend>
@@ -152,7 +152,7 @@ export function MealForm({
                     <label
                       key={value}
                       data-selected={selected[value]}
-                      className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm data-[selected=true]:border-foreground data-[selected=true]:bg-muted"
+                      className="flex h-10 cursor-pointer items-center gap-2 rounded-lg border px-3 text-sm data-[selected=true]:border-foreground data-[selected=true]:bg-muted"
                     >
                       <Checkbox
                         disabled={pending}
