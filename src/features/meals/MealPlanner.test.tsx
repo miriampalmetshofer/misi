@@ -22,13 +22,14 @@ it("prefills the selected day and meal, defaults to both, and permits a personal
   );
   expect(
     screen.getByRole("dialog", { name: "Essen eintragen" }),
-  ).toHaveTextContent("Montag, 2. November 2026 · Mittag");
-  expect(screen.getByRole("radio", { name: "Wir beide" })).toBeChecked();
+  ).toHaveTextContent("Montag Mittag");
+  expect(screen.getByRole("checkbox", { name: "Miriam" })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: "Simon" })).toBeChecked();
   await user.type(
     screen.getByLabelText("Gericht oder Essen"),
     "Essen in der Arbeit",
   );
-  await user.click(screen.getByRole("radio", { name: "Miriam" }));
+  await user.click(screen.getByRole("checkbox", { name: "Simon" }));
   await user.click(screen.getByRole("button", { name: "Speichern" }));
   const data = vi.mocked(saveMeal).mock.calls[0][0];
   expect(Object.fromEntries(data)).toEqual({
@@ -76,7 +77,7 @@ it("edits an existing meal and confirms deletion before writing", async () => {
     />,
   );
   await user.click(screen.getByRole("button", { name: "Pasta bearbeiten" }));
-  expect(screen.getByRole("radio", { name: "Simon" })).toBeChecked();
+  expect(screen.getByRole("checkbox", { name: "Simon" })).toBeChecked();
   await user.click(screen.getByRole("button", { name: "Löschen" }));
   expect(deleteMeal).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Zurück" }));
@@ -86,4 +87,19 @@ it("edits an existing meal and confirms deletion before writing", async () => {
   await user.click(screen.getByRole("button", { name: "Löschen" }));
   await user.click(screen.getByRole("button", { name: "Endgültig löschen" }));
   expect(deleteMeal).toHaveBeenCalledWith("meal-1");
+});
+
+it("requires at least one person", async () => {
+  const user = userEvent.setup();
+  render(<MealPlanner {...props} />);
+  await user.click(
+    screen.getAllByRole("button", { name: "Mittagessen eintragen" })[0],
+  );
+  await user.type(screen.getByLabelText("Gericht oder Essen"), "Pasta");
+  await user.click(screen.getByRole("checkbox", { name: "Miriam" }));
+  await user.click(screen.getByRole("checkbox", { name: "Simon" }));
+  expect(screen.getByRole("button", { name: "Speichern" })).toBeDisabled();
+  expect(saveMeal).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("checkbox", { name: "Miriam" }));
+  expect(screen.getByRole("button", { name: "Speichern" })).toBeEnabled();
 });

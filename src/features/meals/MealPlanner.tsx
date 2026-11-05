@@ -189,7 +189,7 @@ export function MealPlanner({
           entry={editing.entry}
           plannedOn={editing.plannedOn}
           mealTime={editing.mealTime}
-          context={`${dateLabel(editing.plannedOn, "EEEE, d. MMMM yyyy")} · ${mealLabels[editing.mealTime]}`}
+          context={`${dateLabel(editing.plannedOn, "EEEE")} ${mealLabels[editing.mealTime]}`}
           onClose={() => setEditing(null)}
         />
       ) : null}

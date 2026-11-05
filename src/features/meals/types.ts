@@ -2,7 +2,7 @@ import { addDays, format, parseISO, startOfWeek } from "date-fns";
 
 export const mealLabels = { lunch: "Mittag", dinner: "Abend" } as const;
 export const personLabels = {
-  both: "Wir beide",
+  both: "Beide",
   miriam: "Miriam",
   simon: "Simon",
 } as const;

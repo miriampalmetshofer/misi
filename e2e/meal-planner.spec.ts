@@ -19,14 +19,15 @@ test("independent meals and people persist across reloads and week navigation", 
     .click();
   await expect(
     page.getByRole("dialog", { name: "Essen eintragen" }),
-  ).toContainText("Montag, 2. November 2026 · Abend");
+  ).toContainText("Montag Abend");
   await page.getByLabel("Gericht oder Essen").fill(name);
-  await expect(page.getByRole("radio", { name: "Wir beide" })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "Miriam" })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "Simon" })).toBeChecked();
   await page.getByRole("button", { name: "Speichern", exact: true }).click();
   const entry = page.getByRole("button", { name: `${name} bearbeiten` });
   await expect(entry).toBeVisible();
   await page.reload();
-  await expect(entry).toContainText("Wir beide");
+  await expect(entry).toContainText("Beide");
   await expect(lunch.getByRole("listitem")).toHaveCount(lunchCount);
   const tuesday = page.getByRole("region", { name: "Dienstag, 3. November" });
   await expect(
@@ -37,14 +38,14 @@ test("independent meals and people persist across reloads and week navigation", 
     .getByRole("button", { name: /Mittagessen eintragen|Eintrag hinzufügen/ })
     .click();
   await page.getByLabel("Gericht oder Essen").fill(workMeal);
-  await page.getByRole("radio", { name: "Miriam", exact: true }).check();
+  await page.getByRole("checkbox", { name: "Simon", exact: true }).uncheck();
   await page.getByRole("button", { name: "Speichern", exact: true }).click();
   await expect(
     lunch.getByRole("button", { name: `${workMeal} bearbeiten` }),
   ).toBeVisible();
   await lunch.getByRole("button", { name: "Eintrag hinzufügen" }).click();
   await page.getByLabel("Gericht oder Essen").fill(pasta);
-  await page.getByRole("radio", { name: "Simon", exact: true }).check();
+  await page.getByRole("checkbox", { name: "Miriam", exact: true }).uncheck();
   await page.getByRole("button", { name: "Speichern", exact: true }).click();
   await expect(
     lunch.getByRole("button", { name: `${pasta} bearbeiten` }),
@@ -56,7 +57,7 @@ test("independent meals and people persist across reloads and week navigation", 
 
   await entry.click();
   await page.getByLabel("Gericht oder Essen").fill(`${name} geändert`);
-  await page.getByRole("radio", { name: "Simon", exact: true }).check();
+  await page.getByRole("checkbox", { name: "Miriam", exact: true }).uncheck();
   await page.getByRole("button", { name: "Speichern", exact: true }).click();
   const edited = page.getByRole("button", {
     name: `${name} geändert bearbeiten`,

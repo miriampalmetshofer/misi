@@ -27,13 +27,23 @@ export function MealForm({
 }) {
   const id = useId();
   const [name, setName] = useState(entry?.name ?? "");
-  const [person, setPerson] = useState<MealPerson>(entry?.person ?? "both");
+  const [selected, setSelected] = useState({
+    miriam: entry?.person !== "simon",
+    simon: entry?.person !== "miriam",
+  });
+  const hasPerson = selected.miriam || selected.simon;
+  const person: MealPerson =
+    selected.miriam && selected.simon
+      ? "both"
+      : selected.miriam
+        ? "miriam"
+        : "simon";
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function submit(remove = false) {
-    if (pending) return;
+    if (pending || (!remove && !hasPerson)) return;
     setError(null);
     startTransition(async () => {
       try {
@@ -109,23 +119,33 @@ export function MealForm({
                   <legend className="mb-1.5 text-sm font-medium">
                     Für wen?
                   </legend>
-                  {Object.entries(personLabels).map(([value, label]) => (
+                  {(["miriam", "simon"] as const).map((value) => (
                     <label
                       key={value}
                       className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm has-checked:border-foreground has-checked:bg-muted"
                     >
                       <input
-                        type="radio"
-                        name={`${id}-person`}
+                        type="checkbox"
+                        name={`${id}-${value}`}
                         value={value}
-                        checked={person === value}
-                        onChange={() => setPerson(value as MealPerson)}
+                        checked={selected[value]}
+                        onChange={(event) =>
+                          setSelected({
+                            ...selected,
+                            [value]: event.target.checked,
+                          })
+                        }
                         className="size-4 accent-foreground"
                       />
-                      {label}
+                      {personLabels[value]}
                     </label>
                   ))}
                 </fieldset>
+                {!hasPerson ? (
+                  <p className="text-sm text-destructive">
+                    Wähle mindestens eine Person.
+                  </p>
+                ) : null}
                 {error ? (
                   <p role="alert" className="text-sm text-destructive">
                     {error}
@@ -157,7 +177,10 @@ export function MealForm({
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-2">
-                    <Button type="submit" disabled={!name.trim() || pending}>
+                    <Button
+                      type="submit"
+                      disabled={!name.trim() || !hasPerson || pending}
+                    >
                       {pending ? "Wird gespeichert …" : "Speichern"}
                     </Button>
                     <Dialog.Close
