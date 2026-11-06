@@ -1,0 +1,1 @@
+ALTER TABLE "meal_entry" ADD COLUMN "version" integer DEFAULT 1 NOT NULL;

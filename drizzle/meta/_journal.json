@@ -78,6 +78,20 @@
       "when": 1793720615523,
       "tag": "0010_youthful_namorita",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793891478136,
+      "tag": "0011_colorful_mentor",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793894359050,
+      "tag": "0012_cynical_lady_deathstrike",
+      "breakpoints": true
     }
   ]
 }
