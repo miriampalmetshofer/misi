@@ -182,7 +182,7 @@ export function MealForm({
                 ) : null}
                 {confirmDelete ? (
                   <div
-                    className="flex flex-col gap-2"
+                    className="mt-3 flex flex-col gap-2"
                     role="group"
                     aria-label="Löschen bestätigen"
                   >
