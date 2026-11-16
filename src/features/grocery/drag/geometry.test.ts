@@ -42,3 +42,23 @@ describe("findCategoryAtPoint", () => {
     expect(findCategoryAtPoint([], 50)).toBeNull();
   });
 });
+
+it("targets the correct day and meal in a multi-column grid", () => {
+  const grid = [
+    { categoryId: "monday-lunch", top: 0, bottom: 80, left: 0, right: 200 },
+    { categoryId: "tuesday-lunch", top: 0, bottom: 110, left: 220, right: 420 },
+    { categoryId: "monday-dinner", top: 80, bottom: 160, left: 0, right: 200 },
+    {
+      categoryId: "tuesday-dinner",
+      top: 110,
+      bottom: 220,
+      left: 220,
+      right: 420,
+    },
+  ];
+  expect(findCategoryAtPoint(grid, 50, 300)).toBe("tuesday-lunch");
+  expect(findCategoryAtPoint(grid, 150, 300)).toBe("tuesday-dinner");
+  expect(findCategoryAtPoint(grid, 150, 50)).toBe("monday-dinner");
+  expect(findCategoryAtPoint(grid, 50, 210)).toBeNull();
+  expect(findCategoryAtPoint(grid, 240, 300)).toBeNull();
+});

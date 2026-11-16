@@ -176,7 +176,7 @@ export function useDraggableItem({
       return;
     }
 
-    drop(event.clientY);
+    drop(event.clientY, event.clientX);
   }
 
   function handlePointerCancel(event: PointerEvent<HTMLLIElement>) {

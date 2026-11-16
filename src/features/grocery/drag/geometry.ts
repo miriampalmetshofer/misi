@@ -9,32 +9,32 @@ export type CategoryRect = {
   categoryId: string;
   top: number;
   bottom: number;
+  left?: number;
+  right?: number;
 };
 
 /**
- * Measure every category section into a list of vertical bands, in document
- * order. Only the vertical axis is kept: the sections span the full list width,
- * so horizontal position never decides the target, and ignoring it means a
- * sideways drag still drops where the finger is vertically.
- *
- * Bands are stored in document coordinates, not viewport ones. The page scrolls
- * during a drag — by hand, and by the edge auto-scroll — and viewport-relative
- * bounds measured at pickup would point at the wrong category the moment it did.
+ * Vertical bounds use document coordinates so edge scrolling preserves targets.
+ * Grid layouts also keep horizontal bounds and exclude collapsed sections.
  */
 export function measureCategoryRects(
   root: ParentNode,
   scrollY: number,
+  grid = false,
 ): CategoryRect[] {
   return [...root.querySelectorAll<HTMLElement>("[data-category-id]")]
     .map((section) => {
-      const { top, bottom } = section.getBoundingClientRect();
+      const { top, bottom, left, right } = section.getBoundingClientRect();
       return {
         categoryId: section.dataset.categoryId ?? "",
         top: top + scrollY,
         bottom: bottom + scrollY,
+        ...(grid ? { left, right } : {}),
       };
     })
-    .filter((rect) => rect.categoryId !== "")
+    .filter(
+      (rect) => rect.categoryId !== "" && (!grid || rect.bottom > rect.top),
+    )
     .sort((a, b) => a.top - b.top);
 }
 
@@ -47,7 +47,21 @@ export function measureCategoryRects(
 export function findCategoryAtPoint(
   rects: CategoryRect[],
   clientY: number,
+  clientX?: number,
 ): string | null {
+  if (clientX !== undefined && rects.some((rect) => rect.left !== undefined)) {
+    return (
+      rects.find(
+        (rect) =>
+          clientY >= rect.top &&
+          clientY <= rect.bottom &&
+          rect.left !== undefined &&
+          rect.right !== undefined &&
+          clientX >= rect.left &&
+          clientX <= rect.right,
+      )?.categoryId ?? null
+    );
+  }
   if (rects.length === 0) {
     return null;
   }

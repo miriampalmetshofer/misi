@@ -9,6 +9,7 @@ const DragContext = createContext<DragController | null>(null);
 
 type DragProviderProps = {
   children: ReactNode;
+  grid?: boolean;
   onMoveItem: (itemId: string, categoryId: string) => void;
 };
 
@@ -17,8 +18,12 @@ type DragProviderProps = {
  * category section, which only forwarded them. The rows that actually drag read
  * it from here instead.
  */
-export function DragProvider({ children, onMoveItem }: DragProviderProps) {
-  const controller = useDragController(onMoveItem);
+export function DragProvider({
+  children,
+  onMoveItem,
+  grid,
+}: DragProviderProps) {
+  const controller = useDragController(onMoveItem, grid);
 
   return (
     <DragContext.Provider value={controller}>{children}</DragContext.Provider>
