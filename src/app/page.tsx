@@ -6,6 +6,11 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 const modules = [
   {
+    title: "Speiseplan",
+    description: "Mittag- und Abendessen gemeinsam für die Woche planen.",
+    href: "/speiseplan",
+  },
+  {
     title: "Einkaufsliste",
     description: "Gemeinsame Einkaufsliste für den Haushalt.",
     href: "/einkauf",

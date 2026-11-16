@@ -209,8 +209,10 @@ These are the subtle errors that look like productivity but create problems:
 
 ### GitHub Identity and Permissions
 
-AI development work uses the separate GitHub account `mip-ai-bot`, which is invited to the repository as a collaborator.
-- Treat `mip-ai-bot` as a contributor account, not an owner or administrator. gh auth is scoped to the bot account, not the personal account so you are using it automatically.
+- For local development, use the separate GitHub collaborator account `mip-ai-bot`. Treat it as a contributor, not an owner or administrator.
+- In the managed cloud environment, Miriam explicitly authorizes agents to use the connected GitHub account `miriampalmetshofer` through the GitHub connector for branches, commits, PRs, and review follow-ups. This cloud exception does not require renewed approval on each task.
+- Check the authenticated account rather than assuming that `gh` and the GitHub connector share an identity. An unavailable or invalid bot CLI token does not block cloud work when the authorized connector is available.
+- The same review and deployment boundaries apply to both accounts: do not push to `main`, approve your own PRs, bypass review, or merge/deploy without the required human approval.
 
 ## Pull Requests
 
