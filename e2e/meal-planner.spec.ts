@@ -216,3 +216,48 @@ test("the meal overlay fits the visible area when a keyboard opens", async ({
   await expect(save).toBeInViewport();
   await page.getByRole("button", { name: "Schließen" }).click();
 });
+
+test("a dragged meal keeps its new day and meal after reload", async ({
+  page,
+}) => {
+  const name = `Verschieben ${Date.now()}`;
+  await page.goto("/speiseplan?woche=2026-11-02");
+  const monday = page.getByRole("region", { name: "Montag, 2. November" });
+  const tuesday = page.getByRole("region", { name: "Dienstag, 3. November" });
+  for (const day of [monday, tuesday]) {
+    const toggle = day.getByRole("button", { expanded: false });
+    if (await toggle.count()) await toggle.click();
+  }
+  await monday
+    .getByRole("button", { name: /Mittagessen eintragen|Eintrag hinzufügen/ })
+    .first()
+    .click();
+  await page.getByLabel("Gericht oder Essen").fill(name);
+  await page.getByRole("button", { name: "Speichern", exact: true }).click();
+  const meal = page.getByRole("button", { name: `${name} bearbeiten` });
+  await expect(meal).toBeVisible();
+  await meal.scrollIntoViewIfNeeded();
+  const target = tuesday.getByRole("region", { name: "Abend", exact: true });
+  // Adjacent days fit together on desktop, so the test does not need to scroll during the hold.
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await target.scrollIntoViewIfNeeded();
+  const from = await meal.boundingBox();
+  const to = await target.boundingBox();
+  expect(from).not.toBeNull();
+  expect(to).not.toBeNull();
+  await page.mouse.move(from!.x + 20, from!.y + 20);
+  await page.mouse.down();
+  await expect(meal.locator("..")).toHaveAttribute("data-dragging", "true");
+  await page.mouse.move(to!.x + 30, to!.y + 30, { steps: 8 });
+  await expect(target).toHaveAttribute("data-drop-target", "true");
+  await page.mouse.up();
+  await expect(
+    target.getByRole("button", { name: `${name} bearbeiten` }),
+  ).toBeEnabled();
+  await page.reload();
+  const toggle = tuesday.getByRole("button", { expanded: false });
+  if (await toggle.count()) await toggle.click();
+  await expect(
+    target.getByRole("button", { name: `${name} bearbeiten` }),
+  ).toContainText("Beide");
+});

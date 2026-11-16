@@ -52,6 +52,7 @@ export type DragController = ReturnType<typeof useDragController>;
  */
 export function useDragController(
   onMoveItem: (itemId: string, categoryId: string) => void,
+  grid = false,
 ) {
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dropCategoryId, setDropCategoryId] = useState<string | null>(null);
@@ -62,7 +63,11 @@ export function useDragController(
     // pendingY is a screen-space delta, so the finger's document position is
     // its current viewport Y plus however far the page is scrolled.
     const documentY = session.originY + session.pendingY + window.scrollY;
-    const next = findCategoryAtPoint(session.rects, documentY);
+    const next = findCategoryAtPoint(
+      session.rects,
+      documentY,
+      session.originX + session.pendingX,
+    );
     setDropCategoryId((current) => (current === next ? current : next));
   }, []);
 
@@ -118,20 +123,23 @@ export function useDragController(
    * How fast the page should scroll itself, so a category below the fold can be
    * reached without letting go. Ramps up as the finger nears the edge.
    */
-  const updateEdgeSpeed = useCallback((session: ActiveSession, clientY: number) => {
-    const fromTop = clientY;
-    const fromBottom = window.innerHeight - clientY;
+  const updateEdgeSpeed = useCallback(
+    (session: ActiveSession, clientY: number) => {
+      const fromTop = clientY;
+      const fromBottom = window.innerHeight - clientY;
 
-    if (fromTop < EDGE_ZONE_PX) {
-      session.edgeSpeed =
-        -MAX_EDGE_SPEED_PX_PER_FRAME * (1 - fromTop / EDGE_ZONE_PX);
-    } else if (fromBottom < EDGE_ZONE_PX) {
-      session.edgeSpeed =
-        MAX_EDGE_SPEED_PX_PER_FRAME * (1 - fromBottom / EDGE_ZONE_PX);
-    } else {
-      session.edgeSpeed = 0;
-    }
-  }, []);
+      if (fromTop < EDGE_ZONE_PX) {
+        session.edgeSpeed =
+          -MAX_EDGE_SPEED_PX_PER_FRAME * (1 - fromTop / EDGE_ZONE_PX);
+      } else if (fromBottom < EDGE_ZONE_PX) {
+        session.edgeSpeed =
+          MAX_EDGE_SPEED_PX_PER_FRAME * (1 - fromBottom / EDGE_ZONE_PX);
+      } else {
+        session.edgeSpeed = 0;
+      }
+    },
+    [],
+  );
 
   const releaseSession = useCallback(() => {
     const session = sessionRef.current;
@@ -170,29 +178,35 @@ export function useDragController(
     return session;
   }, []);
 
-  const start = useCallback((session: DragSession) => {
-    const scrollY = window.scrollY;
-    const rects = measureCategoryRects(document, scrollY);
-    const listBottom = rects.at(-1)?.bottom ?? scrollY;
+  const start = useCallback(
+    (session: DragSession) => {
+      const scrollY = window.scrollY;
+      const rects = measureCategoryRects(document, scrollY, grid);
+      const listBottom = Math.max(scrollY, ...rects.map((rect) => rect.bottom));
 
-    sessionRef.current = {
-      ...session,
-      rects,
-      originScrollY: scrollY,
-      maxScrollY: Math.max(0, listBottom - window.innerHeight + EDGE_ZONE_PX),
-      frame: null,
-      pendingX: 0,
-      pendingY: 0,
-      edgeSpeed: 0,
-    };
+      sessionRef.current = {
+        ...session,
+        rects,
+        originScrollY: scrollY,
+        maxScrollY: Math.max(0, listBottom - window.innerHeight + EDGE_ZONE_PX),
+        frame: null,
+        pendingX: 0,
+        pendingY: 0,
+        edgeSpeed: 0,
+      };
 
-    session.element.style.willChange = "transform";
-    setDraggedItemId(session.itemId);
-    setDropCategoryId(
-      findCategoryAtPoint(rects, session.originY + scrollY) ??
-        session.sourceCategoryId,
-    );
-  }, []);
+      session.element.style.willChange = "transform";
+      setDraggedItemId(session.itemId);
+      setDropCategoryId(
+        findCategoryAtPoint(
+          rects,
+          session.originY + scrollY,
+          session.originX,
+        ) ?? session.sourceCategoryId,
+      );
+    },
+    [grid],
+  );
 
   const move = useCallback(
     (clientX: number, clientY: number) => {
@@ -216,14 +230,18 @@ export function useDragController(
   );
 
   const drop = useCallback(
-    (clientY: number) => {
+    (clientY: number, clientX?: number) => {
       const session = sessionRef.current;
 
       if (!session) {
         return;
       }
 
-      const target = findCategoryAtPoint(session.rects, clientY + window.scrollY);
+      const target = findCategoryAtPoint(
+        session.rects,
+        clientY + window.scrollY,
+        clientX,
+      );
 
       releaseSession();
 

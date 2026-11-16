@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { MealPlanner } from "./MealPlanner";
@@ -229,3 +229,101 @@ it("focuses the input only when adding a meal", async () => {
   expect(screen.getByLabelText("Gericht oder Essen")).not.toHaveFocus();
   expect(screen.getByRole("dialog")).toHaveFocus();
 });
+
+it.each([false, true])(
+  "moves a meal by long press and restores it on failure: %s",
+  async (fails) => {
+    const entry = {
+      id: "meal-1",
+      version: 3,
+      plannedOn: props.start,
+      mealTime: "lunch" as const,
+      person: "simon" as const,
+      name: "Pasta",
+    };
+    let finish!: (result: { error: string | null }) => void;
+    vi.mocked(saveMeal).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const bounds = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: HTMLElement) {
+        const [day, meal] = (this.dataset.categoryId ?? "").split(":");
+        const left = day === props.start ? 0 : 220;
+        const top = meal === "dinner" ? 100 : 0;
+        return {
+          left,
+          right: left + 200,
+          top,
+          bottom: top + 100,
+          width: 200,
+          height: 100,
+          x: left,
+          y: top,
+          toJSON() {},
+        };
+      });
+    try {
+      const { container, rerender } = render(
+        <MealPlanner {...props} entries={[entry]} />,
+      );
+      const row = screen.getByRole("listitem");
+      fireEvent.pointerDown(row, {
+        button: 0,
+        pointerId: 1,
+        clientX: 20,
+        clientY: 20,
+      });
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 450));
+      });
+      expect(row).toHaveAttribute("data-dragging", "true");
+      fireEvent.pointerMove(row, { pointerId: 1, clientX: 300, clientY: 150 });
+      const target = container.querySelector(
+        '[data-category-id="2026-11-03:dinner"]',
+      )!;
+      expect(target).toHaveAttribute("data-drop-target", "true");
+      fireEvent.pointerUp(row, { pointerId: 1, clientX: 300, clientY: 150 });
+      expect(Object.fromEntries(vi.mocked(saveMeal).mock.calls[0][0])).toEqual({
+        ...entry,
+        version: "3",
+        plannedOn: "2026-11-03",
+        mealTime: "dinner",
+      });
+      expect(target).toHaveTextContent("Pasta");
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      if (!fails) {
+        rerender(
+          <MealPlanner
+            {...props}
+            entries={[
+              {
+                ...entry,
+                version: 4,
+                plannedOn: "2026-11-03",
+                mealTime: "dinner",
+              },
+            ]}
+          />,
+        );
+      }
+      await act(async () => {
+        finish({ error: fails ? "Speichern fehlgeschlagen" : null });
+      });
+      if (!fails) expect(target).toHaveTextContent("Pasta");
+      if (fails) {
+        expect(screen.getByRole("alert")).toHaveTextContent(
+          "Speichern fehlgeschlagen",
+        );
+        expect(
+          container.querySelector('[data-category-id="2026-11-02:lunch"]'),
+        ).toHaveTextContent("Pasta");
+      }
+    } finally {
+      bounds.mockRestore();
+    }
+  },
+);
