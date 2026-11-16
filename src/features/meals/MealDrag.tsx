@@ -70,12 +70,12 @@ export function MealItem({
         <span
           id={`meal-person-${entry.id}`}
           className={cn(
-            "shrink-0 text-xs",
+            "shrink-0 rounded-full px-2 py-1 text-xs font-medium",
             entry.person === "both"
-              ? "text-muted-foreground"
+              ? "bg-muted text-muted-foreground"
               : entry.person === "miriam"
-                ? "text-violet-700 dark:text-violet-300"
-                : "text-sky-700 dark:text-sky-300",
+                ? "bg-violet-100 text-violet-900 dark:bg-violet-950 dark:text-violet-200"
+                : "bg-sky-100 text-sky-900 dark:bg-sky-950 dark:text-sky-200",
           )}
         >
           {personLabels[entry.person]}
