@@ -35,7 +35,9 @@ it("prefills a full settlement with the debtor, amount and date, preserving inpu
       ]}
     />,
   );
-  await user.click(screen.getByRole("button", { name: "Alles ausgleichen" }));
+  await user.click(
+    screen.getByRole("button", { name: "Rückzahlung erfassen" }),
+  );
   const form = screen.getByRole("form", { name: "Rückzahlung eintragen" });
   expect(within(form).getByLabelText("Betrag (€)")).toHaveValue("24,00");
   expect(within(form).getByLabelText("Datum der Rückzahlung")).toHaveValue(
@@ -54,7 +56,7 @@ it("prefills a full settlement with the debtor, amount and date, preserving inpu
   expect(screen.queryByRole("form")).not.toBeInTheDocument();
 });
 
-it("opens entries in a modal with an icon edit button and closes with Escape", async () => {
+it("opens the entire entry row in a modal and closes with Escape", async () => {
   const user = userEvent.setup();
   render(
     <Quitt
@@ -74,8 +76,8 @@ it("opens entries in a modal with an icon edit button and closes with Escape", a
     />,
   );
   const edit = screen.getByRole("button", { name: "Einkauf bearbeiten" });
-  expect(edit).toHaveTextContent("");
-  expect(edit.querySelector("svg")).not.toBeNull();
+  expect(edit).toHaveTextContent("Einkauf");
+  expect(edit).toHaveTextContent("48,00");
   await user.click(edit);
   const dialog = screen.getByRole("dialog", { name: "Eintrag bearbeiten" });
   expect(within(dialog).getByLabelText("Beschreibung")).toHaveValue("Einkauf");

@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { Dialog } from "@base-ui/react/dialog";
-import { Pencil, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { euro } from "@/lib/format";
@@ -30,44 +30,32 @@ export function Quitt({
         aria-label="Balance"
         className="space-y-3 rounded-2xl border bg-card p-5"
       >
-        <h2 className="text-lg font-semibold">Balance</h2>
-        <p className="text-2xl font-semibold tabular-nums">
-          {euro.format(Math.abs(balance) / 100)}
-        </p>
-        <p>
+        <p className="text-sm text-muted-foreground">
           {balance === 0
             ? "Ihr seid quitt."
-            : `${people[debtor]} schuldet ${people[creditor]} diesen Betrag.`}
+            : `${people[debtor]} schuldet ${people[creditor]}`}
         </p>
-        {balance !== 0 && (
-          <Button
-            size="lg"
-            variant="outline"
-            disabled={draft !== null}
-            onClick={() =>
-              setDraft({
-                kind: "payment",
-                paidBy: debtor,
-                amountCents: Math.abs(balance),
-              })
-            }
-          >
-            Alles ausgleichen
-          </Button>
-        )}
-      </section>
-      <div className="flex flex-wrap gap-2">
-        <Button size="lg" onClick={() => setDraft({ kind: "expense" })}>
-          Ausgabe eintragen
-        </Button>
+        <p className="text-3xl font-semibold tabular-nums">
+          {euro.format(Math.abs(balance) / 100)}
+        </p>
         <Button
           size="lg"
           variant="outline"
-          onClick={() => setDraft({ kind: "payment", paidBy: debtor })}
+          onClick={() =>
+            setDraft({
+              kind: "payment",
+              paidBy: debtor,
+              amountCents: balance === 0 ? undefined : Math.abs(balance),
+            })
+          }
         >
-          Rückzahlung eintragen
+          Rückzahlung erfassen
         </Button>
-      </div>
+      </section>
+      <Button size="lg" onClick={() => setDraft({ kind: "expense" })}>
+        <Plus aria-hidden="true" />
+        Ausgabe eintragen
+      </Button>
       {draft && (
         <EntryForm
           key={draft.id ?? draft.kind}
@@ -83,36 +71,30 @@ export function Quitt({
             Noch keine Einträge. Tragt eure erste gemeinsame Ausgabe ein.
           </p>
         ) : (
-          <ul className="divide-y rounded-2xl border bg-card">
+          <ul className="divide-y border-y">
             {entries.map((entry) => (
-              <li
-                key={entry.id}
-                className="flex items-start justify-between gap-3 p-4"
-              >
-                <div className="min-w-0 space-y-1">
-                  <p className="break-words font-medium">{entry.description}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDate(entry.occurredOn)} ·{" "}
-                    {entry.kind === "payment" ? "Rückzahlung" : "Ausgabe"}
-                  </p>
-                  <p className="text-sm">
+              <li key={entry.id}>
+                <button
+                  type="button"
+                  aria-label={`${entry.description} bearbeiten`}
+                  onClick={() => setDraft(entry)}
+                  className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 rounded-sm py-4 text-left transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                >
+                  <span className="break-words font-medium">
+                    {entry.description}
+                  </span>
+                  <span className="text-right font-semibold tabular-nums">
+                    {euro.format(entry.amountCents / 100)}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
                     {entry.kind === "payment"
-                      ? `${people[entry.paidBy]} an ${people[entry.paidBy === "miriam" ? "simon" : "miriam"]}`
-                      : `${people[entry.paidBy]} bezahlt · Für ${entry.forWhom === "both" ? "beide" : people[entry.forWhom]}`}
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="icon-lg"
-                    aria-label={`${entry.description} bearbeiten`}
-                    disabled={draft !== null}
-                    onClick={() => setDraft(entry)}
-                  >
-                    <Pencil aria-hidden="true" />
-                  </Button>
-                </div>
-                <p className="shrink-0 font-semibold tabular-nums">
-                  {euro.format(entry.amountCents / 100)}
-                </p>
+                      ? `Rückzahlung · ${people[entry.paidBy]} an ${people[entry.paidBy === "miriam" ? "simon" : "miriam"]}`
+                      : `${people[entry.paidBy]} · für ${entry.forWhom === "both" ? "beide" : people[entry.forWhom]}`}
+                  </span>
+                  <span className="text-right text-sm text-muted-foreground tabular-nums">
+                    {formatDate(entry.occurredOn)}
+                  </span>
+                </button>
               </li>
             ))}
           </ul>

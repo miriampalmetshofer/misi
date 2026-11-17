@@ -25,7 +25,7 @@ test("Quitt expenses and dated repayments persist and can be edited and deleted"
   await expect(row).toContainText("48,00");
   await page.reload();
   await expect(row).toContainText("16.11.2026");
-  await expect(row).toContainText("Miriam bezahlt");
+  await expect(row).toContainText("Miriam · für beide");
   await row.getByRole("button").click();
   await expect(
     page.getByRole("dialog", { name: "Eintrag bearbeiten" }),
@@ -37,7 +37,7 @@ test("Quitt expenses and dated repayments persist and can be edited and deleted"
   await expect(row).toContainText("50,00");
 
   await page
-    .getByRole("button", { name: "Rückzahlung eintragen", exact: true })
+    .getByRole("button", { name: "Rückzahlung erfassen", exact: true })
     .click();
   await page
     .getByLabel("Beschreibung", { exact: true })
