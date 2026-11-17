@@ -76,7 +76,10 @@ export function ExpenseForm({
         event.preventDefault();
         if (!canSave || isSaving) return;
         const form = new FormData();
-        if (entry) form.set("id", entry.id);
+        if (entry) {
+          form.set("id", entry.id);
+          form.set("version", String(entry.version));
+        }
         for (const [key, value] of Object.entries({
           spentOn,
           paidBy,

@@ -10,6 +10,7 @@ export async function getCarExpenses(): Promise<CarExpenseEntry[]> {
   return getDb()
     .select({
       id: carExpenses.id,
+      version: carExpenses.version,
       spentOn: carExpenses.spentOn,
       description: carExpenses.description,
       totalAmount: carExpenses.totalAmount,

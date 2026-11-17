@@ -134,6 +134,7 @@ export const carExpenses = pgTable(
   "car_expense",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    version: integer("version").notNull().default(1),
     spentOn: date("spent_on").notNull(),
     description: varchar("description", { length: 200 }).notNull(),
     totalAmount: euros("total_amount").notNull(),

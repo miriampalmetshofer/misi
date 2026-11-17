@@ -12,6 +12,7 @@ import { CarExpenses } from "./CarExpenses";
 const entry = {
   id: "11111111-1111-1111-1111-111111111111",
   paidBy: "miriam" as const,
+  version: 1,
   spentOn: "2026-10-24",
   description: "Winterreifen",
   totalAmount: 480,
@@ -96,6 +97,7 @@ it("opens existing data for editing and preserves it when saving fails", async (
   expect(screen.getByLabelText("Gesamtkosten")).toHaveValue("500");
   const data = vi.mocked(saveCarExpense).mock.calls[0][0];
   expect(data.get("id")).toBe(entry.id);
+  expect(data.get("version")).toBe(String(entry.version));
   expect(data.get("totalAmount")).toBe("500");
   await user.click(screen.getByRole("button", { name: "Speichern" }));
   expect(screen.queryByRole("form")).not.toBeInTheDocument();
@@ -122,7 +124,7 @@ it("requires confirmation before deleting and supports cancellation", async () =
       name: "Löschen",
     }),
   );
-  expect(deleteCarExpense).toHaveBeenCalledWith(entry.id);
+  expect(deleteCarExpense).toHaveBeenCalledWith(entry.id, entry.version);
 });
 
 
@@ -145,4 +147,19 @@ it("sends the selected payer when creating an expense", async () => {
   await user.selectOptions(screen.getByLabelText("Bezahlt von"), "simon");
   await user.click(screen.getByRole("button", { name: "Speichern" }));
   expect(vi.mocked(saveCarExpense).mock.calls[0][0].get("paidBy")).toBe("simon");
+});
+
+
+it("keeps the loaded version and edits when another person updates the repair", async () => {
+  const user = userEvent.setup();
+  const { rerender } = render(<CarExpenses entries={[entry]} />);
+  await user.click(screen.getByRole("button", { expanded: false }));
+  await user.click(screen.getByRole("button", { name: "Winterreifen bearbeiten" }));
+  rerender(<CarExpenses entries={[{ ...entry, version: 2, paidBy: "simon" }]} />);
+  await user.type(screen.getByLabelText(/Notiz/), " weitere Details");
+  vi.mocked(saveCarExpense).mockResolvedValueOnce({ error: "Dieser Eintrag wurde inzwischen geändert." });
+  await user.click(screen.getByRole("button", { name: "Speichern" }));
+  expect(vi.mocked(saveCarExpense).mock.calls[0][0].get("version")).toBe("1");
+  expect(await screen.findByRole("alert")).toHaveTextContent("inzwischen geändert");
+  expect(screen.getByLabelText(/Notiz/)).toHaveValue("Werkstatt weitere Details");
 });

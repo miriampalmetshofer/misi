@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { isPerson } from "@/lib/people";
@@ -10,12 +10,18 @@ import { isExpenseDate, parseDecimal, splitExpense } from "./expense";
 const validId = (id: string) =>
   /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id);
 
+const validVersion = (version: number) =>
+  Number.isInteger(version) && version > 0 && version < 2147483647;
+const conflict =
+  "Dieser Eintrag wurde inzwischen geändert oder gelöscht. Bitte lade die Seite neu. Deine Eingaben bleiben bis dahin erhalten.";
+
 export async function saveCarExpense(form: FormData) {
   const read = (key: string) => {
     const value = form.get(key);
     return typeof value === "string" ? value.trim() : "";
   };
   const id = read("id");
+  const version = Number(read("version"));
   const spentOn = read("spentOn");
   const description = read("description");
   const note = read("note");
@@ -24,7 +30,7 @@ export async function saveCarExpense(form: FormData) {
   const miriamPercent = parseDecimal(read("miriamPercent"), 100);
 
   if (
-    (id && !validId(id)) ||
+    (id && (!validId(id) || !validVersion(version))) ||
     !isPerson(paidBy) ||
     !isExpenseDate(spentOn) ||
     !description ||
@@ -55,17 +61,17 @@ export async function saveCarExpense(form: FormData) {
         .update(schema.carExpenses)
         .set({
           ...values,
+          version: sql`${schema.carExpenses.version} + 1`,
           // Editing a historical expense must not reopen its settled debt.
           paidBy: sql`case when ${schema.carExpenses.paidBy} is null then null else ${paidBy} end`,
           updatedAt: new Date(),
         })
-        .where(eq(schema.carExpenses.id, id))
+        .where(and(
+          eq(schema.carExpenses.id, id),
+          eq(schema.carExpenses.version, version),
+        ))
         .returning({ id: schema.carExpenses.id });
-      if (!rows.length)
-        return {
-          error:
-            "Dieser Eintrag existiert nicht mehr. Bitte die Seite neu laden.",
-        };
+      if (!rows.length) return { error: conflict };
     } else {
       await getDb().insert(schema.carExpenses).values(values);
     }
@@ -81,12 +87,18 @@ export async function saveCarExpense(form: FormData) {
   return { error: null };
 }
 
-export async function deleteCarExpense(id: string) {
-  if (!validId(id)) return { error: "Ungültiger Eintrag." };
+export async function deleteCarExpense(id: string, version: number) {
+  if (!validId(id) || !validVersion(version))
+    return { error: "Ungültiger Eintrag." };
   try {
-    await getDb()
+    const rows = await getDb()
       .delete(schema.carExpenses)
-      .where(eq(schema.carExpenses.id, id));
+      .where(and(
+        eq(schema.carExpenses.id, id),
+        eq(schema.carExpenses.version, version),
+      ))
+      .returning({ id: schema.carExpenses.id });
+    if (!rows.length) return { error: conflict };
   } catch (error) {
     logExpenseFailure("deleteCarExpense", error);
     return { error: "Löschen fehlgeschlagen. Bitte erneut versuchen." };

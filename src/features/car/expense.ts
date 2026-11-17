@@ -3,6 +3,7 @@ import { parseNumber } from "@/features/fuel/parseNumber";
 
 export type CarExpenseEntry = {
   id: string;
+  version: number;
   spentOn: string;
   description: string;
   totalAmount: number;

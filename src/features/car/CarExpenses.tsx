@@ -109,7 +109,7 @@ export function CarExpenses({ entries, selectedId }: {
                 setError(null);
                 startDeleting(async () => {
                   try {
-                    const result = await deleteCarExpense(deleting.id);
+                    const result = await deleteCarExpense(deleting.id, deleting.version);
                     if (result.error) setError(result.error);
                     else {
                       setDeleting(null);
