@@ -143,6 +143,11 @@ export function FuelSplit({ fillUps = [], selectedId }: FuelSplitProps) {
           isInvalid={form.invalidFields.includes("bezahlt")}
           onChange={form.update}
         />
+        {form.invalidFields.includes("bezahlt") && (
+          <p role="alert" className="text-sm text-destructive">
+            Bitte einen Betrag bis 100.000 € mit höchstens zwei Nachkommastellen eintragen.
+          </p>
+        )}
       </section>
 
       <PaidByField value={paidBy} onChange={setPaidBy} />
@@ -194,7 +199,9 @@ export function FuelSplit({ fillUps = [], selectedId }: FuelSplitProps) {
           </dl>
         ) : (
           <p className="text-body-muted mt-4">
-            {form.invalidFields.length > 0
+            {form.invalidFields.includes("bezahlt")
+              ? "Bitte den Betrag prüfen, dann erscheint hier die Aufteilung."
+              : form.invalidFields.length > 0
               ? "Bitte nur Zahlen eintragen, dann erscheint hier die Aufteilung."
               : form.hasImpossibleCarKm
                 ? "Der Tachostand ist kleiner als die erfassten Kilometer. Bitte den Tachostand prüfen."

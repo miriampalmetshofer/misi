@@ -6,11 +6,10 @@ import { eq } from "drizzle-orm";
 import { isPerson } from "@/lib/people";
 import { getDb, schema } from "@/db";
 import { calculateFuelSplit, isOffsetMode, roundFuelAmounts } from "./calculate";
-import { parseNumber } from "./parseNumber";
+import { parseFuelAmount, parseNumber } from "./parseNumber";
 
 /** Guards against a fat-fingered reading becoming a numeric overflow. */
 const MAX_KM = 1_000_000;
-const MAX_AMOUNT = 100_000;
 
 export async function addFuelFillUp(formData: FormData) {
   const filledOn = getString(formData, "filledOn");
@@ -22,7 +21,7 @@ export async function addFuelFillUp(formData: FormData) {
     simonKm: getNumber(formData, "simonKm"),
     sharedKm: getNumber(formData, "sharedKm"),
     carKm: getNumber(formData, "carKm"),
-    paidAmount: getNumber(formData, "paidAmount"),
+    paidAmount: parseFuelAmount(getString(formData, "paidAmount")),
   };
 
   if (
@@ -43,7 +42,7 @@ export async function addFuelFillUp(formData: FormData) {
     values.simonKm > MAX_KM ||
     values.sharedKm > MAX_KM ||
     values.carKm > MAX_KM ||
-    values.paidAmount > MAX_AMOUNT
+    values.paidAmount <= 0
   ) {
     console.error("addFuelFillUp: refused out-of-range fill-up");
     return;

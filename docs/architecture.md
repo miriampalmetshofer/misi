@@ -51,11 +51,15 @@ Quitt combines manual expenses and repayments from `quitt_entry` with fuel and
 repair costs read directly from their own tables. Auto costs are never copied
 into `quitt_entry`; their stored shares determine the other person's debt to the
 payer. Money is converted from exact euro decimals to integer cents at this boundary.
+Fuel bill inputs accept at most two decimal places before splitting and saving;
+kilometre inputs retain their independent precision.
 
 `paid_by` on auto costs identifies who advanced the bill. A NULL payer marks the
 already settled history from before the integration, which stays outside the
 Quitt balance. All auto entries were settled at the migration cutoff. New entries
-require a payer; editing a historical repair preserves its NULL payer.
+require a payer; editing a historical repair preserves its NULL payer. Repairs
+carry a version checked atomically on updates and deletes, so stale forms cannot
+overwrite newer changes. Conflicts leave the user's form inputs intact.
 
 Repayments of any amount reduce the shared balance without being allocated to
 individual expenses. Auto expenses stay in the Quitt history after repayment;

@@ -525,3 +525,21 @@ it("opens a linked fill-up on its history page", () => {
   expect(history().getByRole("button", { expanded: true })).toBeVisible();
   expect(history().queryByRole("checkbox", { name: "Zahlung beglichen" })).not.toBeInTheDocument();
 });
+
+
+it("rejects sub-cent amounts in the form while preserving the input for correction", async () => {
+  const user = userEvent.setup();
+  render(<FuelSplit />);
+  await user.type(screen.getByLabelText("Miriam"), "101");
+  await user.type(screen.getByLabelText("Simon"), "99");
+  await user.type(screen.getByLabelText("Auto"), "200");
+  await user.type(screen.getByLabelText("Betrag"), "1,005");
+  expect(saveButton()).toBeDisabled();
+  expect(screen.getByRole("alert")).toHaveTextContent("höchstens zwei Nachkommastellen");
+  expect(actions.addFuelFillUp).not.toHaveBeenCalled();
+  expect(screen.getByLabelText("Betrag")).toHaveValue("1,005");
+  await user.clear(screen.getByLabelText("Betrag"));
+  await user.type(screen.getByLabelText("Betrag"), "1,01");
+  expect(saveButton()).toBeEnabled();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});

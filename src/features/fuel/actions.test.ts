@@ -103,6 +103,8 @@ describe("addFuelFillUp", () => {
   });
 
   it.each([
+    ["a sub-cent bill", { paidAmount: "1,005" }],
+    ["a zero bill", { paidAmount: "0" }],
     ["a missing payer", { paidBy: "" }],
     ["an unknown payer", { paidBy: "other" }],
     ["an unreadable number", { paidAmount: "hundert" }],
@@ -140,4 +142,13 @@ describe("deleteFuelFillUp", () => {
 
     expect(db.del).not.toHaveBeenCalled();
   });
+});
+
+
+it("persists the exact bill and shares for the reported 101/99 km split", async () => {
+  await addFuelFillUp(form({ ...VALID, paidAmount: "1,01", miriamKm: "101",
+    simonKm: "99", sharedKm: "0", carKm: "200" }));
+  expect(db.values).toHaveBeenCalledWith(expect.objectContaining({
+    paidAmount: 1.01, miriamAmount: 0.51, simonAmount: 0.50,
+  }));
 });

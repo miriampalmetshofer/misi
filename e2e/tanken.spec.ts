@@ -85,3 +85,20 @@ test("a deleted fill-up stays gone after a reload", async ({ page }) => {
   await reloadPage(page);
   await expect(historyRow(page, amount)).toHaveCount(0);
 });
+
+test("sub-cent fuel bills must be corrected before they can be saved", async ({ page }, testInfo) => {
+  await page.getByLabel("Miriam", { exact: true }).fill("101");
+  await page.getByLabel("Simon", { exact: true }).fill("99");
+  await page.getByLabel("Auto", { exact: true }).fill("200");
+  await page.getByLabel("Betrag", { exact: true }).fill("1,005");
+  await expect(page.getByRole("button", { name: "Speichern", exact: true })).toBeDisabled();
+  await expect(page.getByRole("region", { name: "Bezahlt" }).getByRole("alert")).toContainText("höchstens zwei Nachkommastellen");
+  await expect(page.getByLabel("Betrag", { exact: true })).toHaveValue("1,005");
+  await page.screenshot({ path: testInfo.outputPath("fuel-precision-error.png"), fullPage: true });
+  await page.getByLabel("Betrag", { exact: true }).fill("1,01");
+  await page.getByRole("button", { name: "Speichern", exact: true }).click();
+  const row = page.getByRole("listitem").filter({ hasText: "1,01 €" });
+  await expect(row).toContainText("Miriam 0,51 € · Simon 0,50 €");
+  await reloadPage(page);
+  await expect(row).toContainText("Miriam 0,51 € · Simon 0,50 €");
+});
