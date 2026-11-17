@@ -91,6 +91,8 @@ The goal is not to ship every feature at once. The goal is to build a maintainab
 
 These behaviors apply at all times, across all skills. They are non-negotiable.
 
+When the user invokes `simon-feature`, follow `.agents/skills/simon-feature/SKILL.md` for communication and product clarification. For that workflow, the skill's approach of making reasonable assumptions and refining them through preview feedback replaces sections 1 and 2 below for minor product ambiguities. Ask Simon only about substantial ambiguity or consequential decisions. Technical verification, privacy, and merge/deployment boundaries still apply.
+
 ### 1. Surface Assumptions
 
 Before implementing anything non-trivial, explicitly state your assumptions:
