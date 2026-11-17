@@ -5,10 +5,7 @@ import { ChevronDown, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Item, ItemActions, ItemContent } from "@/components/ui/item";
-import {
-  PaymentSettledMark,
-  PaymentStatus,
-} from "@/features/payments/PaymentStatus";
+import { AutoPaymentInfo } from "@/features/payments/AutoPaymentInfo";
 import { euro } from "@/lib/format";
 import { formatDate } from "@/lib/date";
 import { FillUpDetails } from "./FillUpDetails";
@@ -16,6 +13,7 @@ import type { FuelFillUpEntry } from "./types";
 
 type FillUpRowProps = {
   entry: FuelFillUpEntry;
+  initiallyExpanded?: boolean;
   onDelete: () => void;
 };
 
@@ -23,13 +21,14 @@ type FillUpRowProps = {
  * One fill-up in the history, expandable to show the readings behind it.
  *
  */
-export function FillUpRow({ entry, onDelete }: FillUpRowProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export function FillUpRow({ entry, onDelete, initiallyExpanded = false }: FillUpRowProps) {
+  const [isExpanded, setIsExpanded] = useState(initiallyExpanded);
   const detailsId = useId();
   const date = formatDate(entry.filledOn);
 
   return (
     <Item
+      id={`eintrag-${entry.id}`}
       variant="outline"
       // Rendered as an <li> so the role="list" ItemGroup sets has real listitem
       // children rather than bare divs.
@@ -52,7 +51,6 @@ export function FillUpRow({ entry, onDelete }: FillUpRowProps) {
             </span>
             <span className="flex items-center gap-2 text-sm leading-snug font-medium tabular-nums">
               {euro.format(entry.paidAmount)}
-              {entry.isSettled ? <PaymentSettledMark /> : null}
             </span>
             <span className="text-sm leading-normal text-muted-foreground tabular-nums">
               Miriam {euro.format(entry.miriamAmount)} · Simon{" "}
@@ -83,7 +81,7 @@ export function FillUpRow({ entry, onDelete }: FillUpRowProps) {
       <div hidden={!isExpanded} className="basis-full" id={detailsId}>
         <div className="flex flex-col gap-3">
           <FillUpDetails entry={entry} />
-          <PaymentStatus kind="fuel" id={entry.id} isSettled={entry.isSettled} />
+          <AutoPaymentInfo paidBy={entry.paidBy} />
         </div>
       </div>
     </Item>

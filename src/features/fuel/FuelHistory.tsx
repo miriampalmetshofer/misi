@@ -12,6 +12,7 @@ import type { FuelFillUpEntry } from "./types";
 
 type FuelHistoryProps = {
   entries: FuelFillUpEntry[];
+  selectedId?: string;
   /** True while a delete is in flight, so the dialog can say so. */
   isDeleting: boolean;
   onDelete: (id: string) => void;
@@ -19,10 +20,14 @@ type FuelHistoryProps = {
 
 export function FuelHistory({
   entries,
+  selectedId,
   isDeleting,
   onDelete,
 }: FuelHistoryProps) {
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(() => {
+    const index = entries.findIndex((entry) => entry.id === selectedId);
+    return Math.floor(Math.max(0, index) / PAGE_SIZE) + 1;
+  });
   // Held as the whole entry rather than an id: the dialog names the fill-up it
   // is about, and needs those details for as long as it is open.
   const [selected, setSelected] = useState<FuelFillUpEntry | null>(null);
@@ -62,6 +67,7 @@ export function FuelHistory({
               <FillUpRow
                 key={entry.id}
                 entry={entry}
+                initiallyExpanded={entry.id === selectedId}
                 onDelete={() => setSelected(entry)}
               />
             ))}

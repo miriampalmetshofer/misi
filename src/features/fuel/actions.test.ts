@@ -38,6 +38,7 @@ function form(fields: Record<string, string>) {
 }
 
 const VALID = {
+  paidBy: "miriam",
   filledOn: "2025-11-04",
   offsetMode: "proportional",
   miriamKm: "256,4",
@@ -60,6 +61,7 @@ describe("addFuelFillUp", () => {
 
     expect(db.values).toHaveBeenCalledWith({
       filledOn: "2025-11-04",
+      paidBy: "miriam",
       offsetMode: "proportional",
       miriamKm: 256.4,
       simonKm: 352.2,
@@ -101,6 +103,8 @@ describe("addFuelFillUp", () => {
   });
 
   it.each([
+    ["a missing payer", { paidBy: "" }],
+    ["an unknown payer", { paidBy: "other" }],
     ["an unreadable number", { paidAmount: "hundert" }],
     ["a missing number", { carKm: "" }],
     ["a mode it does not know", { offsetMode: "fifty-fifty" }],

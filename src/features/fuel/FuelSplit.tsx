@@ -1,7 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 
+import { PaidByField } from "@/features/payments/PaidByField";
+import type { Person } from "@/lib/people";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -15,10 +17,12 @@ import { FIELDS, useFuelSplitForm, type FieldName } from "./useFuelSplitForm";
 type FuelSplitProps = {
   /** Past fill-ups, newest first. Empty until the page loads them. */
   fillUps?: FuelFillUpEntry[];
+  selectedId?: string;
 };
 
-export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
+export function FuelSplit({ fillUps = [], selectedId }: FuelSplitProps) {
   const form = useFuelSplitForm();
+  const [paidBy, setPaidBy] = useState<Person>("miriam");
   const [isSaving, startSaving] = useTransition();
   const [isDeleting, startDeleting] = useTransition();
 
@@ -33,6 +37,7 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
       await addFuelFillUp(
         toFormData({
           filledOn: datum,
+          paidBy,
           offsetMode: mode,
           miriamKm: toField(input.miriamKm),
           simonKm: toField(input.simonKm),
@@ -140,6 +145,8 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
         />
       </section>
 
+      <PaidByField value={paidBy} onChange={setPaidBy} />
+
       <section aria-labelledby="modus" className="flex flex-col gap-3">
         <h2 className="section-label" id="modus">
           Nicht erfasste Kilometer verteilen
@@ -206,6 +213,8 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
       </section>
 
       <FuelHistory
+        key={selectedId}
+        selectedId={selectedId}
         entries={fillUps}
         isDeleting={isDeleting}
         onDelete={deleteFillUp}

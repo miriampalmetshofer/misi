@@ -1,5 +1,6 @@
-export const people = { miriam: "Miriam", simon: "Simon" } as const;
-export type Person = keyof typeof people;
+import type { Person } from "@/lib/people";
+export { people, isPerson } from "@/lib/people";
+export type { Person } from "@/lib/people";
 export type QuittEntry = {
   id: string;
   version: number;
@@ -11,8 +12,22 @@ export type QuittEntry = {
   occurredOn: string;
 };
 
-export function isPerson(value: string): value is Person {
-  return value === "miriam" || value === "simon";
+export type AutoQuittEntry = {
+  source: "fuel" | "car";
+  id: string;
+  kind: "expense";
+  description: string;
+  amountCents: number;
+  paidBy: Person;
+  miriamAmountCents: number;
+  simonAmountCents: number;
+  occurredOn: string;
+};
+
+export type QuittHistoryEntry = QuittEntry | AutoQuittEntry;
+
+export function isAutoEntry(entry: QuittHistoryEntry): entry is AutoQuittEntry {
+  return "source" in entry;
 }
 
 export function parseCents(value: string): number | null {
@@ -41,10 +56,16 @@ export function householdToday() {
 }
 
 // Positive means Simon owes Miriam. The payer keeps an indivisible extra cent.
-export function balanceCents(entries: QuittEntry[]) {
+export function balanceCents(entries: QuittHistoryEntry[]) {
   return entries.reduce((balance, entry) => {
     const sign = entry.paidBy === "miriam" ? 1 : -1;
     if (entry.kind === "payment") return balance + sign * entry.amountCents;
+    if (isAutoEntry(entry)) {
+      const owed = entry.paidBy === "miriam"
+        ? entry.simonAmountCents
+        : entry.miriamAmountCents;
+      return balance + sign * owed;
+    }
     const owed =
       entry.forWhom === "both"
         ? Math.floor(entry.amountCents / 2)

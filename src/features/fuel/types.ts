@@ -1,3 +1,4 @@
+import type { Person } from "@/lib/people";
 import type { OffsetMode } from "./calculate";
 
 /** A stored fill-up, as the history list needs it. */
@@ -13,5 +14,5 @@ export type FuelFillUpEntry = {
   offsetMode: OffsetMode;
   miriamAmount: number;
   simonAmount: number;
-  isSettled: boolean;
+  paidBy: Person | null;
 };

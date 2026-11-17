@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { today } from "@/lib/date";
-import { calculateFuelSplit, type OffsetMode } from "./calculate";
+import { calculateFuelSplit, roundFuelAmounts, type OffsetMode } from "./calculate";
 import { parseNumber } from "./parseNumber";
 
 export const FIELDS = [
@@ -109,7 +109,7 @@ export function useFuelSplitForm() {
     setUseFiftyFifty,
     mode,
     input,
-    result,
+    result: { ...result, ...roundFuelAmounts(result) },
     invalidFields,
     hasInvalidDeviceKm,
     hasInvalidDistance,

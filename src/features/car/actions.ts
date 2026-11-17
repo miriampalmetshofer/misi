@@ -1,8 +1,9 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
+import { isPerson } from "@/lib/people";
 import { getDb, schema } from "@/db";
 import { isExpenseDate, parseDecimal, splitExpense } from "./expense";
 
@@ -18,11 +19,13 @@ export async function saveCarExpense(form: FormData) {
   const spentOn = read("spentOn");
   const description = read("description");
   const note = read("note");
+  const paidBy = read("paidBy");
   const totalAmount = parseDecimal(read("totalAmount"), 100_000);
   const miriamPercent = parseDecimal(read("miriamPercent"), 100);
 
   if (
     (id && !validId(id)) ||
+    !isPerson(paidBy) ||
     !isExpenseDate(spentOn) ||
     !description ||
     description.length > 200 ||
@@ -38,6 +41,7 @@ export async function saveCarExpense(form: FormData) {
 
   const values = {
     spentOn,
+    paidBy,
     description,
     note,
     totalAmount,
@@ -49,7 +53,12 @@ export async function saveCarExpense(form: FormData) {
     if (id) {
       const rows = await getDb()
         .update(schema.carExpenses)
-        .set({ ...values, updatedAt: new Date() })
+        .set({
+          ...values,
+          // Editing a historical expense must not reopen its settled debt.
+          paidBy: sql`case when ${schema.carExpenses.paidBy} is null then null else ${paidBy} end`,
+          updatedAt: new Date(),
+        })
         .where(eq(schema.carExpenses.id, id))
         .returning({ id: schema.carExpenses.id });
       if (!rows.length)
@@ -68,6 +77,7 @@ export async function saveCarExpense(form: FormData) {
     };
   }
   revalidatePath("/auto");
+  revalidatePath("/quitt");
   return { error: null };
 }
 
@@ -82,6 +92,7 @@ export async function deleteCarExpense(id: string) {
     return { error: "Löschen fehlgeschlagen. Bitte erneut versuchen." };
   }
   revalidatePath("/auto");
+  revalidatePath("/quitt");
   return { error: null };
 }
 

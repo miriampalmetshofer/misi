@@ -7,22 +7,22 @@ import { ThemeToggle } from "@/components/theme-toggle";
 const modules = [
   {
     title: "Einkaufsliste",
-    description: "Gemeinsame Einkaufsliste für den Haushalt.",
+    description: "Einkäufe im Blick",
     href: "/einkauf",
   },
   {
     title: "Speiseplan",
-    description: "Mittag- und Abendessen gemeinsam für die Woche planen.",
+    description: "Essen für die Woche",
     href: "/speiseplan",
   },
   {
     title: "Auto",
-    description: "Tanken, Reparaturen und Einkäufe gemeinsam aufteilen.",
+    description: "Tanken und Reparaturen",
     href: "/auto",
   },
   {
     title: "Quitt",
-    description: "Gemeinsame Ausgaben",
+    description: "Ausgaben und Ausgleich",
     href: "/quitt",
   },
 ];
@@ -51,7 +51,7 @@ export default function Home() {
               key={module.title}
             >
               <h2 className="text-card-title">{module.title}</h2>
-              <p className="text-body-muted mt-2">{module.description}</p>
+              <p className="text-body-muted mt-2 truncate">{module.description}</p>
             </Link>
           ))}
         </div>

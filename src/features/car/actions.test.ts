@@ -26,6 +26,7 @@ import { saveCarExpense, deleteCarExpense } from "./actions";
 
 const id = "11111111-1111-1111-1111-111111111111";
 const valid = {
+  paidBy: "miriam",
   spentOn: "2026-10-24",
   description: "Winterreifen",
   totalAmount: "480,00",
@@ -53,6 +54,7 @@ describe("saveCarExpense", () => {
     ).toEqual({ error: null });
     expect(db.values).toHaveBeenCalledWith({
       spentOn: valid.spentOn,
+      paidBy: "miriam",
       description: valid.description,
       note: valid.note,
       totalAmount: 480,
@@ -77,6 +79,8 @@ describe("saveCarExpense", () => {
   });
 
   it.each<Record<string, string>>([
+    { paidBy: "" },
+    { paidBy: "other" },
     { spentOn: "2026-02-30" },
     { description: "  " },
     { description: "x".repeat(201) },

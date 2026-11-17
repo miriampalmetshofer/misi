@@ -11,7 +11,7 @@ import { CarExpenses } from "./CarExpenses";
 
 const entry = {
   id: "11111111-1111-1111-1111-111111111111",
-  isSettled: false,
+  paidBy: "miriam" as const,
   spentOn: "2026-10-24",
   description: "Winterreifen",
   totalAmount: 480,
@@ -123,4 +123,26 @@ it("requires confirmation before deleting and supports cancellation", async () =
     }),
   );
   expect(deleteCarExpense).toHaveBeenCalledWith(entry.id);
+});
+
+
+it("edits historical entries without offering a new payer or settlement checkbox", async () => {
+  const user = userEvent.setup();
+  render(<CarExpenses entries={[{ ...entry, paidBy: null }]} />);
+  await user.click(screen.getByRole("button", { expanded: false }));
+  expect(screen.getByText("Altbestand · bereits ausgeglichen")).toBeVisible();
+  expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Winterreifen bearbeiten" }));
+  expect(screen.queryByLabelText("Bezahlt von")).not.toBeInTheDocument();
+});
+
+it("sends the selected payer when creating an expense", async () => {
+  const user = userEvent.setup();
+  render(<CarExpenses entries={[]} />);
+  await user.click(screen.getByRole("button", { name: "Eintrag hinzufügen" }));
+  await user.type(screen.getByLabelText("Was wurde gemacht oder gekauft?"), "Reifen");
+  await user.type(screen.getByLabelText("Gesamtkosten"), "100");
+  await user.selectOptions(screen.getByLabelText("Bezahlt von"), "simon");
+  await user.click(screen.getByRole("button", { name: "Speichern" }));
+  expect(vi.mocked(saveCarExpense).mock.calls[0][0].get("paidBy")).toBe("simon");
 });

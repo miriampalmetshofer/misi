@@ -90,3 +90,19 @@ it("opens the entire entry row in a modal and closes with Escape", async () => {
   await user.click(screen.getByRole("button", { name: "Schließen" }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
+
+
+it("links auto entries to their source and prefills only the other person's share", async () => {
+  const user = userEvent.setup();
+  render(<Quitt today="2026-11-17" entries={[{
+    source: "car", id: "auto-id", kind: "expense", description: "Winterreifen",
+    amountCents: 48000, paidBy: "simon", miriamAmountCents: 19200,
+    simonAmountCents: 28800, occurredOn: "2026-11-17",
+  }]} />);
+  expect(screen.getByRole("link", { name: "Winterreifen im Auto-Bereich ansehen" }))
+    .toHaveAttribute("href", "/auto?bereich=ausgaben&eintrag=auto-id#eintrag-auto-id");
+  expect(screen.queryByRole("button", { name: "Winterreifen bearbeiten" })).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Rückzahlung erfassen" }));
+  expect(screen.getByLabelText("Betrag (€)")).toHaveValue("192,00");
+  expect(screen.getByRole("radio", { name: "Miriam" })).toBeChecked();
+});

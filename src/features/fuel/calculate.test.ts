@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { calculateFuelSplit, type FuelSplitInput } from "./calculate";
+import { calculateFuelSplit, roundFuelAmounts, type FuelSplitInput } from "./calculate";
 
 const sheetFillUp: FuelSplitInput = {
   miriamKm: 256.4,
@@ -133,4 +133,13 @@ describe("calculateFuelSplit", () => {
     expect(result.distanceOffset).toBeCloseTo(-20, 6);
     expect(result.miriamAmount + result.simonAmount).toBeCloseTo(90, 6);
   });
+});
+
+
+it.each([0.01, 0.03, 0.05, 45.45])("keeps cent-rounded shares equal to a %s euro bill", (paidAmount) => {
+  const result = calculateFuelSplit({ miriamKm: 0, simonKm: 0,
+    sharedKm: 100, carKm: 100, paidAmount }, "shared");
+  const amounts = roundFuelAmounts(result);
+  expect(Math.round(amounts.miriamAmount * 100) + Math.round(amounts.simonAmount * 100))
+    .toBe(Math.round(paidAmount * 100));
 });

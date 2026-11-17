@@ -18,15 +18,16 @@ export default async function AutoPage({
   searchParams: Promise<{
     bereich?: string | string[];
     ansicht?: string | string[];
+    eintrag?: string;
   }>;
 }) {
-  const { bereich, ansicht } = await searchParams;
+  const { bereich, ansicht, eintrag } = await searchParams;
   const expenses = bereich === "ausgaben";
   const view = viewFromParam(ansicht);
   const content = expenses ? (
-    <CarExpenses entries={await getCarExpenses()} />
+    <CarExpenses selectedId={eintrag} entries={await getCarExpenses()} />
   ) : (
-    <FuelContent view={view} />
+    <FuelContent view={view} selectedId={eintrag} />
   );
 
   return (
@@ -46,13 +47,15 @@ export default async function AutoPage({
 
 async function FuelContent({
   view,
+  selectedId,
 }: {
   view: ReturnType<typeof viewFromParam>;
+  selectedId?: string;
 }) {
   const fillUps = await getFuelFillUps();
   return view === "uebersicht" ? (
     <FuelOverview fillUps={fillUps} />
   ) : (
-    <FuelSplit fillUps={fillUps} />
+    <FuelSplit selectedId={selectedId} fillUps={fillUps} />
   );
 }
