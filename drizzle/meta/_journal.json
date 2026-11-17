@@ -92,6 +92,13 @@
       "when": 1793894359050,
       "tag": "0012_cynical_lady_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794895772679,
+      "tag": "0013_cynical_scarlet_witch",
+      "breakpoints": true
     }
   ]
 }
