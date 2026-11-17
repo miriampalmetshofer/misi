@@ -20,6 +20,11 @@ const modules = [
     description: "Tanken, Reparaturen und Einkäufe gemeinsam aufteilen.",
     href: "/auto",
   },
+  {
+    title: "Quitt",
+    description: "Gemeinsame Ausgaben",
+    href: "/quitt",
+  },
 ];
 
 export default function Home() {

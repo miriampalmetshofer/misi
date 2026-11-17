@@ -194,3 +194,43 @@ export const mealEntries = pgTable(
     check("meal_entry_name_not_empty", sql`length(trim(${table.name})) > 0`),
   ],
 );
+
+export const quittEntries = pgTable(
+  "quitt_entry",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    version: integer("version").notNull().default(1),
+    kind: text("kind").$type<"expense" | "payment">().notNull(),
+    description: varchar("description", { length: 200 }).notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    paidBy: text("paid_by").$type<"miriam" | "simon">().notNull(),
+    forWhom: text("for_whom").$type<"miriam" | "simon" | "both">().notNull(),
+    occurredOn: date("occurred_on").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      "quitt_positive_amount",
+      sql`${table.amountCents} > 0 and ${table.amountCents} <= 999999999`,
+    ),
+    check("quitt_kind_valid", sql`${table.kind} in ('expense', 'payment')`),
+    check("quitt_payer_valid", sql`${table.paidBy} in ('miriam', 'simon')`),
+    check(
+      "quitt_beneficiary_valid",
+      sql`${table.forWhom} in ('miriam', 'simon', 'both')`,
+    ),
+    check(
+      "quitt_payment_recipient",
+      sql`${table.kind} != 'payment' or (${table.forWhom} != 'both' and ${table.forWhom} != ${table.paidBy})`,
+    ),
+    check(
+      "quitt_description_not_empty",
+      sql`length(trim(${table.description})) > 0`,
+    ),
+  ],
+);
