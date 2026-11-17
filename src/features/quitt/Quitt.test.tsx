@@ -53,3 +53,38 @@ it("prefills a full settlement with the debtor, amount and date, preserving inpu
   await user.click(within(form).getByRole("button", { name: "Speichern" }));
   expect(screen.queryByRole("form")).not.toBeInTheDocument();
 });
+
+it("opens entries in a modal with an icon edit button and closes with Escape", async () => {
+  const user = userEvent.setup();
+  render(
+    <Quitt
+      today="2026-11-17"
+      entries={[
+        {
+          id: "1",
+          version: 1,
+          kind: "expense",
+          description: "Einkauf",
+          amountCents: 4800,
+          paidBy: "miriam",
+          forWhom: "both",
+          occurredOn: "2026-11-16",
+        },
+      ]}
+    />,
+  );
+  const edit = screen.getByRole("button", { name: "Einkauf bearbeiten" });
+  expect(edit).toHaveTextContent("");
+  expect(edit.querySelector("svg")).not.toBeNull();
+  await user.click(edit);
+  const dialog = screen.getByRole("dialog", { name: "Eintrag bearbeiten" });
+  expect(within(dialog).getByLabelText("Beschreibung")).toHaveValue("Einkauf");
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Ausgabe eintragen" }));
+  expect(
+    screen.getByRole("dialog", { name: "Ausgabe eintragen" }),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Schließen" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
