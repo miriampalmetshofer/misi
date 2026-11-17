@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { Dialog } from "@base-ui/react/dialog";
-import { Plus, X } from "lucide-react";
+import { ArrowLeftRight, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { euro } from "@/lib/format";
@@ -80,15 +80,23 @@ export function Quitt({
                   onClick={() => setDraft(entry)}
                   className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 rounded-sm py-4 text-left transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
                 >
-                  <span className="break-words font-medium">
-                    {entry.description}
+                  <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="min-w-0 break-words font-medium">
+                      {entry.description}
+                    </span>
+                    {entry.kind === "payment" && (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                        <ArrowLeftRight aria-hidden="true" className="size-3" />
+                        Rückzahlung
+                      </span>
+                    )}
                   </span>
                   <span className="text-right font-semibold tabular-nums">
                     {euro.format(entry.amountCents / 100)}
                   </span>
                   <span className="text-sm text-muted-foreground">
                     {entry.kind === "payment"
-                      ? `Rückzahlung · ${people[entry.paidBy]} an ${people[entry.paidBy === "miriam" ? "simon" : "miriam"]}`
+                      ? `${people[entry.paidBy]} an ${people[entry.paidBy === "miriam" ? "simon" : "miriam"]}`
                       : `${people[entry.paidBy]} · für ${entry.forWhom === "both" ? "beide" : people[entry.forWhom]}`}
                   </span>
                   <span className="text-right text-sm text-muted-foreground tabular-nums">
@@ -272,17 +280,7 @@ function EntryForm({
                         </label>
                       ),
                     )}
-                    <p className="w-full text-sm text-muted-foreground">
-                      Für beide wird halbiert. Bei ungeraden Centbeträgen trägt
-                      die zahlende Person den zusätzlichen Cent.
-                    </p>
                   </fieldset>
-                )}
-                {payment && (
-                  <p className="text-sm text-muted-foreground">
-                    Die Rückzahlung geht an die jeweils andere Person. Sie wird
-                    erst mit „Speichern“ erfasst.
-                  </p>
                 )}
                 {error && (
                   <p role="alert" className="text-sm text-destructive">
