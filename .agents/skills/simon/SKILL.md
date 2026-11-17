@@ -1,5 +1,5 @@
 ---
-name: simon-feature
+name: simon
 description: Setzt mit Simon App-Features um, stellt eine CI-Preview bereit und arbeitet sein Feedback ein. Verwenden, wenn Simon diesen Skill aufruft.
 ---
 
