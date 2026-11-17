@@ -6,11 +6,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 const modules = [
   {
-    title: "Quitt",
-    description: "Gemeinsame Ausgaben",
-    href: "/quitt",
-  },
-  {
     title: "Einkaufsliste",
     description: "Gemeinsame Einkaufsliste für den Haushalt.",
     href: "/einkauf",
@@ -24,6 +19,11 @@ const modules = [
     title: "Auto",
     description: "Tanken, Reparaturen und Einkäufe gemeinsam aufteilen.",
     href: "/auto",
+  },
+  {
+    title: "Quitt",
+    description: "Gemeinsame Ausgaben",
+    href: "/quitt",
   },
 ];
 
