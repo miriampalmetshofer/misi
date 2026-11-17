@@ -88,7 +88,7 @@ export function Quitt({
                       {entry.description}
                     </span>
                     {entry.kind === "payment" && (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-1.5 py-0.5 text-xs text-blue-800 dark:bg-blue-950 dark:text-blue-200">
                         <ArrowLeftRight aria-hidden="true" className="size-3" />
                         Rückzahlung
                       </span>
