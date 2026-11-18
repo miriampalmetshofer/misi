@@ -1,7 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 
+import { PaidByField } from "@/features/payments/PaidByField";
+import type { Person } from "@/lib/people";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -15,10 +17,12 @@ import { FIELDS, useFuelSplitForm, type FieldName } from "./useFuelSplitForm";
 type FuelSplitProps = {
   /** Past fill-ups, newest first. Empty until the page loads them. */
   fillUps?: FuelFillUpEntry[];
+  selectedId?: string;
 };
 
-export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
+export function FuelSplit({ fillUps = [], selectedId }: FuelSplitProps) {
   const form = useFuelSplitForm();
+  const [paidBy, setPaidBy] = useState<Person>("miriam");
   const [isSaving, startSaving] = useTransition();
   const [isDeleting, startDeleting] = useTransition();
 
@@ -33,6 +37,7 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
       await addFuelFillUp(
         toFormData({
           filledOn: datum,
+          paidBy,
           offsetMode: mode,
           miriamKm: toField(input.miriamKm),
           simonKm: toField(input.simonKm),
@@ -138,7 +143,14 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
           isInvalid={form.invalidFields.includes("bezahlt")}
           onChange={form.update}
         />
+        {form.invalidFields.includes("bezahlt") && (
+          <p role="alert" className="text-sm text-destructive">
+            Bitte einen Betrag bis 100.000 € mit höchstens zwei Nachkommastellen eintragen.
+          </p>
+        )}
       </section>
+
+      <PaidByField value={paidBy} onChange={setPaidBy} />
 
       <section aria-labelledby="modus" className="flex flex-col gap-3">
         <h2 className="section-label" id="modus">
@@ -187,7 +199,9 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
           </dl>
         ) : (
           <p className="text-body-muted mt-4">
-            {form.invalidFields.length > 0
+            {form.invalidFields.includes("bezahlt")
+              ? "Bitte den Betrag prüfen, dann erscheint hier die Aufteilung."
+              : form.invalidFields.length > 0
               ? "Bitte nur Zahlen eintragen, dann erscheint hier die Aufteilung."
               : form.hasImpossibleCarKm
                 ? "Der Tachostand ist kleiner als die erfassten Kilometer. Bitte den Tachostand prüfen."
@@ -206,6 +220,8 @@ export function FuelSplit({ fillUps = [] }: FuelSplitProps) {
       </section>
 
       <FuelHistory
+        key={selectedId}
+        selectedId={selectedId}
         entries={fillUps}
         isDeleting={isDeleting}
         onDelete={deleteFillUp}

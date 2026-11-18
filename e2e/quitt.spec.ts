@@ -1,10 +1,11 @@
+import { openPage, reloadPage } from "./navigation";
 import { expect, test } from "@playwright/test";
 
 test("Quitt expenses and dated repayments persist and can be edited and deleted", async ({
   page,
 }) => {
   const name = `Quitt Test ${Date.now()}`;
-  await page.goto("/");
+  await openPage(page, "/");
   await page.getByRole("link", { name: /Quitt/ }).click();
   await expect(
     page.getByText("Gemeinsame Ausgaben", { exact: true }),
@@ -23,7 +24,7 @@ test("Quitt expenses and dated repayments persist and can be edited and deleted"
   await page.getByRole("button", { name: "Speichern", exact: true }).click();
   const row = page.getByRole("listitem").filter({ hasText: name });
   await expect(row).toContainText("48,00");
-  await page.reload();
+  await reloadPage(page);
   await expect(row).toContainText("16.11.2026");
   await expect(row).toContainText("Miriam · für beide");
   await row.getByRole("button").click();
@@ -33,7 +34,7 @@ test("Quitt expenses and dated repayments persist and can be edited and deleted"
   await page.getByLabel("Betrag (€)", { exact: true }).fill("50,00");
   await page.getByRole("button", { name: "Speichern", exact: true }).click();
   await expect(row).toContainText("50,00");
-  await page.reload();
+  await reloadPage(page);
   await expect(row).toContainText("50,00");
 
   await page
@@ -50,7 +51,7 @@ test("Quitt expenses and dated repayments persist and can be edited and deleted"
     .getByRole("listitem")
     .filter({ hasText: `${name} Rückzahlung` });
   await expect(repayment).toContainText("Simon an Miriam");
-  await page.reload();
+  await reloadPage(page);
   await expect(repayment).toContainText("17.11.2026");
   await expect(balance).toHaveText(initialBalance.replaceAll("\n", ""));
   for (const description of [`${name} Rückzahlung`, name]) {
@@ -68,6 +69,6 @@ test("Quitt expenses and dated repayments persist and can be edited and deleted"
       }),
     ).toHaveCount(0);
   }
-  await page.reload();
+  await reloadPage(page);
   await expect(page.getByText(name, { exact: true })).toHaveCount(0);
 });

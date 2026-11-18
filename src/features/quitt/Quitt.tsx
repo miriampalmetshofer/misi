@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
 import { Dialog } from "@base-ui/react/dialog";
 import { ArrowLeftRight, Plus, X } from "lucide-react";
@@ -7,7 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { euro } from "@/lib/format";
 import { formatDate } from "@/lib/date";
-import { balanceCents, people, type QuittEntry } from "./types";
+import {
+  balanceCents,
+  isAutoEntry,
+  people,
+  type QuittEntry,
+  type QuittHistoryEntry,
+} from "./types";
 import { deleteQuittEntry, saveQuittEntry } from "./actions";
 
 type Draft = Partial<QuittEntry> & { kind: QuittEntry["kind"] };
@@ -16,7 +23,7 @@ export function Quitt({
   entries,
   today,
 }: {
-  entries: QuittEntry[];
+  entries: QuittHistoryEntry[];
   today: string;
 }) {
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -72,22 +79,23 @@ export function Quitt({
           </p>
         ) : (
           <ul className="divide-y border-y">
-            {entries.map((entry) => (
-              <li key={entry.id}>
-                <button
-                  type="button"
-                  aria-label={`${entry.description} bearbeiten`}
-                  onClick={() => setDraft(entry)}
-                  className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 rounded-sm py-4 text-left transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
-                >
+            {entries.map((entry) => {
+              const auto = isAutoEntry(entry);
+              const content = (
+                <>
                   <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="min-w-0 break-words font-medium">
                       {entry.description}
                     </span>
                     {entry.kind === "payment" && (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-1.5 py-0.5 text-xs text-blue-800 dark:bg-blue-950 dark:text-blue-200">
                         <ArrowLeftRight aria-hidden="true" className="size-3" />
                         Rückzahlung
+                      </span>
+                    )}
+                    {auto && (
+                      <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                        Auto
                       </span>
                     )}
                   </span>
@@ -95,16 +103,46 @@ export function Quitt({
                     {euro.format(entry.amountCents / 100)}
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    {entry.kind === "payment"
-                      ? `${people[entry.paidBy]} an ${people[entry.paidBy === "miriam" ? "simon" : "miriam"]}`
-                      : `${people[entry.paidBy]} · für ${entry.forWhom === "both" ? "beide" : people[entry.forWhom]}`}
+                    {auto ? (
+                      <>
+                        <span className="block">Bezahlt von {people[entry.paidBy]}</span>
+                        <span className="inline-block">Miriam {euro.format(entry.miriamAmountCents / 100)}</span>
+                        {" · "}
+                        <span className="inline-block">Simon {euro.format(entry.simonAmountCents / 100)}</span>
+                      </>
+                    ) : entry.kind === "payment"
+                        ? `${people[entry.paidBy]} an ${people[entry.paidBy === "miriam" ? "simon" : "miriam"]}`
+                        : `${people[entry.paidBy]} · für ${entry.forWhom === "both" ? "beide" : people[entry.forWhom]}`}
                   </span>
                   <span className="text-right text-sm text-muted-foreground tabular-nums">
                     {formatDate(entry.occurredOn)}
                   </span>
-                </button>
-              </li>
-            ))}
+                </>
+              );
+              const className = "grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 rounded-sm py-4 text-left transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2";
+              return (
+                <li key={`${auto ? entry.source : "quitt"}-${entry.id}`}>
+                  {auto ? (
+                    <Link
+                      href={`/auto?${entry.source === "car" ? "bereich=ausgaben&" : ""}eintrag=${entry.id}#eintrag-${entry.id}`}
+                      aria-label={`${entry.description} im Auto-Bereich ansehen`}
+                      className={className}
+                    >
+                      {content}
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-label={`${entry.description} bearbeiten`}
+                      onClick={() => setDraft(entry)}
+                      className={className}
+                    >
+                      {content}
+                    </button>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

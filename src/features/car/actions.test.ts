@@ -26,6 +26,7 @@ import { saveCarExpense, deleteCarExpense } from "./actions";
 
 const id = "11111111-1111-1111-1111-111111111111";
 const valid = {
+  paidBy: "miriam",
   spentOn: "2026-10-24",
   description: "Winterreifen",
   totalAmount: "480,00",
@@ -53,6 +54,7 @@ describe("saveCarExpense", () => {
     ).toEqual({ error: null });
     expect(db.values).toHaveBeenCalledWith({
       spentOn: valid.spentOn,
+      paidBy: "miriam",
       description: valid.description,
       note: valid.note,
       totalAmount: 480,
@@ -64,7 +66,7 @@ describe("saveCarExpense", () => {
 
   it("updates an existing entry", async () => {
     await saveCarExpense(
-      form({ ...valid, id, totalAmount: "0,05", miriamPercent: "50" }),
+      form({ ...valid, id, version: "1", totalAmount: "0,05", miriamPercent: "50" }),
     );
     expect(db.insert).not.toHaveBeenCalled();
     expect(db.set).toHaveBeenCalledWith(
@@ -77,6 +79,8 @@ describe("saveCarExpense", () => {
   });
 
   it.each<Record<string, string>>([
+    { paidBy: "" },
+    { paidBy: "other" },
     { spentOn: "2026-02-30" },
     { description: "  " },
     { description: "x".repeat(201) },
@@ -90,6 +94,10 @@ describe("saveCarExpense", () => {
     { miriamPercent: "33,333" },
     { note: "x".repeat(2001) },
     { id: "invalid" },
+    { id, version: "" },
+    { id, version: "0" },
+    { id, version: "1.5" },
+    { id, version: "2147483647" },
   ])("rejects invalid input %j", async (override) => {
     expect(
       (await saveCarExpense(form({ ...valid, ...override }))).error,
@@ -128,19 +136,19 @@ describe("saveCarExpense", () => {
 
   it("does not silently succeed when an edited entry disappeared", async () => {
     db.returning.mockResolvedValueOnce([]);
-    expect((await saveCarExpense(form({ ...valid, id }))).error).toContain(
-      "existiert nicht mehr",
+    expect((await saveCarExpense(form({ ...valid, id, version: "1" }))).error).toContain(
+      "inzwischen geändert oder gelöscht",
     );
   });
 });
 
 describe("deleteCarExpense", () => {
   it("rejects malformed ids", async () => {
-    expect((await deleteCarExpense("bad")).error).toBeTruthy();
+    expect((await deleteCarExpense("bad", 1)).error).toBeTruthy();
     expect(db.delete).not.toHaveBeenCalled();
   });
   it("deletes an existing entry", async () => {
-    expect((await deleteCarExpense(id)).error).toBeNull();
+    expect((await deleteCarExpense(id, 1)).error).toBeNull();
     expect(db.delete).toHaveBeenCalled();
   });
 
@@ -152,11 +160,24 @@ describe("deleteCarExpense", () => {
       );
     });
 
-    expect((await deleteCarExpense(id)).error).toContain(
+    expect((await deleteCarExpense(id, 1)).error).toContain(
       "Löschen fehlgeschlagen",
     );
     expect(console.error).toHaveBeenCalledExactlyOnceWith("deleteCarExpense", {
       type: "TypeError",
     });
   });
+});
+
+
+it("rejects stale updates and deletes without reporting success", async () => {
+  db.returning.mockResolvedValue([]);
+  expect((await saveCarExpense(form({ ...valid, id, version: "1" }))).error)
+    .toContain("inzwischen geändert oder gelöscht");
+  expect((await deleteCarExpense(id, 1)).error).toContain("inzwischen geändert oder gelöscht");
+});
+
+it.each([0, -1, 1.5, NaN, 2147483647])("rejects delete version %s", async (version) => {
+  expect((await deleteCarExpense(id, version)).error).toBeTruthy();
+  expect(db.delete).not.toHaveBeenCalled();
 });

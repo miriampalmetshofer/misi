@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 import { today } from "@/lib/date";
-import { calculateFuelSplit, type OffsetMode } from "./calculate";
-import { parseNumber } from "./parseNumber";
+import { calculateFuelSplit, roundFuelAmounts, type OffsetMode } from "./calculate";
+import { parseFuelAmount, parseNumber } from "./parseNumber";
 
 export const FIELDS = [
   { name: "kmMiriam", label: "Miriam" },
@@ -46,7 +46,7 @@ export function useFuelSplitForm() {
     kmSimon: parseNumber(form.kmSimon),
     kmBeide: parseNumber(form.kmBeide),
     kmAuto: parseNumber(form.kmAuto),
-    bezahlt: parseNumber(form.bezahlt),
+    bezahlt: parseFuelAmount(form.bezahlt),
   };
 
   // A field is invalid only once something unreadable is in it; empty just
@@ -109,7 +109,7 @@ export function useFuelSplitForm() {
     setUseFiftyFifty,
     mode,
     input,
-    result,
+    result: { ...result, ...roundFuelAmounts(result) },
     invalidFields,
     hasInvalidDeviceKm,
     hasInvalidDistance,

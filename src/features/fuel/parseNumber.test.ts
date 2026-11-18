@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseNumber } from "./parseNumber";
+import { parseFuelAmount, parseNumber } from "./parseNumber";
 
 describe("parseNumber", () => {
   it("reads the comma as the decimal separator", () => {
@@ -37,4 +37,16 @@ describe("parseNumber", () => {
     expect(parseNumber("256,")).toBe(256);
     expect(parseNumber(",5")).toBe(0.5);
   });
+});
+
+describe("fuel money precision", () => {
+  it.each(["1,005", "1,000", "0,001", "100000,01", ",", "Infinity"])(
+    "rejects %s as a fuel bill", (value) => expect(parseFuelAmount(value)).toBeNull(),
+  );
+  it.each([["1,01", 1.01], [",5", 0.5], ["1,", 1], ["100000,00", 100000]])(
+    "accepts %s without reducing kilometre precision", (value, expected) => {
+      expect(parseFuelAmount(String(value))).toBe(expected);
+      expect(parseNumber("101,005")).toBe(101.005);
+    },
+  );
 });

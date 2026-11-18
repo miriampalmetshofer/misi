@@ -36,7 +36,7 @@ vi.mock("./actions", () => ({
 
 const entry: FuelFillUpEntry = {
   id: "11111111-1111-1111-1111-111111111111",
-  isSettled: false,
+  paidBy: "miriam" as const,
   filledOn: "2025-11-04",
   miriamKm: 256.4,
   simonKm: 352.2,
@@ -506,4 +506,40 @@ describe("delete confirmation", () => {
     expect(dialog.getByText(/04\.11\.2025/)).toBeInTheDocument();
     expect(dialog.getByText(/102,00/)).toBeInTheDocument();
   });
+});
+
+
+it("sends the selected fuel payer", async () => {
+  const user = userEvent.setup();
+  render(<FuelSplit />);
+  await fillSheetExample(user);
+  await user.selectOptions(screen.getByLabelText("Bezahlt von"), "simon");
+  await user.click(saveButton());
+  expect(sentFields(actions.addFuelFillUp).paidBy).toBe("simon");
+});
+
+it("opens a linked fill-up on its history page", () => {
+  const entries = Array.from({ length: 12 }, (_, i) => ({ ...entry, id: `fill-${i}` }));
+  render(<FuelSplit fillUps={entries} selectedId="fill-11" />);
+  expect(screen.getByRole("button", { name: "Seite 2" })).toHaveAttribute("aria-current", "page");
+  expect(history().getByRole("button", { expanded: true })).toBeVisible();
+  expect(history().queryByRole("checkbox", { name: "Zahlung beglichen" })).not.toBeInTheDocument();
+});
+
+
+it("rejects sub-cent amounts in the form while preserving the input for correction", async () => {
+  const user = userEvent.setup();
+  render(<FuelSplit />);
+  await user.type(screen.getByLabelText("Miriam"), "101");
+  await user.type(screen.getByLabelText("Simon"), "99");
+  await user.type(screen.getByLabelText("Auto"), "200");
+  await user.type(screen.getByLabelText("Betrag"), "1,005");
+  expect(saveButton()).toBeDisabled();
+  expect(screen.getByRole("alert")).toHaveTextContent("höchstens zwei Nachkommastellen");
+  expect(actions.addFuelFillUp).not.toHaveBeenCalled();
+  expect(screen.getByLabelText("Betrag")).toHaveValue("1,005");
+  await user.clear(screen.getByLabelText("Betrag"));
+  await user.type(screen.getByLabelText("Betrag"), "1,01");
+  expect(saveButton()).toBeEnabled();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });

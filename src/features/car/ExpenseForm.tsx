@@ -2,6 +2,9 @@
 
 import { useId, useState, useTransition } from "react";
 
+import { PaidByField } from "@/features/payments/PaidByField";
+import { AutoPaymentInfo } from "@/features/payments/AutoPaymentInfo";
+import type { Person } from "@/lib/people";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { euro } from "@/lib/format";
@@ -25,6 +28,7 @@ export function ExpenseForm({
   onDelete: (entry: CarExpenseEntry) => void;
 }) {
   const formId = useId();
+  const [paidBy, setPaidBy] = useState<Person>(entry?.paidBy ?? "miriam");
   const [spentOn, setSpentOn] = useState(entry?.spentOn ?? today);
   const [description, setDescription] = useState(entry?.description ?? "");
   const [amount, setAmount] = useState(entry ? toField(entry.totalAmount) : "");
@@ -72,9 +76,13 @@ export function ExpenseForm({
         event.preventDefault();
         if (!canSave || isSaving) return;
         const form = new FormData();
-        if (entry) form.set("id", entry.id);
+        if (entry) {
+          form.set("id", entry.id);
+          form.set("version", String(entry.version));
+        }
         for (const [key, value] of Object.entries({
           spentOn,
+          paidBy,
           description,
           totalAmount: amount,
           miriamPercent: shares.miriam,
@@ -135,6 +143,9 @@ export function ExpenseForm({
             <span className="text-sm text-muted-foreground">€</span>
           </span>
         </label>
+        {entry?.paidBy === null ? <AutoPaymentInfo paidBy={null} /> : (
+          <PaidByField value={paidBy} onChange={setPaidBy} />
+        )}
         <div className="flex flex-col gap-3">
           {(["miriam", "simon"] as const).map((person) => (
             <div

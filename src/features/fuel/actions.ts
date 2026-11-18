@@ -3,29 +3,29 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 
+import { isPerson } from "@/lib/people";
 import { getDb, schema } from "@/db";
-import { calculateFuelSplit, isOffsetMode } from "./calculate";
-import { parseNumber } from "./parseNumber";
-
-const FUEL_PATH = "/auto";
+import { calculateFuelSplit, isOffsetMode, roundFuelAmounts } from "./calculate";
+import { parseFuelAmount, parseNumber } from "./parseNumber";
 
 /** Guards against a fat-fingered reading becoming a numeric overflow. */
 const MAX_KM = 1_000_000;
-const MAX_AMOUNT = 100_000;
 
 export async function addFuelFillUp(formData: FormData) {
   const filledOn = getString(formData, "filledOn");
   const offsetMode = getString(formData, "offsetMode");
+  const paidBy = getString(formData, "paidBy");
 
   const input = {
     miriamKm: getNumber(formData, "miriamKm"),
     simonKm: getNumber(formData, "simonKm"),
     sharedKm: getNumber(formData, "sharedKm"),
     carKm: getNumber(formData, "carKm"),
-    paidAmount: getNumber(formData, "paidAmount"),
+    paidAmount: parseFuelAmount(getString(formData, "paidAmount")),
   };
 
   if (
+    !isPerson(paidBy) ||
     !isDate(filledOn) ||
     !isOffsetMode(offsetMode) ||
     Object.values(input).some((value) => value === null)
@@ -42,7 +42,7 @@ export async function addFuelFillUp(formData: FormData) {
     values.simonKm > MAX_KM ||
     values.sharedKm > MAX_KM ||
     values.carKm > MAX_KM ||
-    values.paidAmount > MAX_AMOUNT
+    values.paidAmount <= 0
   ) {
     console.error("addFuelFillUp: refused out-of-range fill-up");
     return;
@@ -68,15 +68,14 @@ export async function addFuelFillUp(formData: FormData) {
     .insert(schema.fuelFillUps)
     .values({
       filledOn,
+      paidBy,
       ...values,
       offsetMode,
-      // Rounded to the cent on the way in, because that is the amount actually
-      // settled — storing 45,459999 would make the pair fail to sum to the bill.
-      miriamAmount: toCents(result.miriamAmount),
-      simonAmount: toCents(result.simonAmount),
+      ...roundFuelAmounts(result),
     });
 
-  revalidatePath(FUEL_PATH);
+  revalidatePath("/auto");
+  revalidatePath("/quitt");
 }
 
 export async function deleteFuelFillUp(formData: FormData) {
@@ -90,7 +89,8 @@ export async function deleteFuelFillUp(formData: FormData) {
     .delete(schema.fuelFillUps)
     .where(eq(schema.fuelFillUps.id, id));
 
-  revalidatePath(FUEL_PATH);
+  revalidatePath("/auto");
+  revalidatePath("/quitt");
 }
 
 function getString(formData: FormData, key: string) {
@@ -105,8 +105,4 @@ function getNumber(formData: FormData, key: string) {
 
 function isDate(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
-}
-
-function toCents(amount: number) {
-  return Math.round(amount * 100) / 100;
 }

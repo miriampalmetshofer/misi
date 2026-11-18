@@ -4,28 +4,27 @@ import { useId, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  PaymentSettledMark,
-  PaymentStatus,
-} from "@/features/payments/PaymentStatus";
+import { AutoPaymentInfo } from "@/features/payments/AutoPaymentInfo";
 import { euro } from "@/lib/format";
 import { formatDate } from "@/lib/date";
 import { toField, type CarExpenseEntry } from "./expense";
 
 export function ExpenseRow({
   entry,
+  initiallyExpanded = false,
   isEditing,
   onEdit,
 }: {
   entry: CarExpenseEntry;
+  initiallyExpanded?: boolean;
   isEditing: boolean;
   onEdit: () => void;
 }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(initiallyExpanded);
   const detailsId = useId();
 
   return (
-    <li className="flex flex-col gap-3 rounded-xl border p-4 sm:p-5">
+    <li id={`eintrag-${entry.id}`} className="flex flex-col gap-3 rounded-xl border p-4 sm:p-5">
       <button
         type="button"
         aria-expanded={isExpanded}
@@ -40,7 +39,6 @@ export function ExpenseRow({
             </span>
             <span className="inline-flex items-center gap-2 font-semibold tabular-nums">
               {euro.format(entry.totalAmount)}
-              {entry.isSettled ? <PaymentSettledMark /> : null}
             </span>
           </span>
           <span className="font-medium break-words">{entry.description}</span>
@@ -73,11 +71,7 @@ export function ExpenseRow({
               {entry.note}
             </p>
           ) : null}
-          <PaymentStatus
-            kind="expense"
-            id={entry.id}
-            isSettled={entry.isSettled}
-          />
+          <AutoPaymentInfo paidBy={entry.paidBy} />
           <Button
             variant="outline"
             className="self-start"

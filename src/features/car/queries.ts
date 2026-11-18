@@ -10,6 +10,7 @@ export async function getCarExpenses(): Promise<CarExpenseEntry[]> {
   return getDb()
     .select({
       id: carExpenses.id,
+      version: carExpenses.version,
       spentOn: carExpenses.spentOn,
       description: carExpenses.description,
       totalAmount: carExpenses.totalAmount,
@@ -17,7 +18,7 @@ export async function getCarExpenses(): Promise<CarExpenseEntry[]> {
       miriamAmount: carExpenses.miriamAmount,
       simonAmount: carExpenses.simonAmount,
       note: carExpenses.note,
-      isSettled: carExpenses.isSettled,
+      paidBy: carExpenses.paidBy,
     })
     .from(carExpenses)
     .orderBy(

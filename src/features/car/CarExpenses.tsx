@@ -21,7 +21,10 @@ import { ExpenseForm } from "./ExpenseForm";
 import type { CarExpenseEntry } from "./expense";
 import { ExpenseRow } from "./ExpenseRow";
 
-export function CarExpenses({ entries }: { entries: CarExpenseEntry[] }) {
+export function CarExpenses({ entries, selectedId }: {
+  entries: CarExpenseEntry[];
+  selectedId?: string;
+}) {
   const [editing, setEditing] = useState<CarExpenseEntry | null | undefined>();
   const [deleting, setDeleting] = useState<CarExpenseEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,8 +65,9 @@ export function CarExpenses({ entries }: { entries: CarExpenseEntry[] }) {
           <ul className="flex flex-col gap-3">
             {entries.map((entry) => (
               <ExpenseRow
-                key={entry.id}
+                key={`${entry.id}-${entry.id === selectedId}`}
                 entry={entry}
+                initiallyExpanded={entry.id === selectedId}
                 isEditing={editing !== undefined}
                 onEdit={() => setEditing(entry)}
               />
@@ -105,7 +109,7 @@ export function CarExpenses({ entries }: { entries: CarExpenseEntry[] }) {
                 setError(null);
                 startDeleting(async () => {
                   try {
-                    const result = await deleteCarExpense(deleting.id);
+                    const result = await deleteCarExpense(deleting.id, deleting.version);
                     if (result.error) setError(result.error);
                     else {
                       setDeleting(null);

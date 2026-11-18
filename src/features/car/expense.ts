@@ -1,7 +1,9 @@
+import type { Person } from "@/lib/people";
 import { parseNumber } from "@/features/fuel/parseNumber";
 
 export type CarExpenseEntry = {
   id: string;
+  version: number;
   spentOn: string;
   description: string;
   totalAmount: number;
@@ -9,7 +11,7 @@ export type CarExpenseEntry = {
   miriamAmount: number;
   simonAmount: number;
   note: string;
-  isSettled: boolean;
+  paidBy: Person | null;
 };
 
 export function parseDecimal(value: string, max: number) {

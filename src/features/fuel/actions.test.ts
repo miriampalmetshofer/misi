@@ -38,6 +38,7 @@ function form(fields: Record<string, string>) {
 }
 
 const VALID = {
+  paidBy: "miriam",
   filledOn: "2025-11-04",
   offsetMode: "proportional",
   miriamKm: "256,4",
@@ -60,6 +61,7 @@ describe("addFuelFillUp", () => {
 
     expect(db.values).toHaveBeenCalledWith({
       filledOn: "2025-11-04",
+      paidBy: "miriam",
       offsetMode: "proportional",
       miriamKm: 256.4,
       simonKm: 352.2,
@@ -101,6 +103,10 @@ describe("addFuelFillUp", () => {
   });
 
   it.each([
+    ["a sub-cent bill", { paidAmount: "1,005" }],
+    ["a zero bill", { paidAmount: "0" }],
+    ["a missing payer", { paidBy: "" }],
+    ["an unknown payer", { paidBy: "other" }],
     ["an unreadable number", { paidAmount: "hundert" }],
     ["a missing number", { carKm: "" }],
     ["a mode it does not know", { offsetMode: "fifty-fifty" }],
@@ -136,4 +142,13 @@ describe("deleteFuelFillUp", () => {
 
     expect(db.del).not.toHaveBeenCalled();
   });
+});
+
+
+it("persists the exact bill and shares for the reported 101/99 km split", async () => {
+  await addFuelFillUp(form({ ...VALID, paidAmount: "1,01", miriamKm: "101",
+    simonKm: "99", sharedKm: "0", carKm: "200" }));
+  expect(db.values).toHaveBeenCalledWith(expect.objectContaining({
+    paidAmount: 1.01, miriamAmount: 0.51, simonAmount: 0.50,
+  }));
 });

@@ -111,7 +111,8 @@ export const fuelFillUps = pgTable(
     miriamAmount: euros("miriam_amount").notNull(),
     simonAmount: euros("simon_amount").notNull(),
 
-    isSettled: boolean("is_settled").notNull().default(false),
+    // NULL marks auto costs already settled before the Quitt integration.
+    paidBy: text("paid_by").$type<"miriam" | "simon">(),
 
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -120,7 +121,10 @@ export const fuelFillUps = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [index("fuel_fill_up_filled_on_idx").on(table.filledOn)],
+  (table) => [
+    index("fuel_fill_up_filled_on_idx").on(table.filledOn),
+    check("fuel_fill_up_payer_valid", sql`${table.paidBy} in ('miriam', 'simon')`),
+  ],
 );
 
 export type FuelFillUp = typeof fuelFillUps.$inferSelect;
@@ -130,6 +134,7 @@ export const carExpenses = pgTable(
   "car_expense",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    version: integer("version").notNull().default(1),
     spentOn: date("spent_on").notNull(),
     description: varchar("description", { length: 200 }).notNull(),
     totalAmount: euros("total_amount").notNull(),
@@ -141,7 +146,8 @@ export const carExpenses = pgTable(
     miriamAmount: euros("miriam_amount").notNull(),
     simonAmount: euros("simon_amount").notNull(),
     note: varchar("note", { length: 2000 }).notNull().default(""),
-    isSettled: boolean("is_settled").notNull().default(false),
+    // NULL marks auto costs already settled before the Quitt integration.
+    paidBy: text("paid_by").$type<"miriam" | "simon">(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -151,6 +157,7 @@ export const carExpenses = pgTable(
   },
   (table) => [
     index("car_expense_spent_on_idx").on(table.spentOn),
+    check("car_expense_payer_valid", sql`${table.paidBy} in ('miriam', 'simon')`),
     check("car_expense_positive_total", sql`${table.totalAmount} > 0`),
     check(
       "car_expense_percent_range",

@@ -1,3 +1,4 @@
+import { openPage, reloadPage } from "./navigation";
 import { expect, test, type Page } from "@playwright/test";
 
 /**
@@ -19,8 +20,8 @@ function historyRow(page: Page, amount: string) {
 }
 
 async function saveFillUp(page: Page, amount: string) {
-  await page.getByLabel("Miriam").fill("256,4");
-  await page.getByLabel("Simon").fill("352,2");
+  await page.getByLabel("Miriam", { exact: true }).fill("256,4");
+  await page.getByLabel("Simon", { exact: true }).fill("352,2");
   await page.getByLabel("Gemeinsam").fill("273,8");
   await page.getByLabel("Auto", { exact: true }).fill("1052,4");
   await page.getByLabel("Betrag").fill(amount);
@@ -33,7 +34,7 @@ async function saveFillUp(page: Page, amount: string) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto("/tanken");
+  await openPage(page, "/tanken");
   await expect(
     page.getByRole("heading", { name: "Auto", exact: true }),
   ).toBeVisible();
@@ -43,28 +44,13 @@ test("a saved fill-up survives a reload", async ({ page }) => {
   const amount = uniqueAmount();
 
   await saveFillUp(page, amount);
-  await page.reload();
+  await reloadPage(page);
 
   const row = historyRow(page, amount);
   await expect(row).toBeVisible();
   await row.getByRole("button", { expanded: false }).click();
-  await expect(
-    row.getByRole("checkbox", { name: "Zahlung beglichen" }),
-  ).not.toBeChecked();
-  await row.getByRole("checkbox").click();
-  await expect(row.getByRole("checkbox")).toBeChecked();
-  await page.reload();
-  await expect(row.getByRole("button", { expanded: false })).toContainText(
-    "Zahlung beglichen",
-  );
-  await row.getByRole("button", { expanded: false }).click();
-  await expect(row.getByRole("checkbox")).toBeChecked();
-  await row.getByRole("checkbox").click();
-  await expect(row.getByRole("checkbox")).not.toBeChecked();
-  await page.reload();
-  await expect(row.getByRole("button", { expanded: false })).not.toContainText(
-    "Zahlung beglichen",
-  );
+  await expect(row).toContainText("Bezahlt von Miriam");
+  await expect(row.getByRole("checkbox")).toHaveCount(0);
 });
 
 test("a saved fill-up keeps the split that was on screen", async ({ page }) => {
@@ -74,7 +60,7 @@ test("a saved fill-up keeps the split that was on screen", async ({ page }) => {
   // The amounts are recomputed server-side, so this is the check that the
   // stored split matches the one the calculator showed before saving.
   const shares = await historyRow(page, amount).textContent();
-  await page.reload();
+  await reloadPage(page);
 
   await expect(historyRow(page, amount)).toHaveText(shares ?? "");
 });
@@ -96,6 +82,23 @@ test("a deleted fill-up stays gone after a reload", async ({ page }) => {
     .click();
   await expect(historyRow(page, amount)).toHaveCount(0);
 
-  await page.reload();
+  await reloadPage(page);
   await expect(historyRow(page, amount)).toHaveCount(0);
+});
+
+test("sub-cent fuel bills must be corrected before they can be saved", async ({ page }, testInfo) => {
+  await page.getByLabel("Miriam", { exact: true }).fill("101");
+  await page.getByLabel("Simon", { exact: true }).fill("99");
+  await page.getByLabel("Auto", { exact: true }).fill("200");
+  await page.getByLabel("Betrag", { exact: true }).fill("1,005");
+  await expect(page.getByRole("button", { name: "Speichern", exact: true })).toBeDisabled();
+  await expect(page.getByRole("region", { name: "Bezahlt" }).getByRole("alert")).toContainText("höchstens zwei Nachkommastellen");
+  await expect(page.getByLabel("Betrag", { exact: true })).toHaveValue("1,005");
+  await page.screenshot({ path: testInfo.outputPath("fuel-precision-error.png"), fullPage: true });
+  await page.getByLabel("Betrag", { exact: true }).fill("1,01");
+  await page.getByRole("button", { name: "Speichern", exact: true }).click();
+  const row = page.getByRole("listitem").filter({ hasText: "1,01 €" });
+  await expect(row).toContainText("Miriam 0,51 € · Simon 0,50 €");
+  await reloadPage(page);
+  await expect(row).toContainText("Miriam 0,51 € · Simon 0,50 €");
 });

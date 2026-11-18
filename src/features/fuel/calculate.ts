@@ -112,3 +112,13 @@ export function calculateFuelSplit(
     simonAmount: paidAmount * simonBillShare,
   };
 }
+
+
+export function roundFuelAmounts(result: FuelSplitResult) {
+  const totalCents = Math.round((result.miriamAmount + result.simonAmount) * 100);
+  const miriamCents = Math.round(result.miriamAmount * 100);
+  return {
+    miriamAmount: miriamCents / 100,
+    simonAmount: (totalCents - miriamCents) / 100,
+  };
+}

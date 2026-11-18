@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { balanceCents, parseCents, validDate, type QuittEntry } from "./types";
+import { balanceCents, parseCents, validDate, type AutoQuittEntry, type QuittEntry } from "./types";
 const entry = (changes: Partial<QuittEntry> = {}): QuittEntry => ({
   id: "1",
   version: 1,
@@ -52,4 +52,27 @@ it("rejects impossible calendar dates", () => {
   expect(validDate("2026-02-29")).toBe(false);
   expect(validDate("2024-02-29")).toBe(true);
   expect(validDate("0000-01-01")).toBe(false);
+});
+
+
+it("nets exact auto shares with manual expenses and partial repayments without dropping expenses", () => {
+  const fuel: AutoQuittEntry = {
+    source: "fuel", id: "fuel", kind: "expense", description: "Tanken",
+    amountCents: 10200, paidBy: "miriam", miriamAmountCents: 4546,
+    simonAmountCents: 5654, occurredOn: "2026-11-17",
+  };
+  const car: AutoQuittEntry = {
+    ...fuel, source: "car", id: "car", description: "Reparatur",
+    amountCents: 48000, paidBy: "simon", miriamAmountCents: 19200,
+    simonAmountCents: 28800,
+  };
+  const expenses = [fuel, car, entry()];
+  expect(balanceCents(expenses)).toBe(-11146);
+  const partial = entry({ kind: "payment", paidBy: "miriam", amountCents: 4000 });
+  expect(balanceCents([...expenses, partial])).toBe(-7146);
+  expect(balanceCents([
+    ...expenses, partial,
+    entry({ kind: "payment", paidBy: "miriam", amountCents: 7146 }),
+  ])).toBe(0);
+  expect(balanceCents([{ ...fuel, miriamAmountCents: 10200, simonAmountCents: 0 }])).toBe(0);
 });

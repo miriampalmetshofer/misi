@@ -19,3 +19,11 @@ export function parseNumber(value: string): number | null {
 
   return Number(trimmed.replace(",", "."));
 }
+
+export function parseFuelAmount(value: string): number | null {
+  const amount = parseNumber(value);
+  return /^\d*(?:,\d{0,2})?$/.test(value.trim()) &&
+    amount !== null && Number.isFinite(amount) && amount <= 100_000
+    ? amount
+    : null;
+}

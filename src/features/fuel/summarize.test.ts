@@ -6,7 +6,7 @@ import type { FuelFillUpEntry } from "./types";
 function entry(overrides: Partial<FuelFillUpEntry> = {}): FuelFillUpEntry {
   return {
     id: crypto.randomUUID(),
-    isSettled: false,
+    paidBy: "miriam" as const,
     filledOn: "2026-01-15",
     miriamKm: 100,
     simonKm: 200,
