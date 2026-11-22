@@ -2,6 +2,10 @@
 
 Private household web app for shared everyday planning.
 
+Codex reviews pushes to open PRs automatically. Reviewer instructions live in
+`.codex/reviewer.md`; setup, loop limits and justified exceptions are documented
+in [Agent reviews](docs/agent-review.md).
+
 ## Setup
 
 Install dependencies:
