@@ -1,3 +1,4 @@
+import { calculateFuelSplit } from "./calculate";
 import type { FuelFillUpEntry } from "./types";
 
 /** An inclusive yyyy-mm-dd date range. */
@@ -15,6 +16,8 @@ export type FuelSummary = {
   miriamKm: number;
   simonKm: number;
   sharedKm: number;
+  miriamAllocatedKm: number;
+  simonAllocatedKm: number;
   /** Car kilometres no device reading accounts for. */
   offsetKm: number;
   /**
@@ -69,6 +72,14 @@ export function summarizeFillUps(entries: FuelFillUpEntry[]): FuelSummary {
   const miriamPaid = sum((entry) => entry.miriamAmount);
   const simonPaid = sum((entry) => entry.simonAmount);
 
+  let miriamAllocatedKm = 0;
+  let simonAllocatedKm = 0;
+  for (const entry of entries) {
+    const split = calculateFuelSplit(entry, entry.offsetMode);
+    miriamAllocatedKm += entry.carKm * split.miriamBillShare;
+    simonAllocatedKm += entry.carKm * split.simonBillShare;
+  }
+
   // An empty range has no basis to divide by, and every share collapses to 0
   // rather than to NaN — the panel renders those as "0,0 %", not as "NaN %".
   const kmShare = (value: number) => (carKmTotal > 0 ? value / carKmTotal : 0);
@@ -86,6 +97,8 @@ export function summarizeFillUps(entries: FuelFillUpEntry[]): FuelSummary {
     miriamKm,
     simonKm,
     sharedKm,
+    miriamAllocatedKm,
+    simonAllocatedKm,
     offsetKm: carKmTotal - (miriamKm + simonKm + sharedKm),
     miriamKmShare: kmShare(miriamKm),
     simonKmShare: kmShare(simonKm),

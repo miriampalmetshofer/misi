@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { euro } from "@/lib/format";
@@ -51,7 +52,60 @@ export function FuelOverview({ fillUps }: FuelOverviewProps) {
           {/* First on the page: the split is what the overview is for. Set at
               the same size the calculator gives its euro amounts, which is
               this app's "headline value of a card". */}
-          <Panel label="Anteile">
+          <Panel
+            label="Anteile"
+            footer={
+              <details className="group mt-4 border-t pt-4">
+                <summary className="flex cursor-pointer list-none items-center gap-2 font-medium [&::-webkit-details-marker]:hidden">
+                  <ChevronDown
+                    aria-hidden="true"
+                    className="size-4 group-open:rotate-180"
+                  />
+                  Kilometer &amp; Kosten
+                </summary>
+                <table className="mt-3 w-full text-sm">
+                  <thead>
+                    <tr className="text-left align-bottom">
+                      <th scope="col" className="pr-2 font-medium">Person</th>
+                      <th scope="col" className="px-2 text-right font-medium">
+                        Kilometer
+                        <span className="block text-xs">
+                          (inkl. Anteil gemeinsamer Fahrten)
+                        </span>
+                      </th>
+                      <th scope="col" className="pl-2 text-right font-medium">
+                        Kostenanteil
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="tabular-nums">
+                    <tr>
+                      <th scope="row" className="py-2 pr-2 text-left font-normal">
+                        Miriam
+                      </th>
+                      <td className="whitespace-nowrap px-2 text-right">
+                        {km.format(summary.miriamAllocatedKm)} km
+                      </td>
+                      <td className="whitespace-nowrap pl-2 text-right">
+                        {euro.format(summary.miriamPaid)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row" className="py-2 pr-2 text-left font-normal">
+                        Simon
+                      </th>
+                      <td className="whitespace-nowrap px-2 text-right">
+                        {km.format(summary.simonAllocatedKm)} km
+                      </td>
+                      <td className="whitespace-nowrap pl-2 text-right">
+                        {euro.format(summary.simonPaid)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </details>
+            }
+          >
             <ShareOfBill label="Miriam" share={summary.miriamPaidShare} />
             <ShareOfBill label="Simon" share={summary.simonPaidShare} />
           </Panel>
@@ -92,14 +146,17 @@ export function FuelOverview({ fillUps }: FuelOverviewProps) {
 function Panel({
   label,
   children,
+  footer,
 }: {
   label: string;
   children: React.ReactNode;
+  footer?: React.ReactNode;
 }) {
   return (
     <section className="rounded-2xl border bg-card p-5 text-card-foreground sm:p-7">
       <h2 className="section-label">{label}</h2>
       <dl className="mt-4 flex flex-col gap-3">{children}</dl>
+      {footer}
     </section>
   );
 }

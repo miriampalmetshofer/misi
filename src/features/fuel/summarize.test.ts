@@ -244,6 +244,20 @@ describe("summarizeFillUps", () => {
     ).toBeCloseTo(1, 10);
   });
 
+  it("allocates each tank's car kilometres using its own split mode", () => {
+    const summary = summarizeFillUps([
+      entry(),
+      entry({ offsetMode: "shared", paidAmount: 50, miriamAmount: 20, simonAmount: 30 }),
+    ]);
+
+    // Proportional: (100 + 50) / 400 × 500 = 187.5.
+    // Shared: 100 + (100 shared + 100 untracked) / 2 = 200.
+    expect(summary.miriamAllocatedKm).toBeCloseTo(387.5);
+    expect(summary.simonAllocatedKm).toBeCloseTo(612.5);
+    expect(summary.miriamPaid).toBe(60);
+    expect(summary.simonPaid).toBe(90);
+  });
+
   it("reads as zero rather than NaN with nothing in range", () => {
     const summary = summarizeFillUps([]);
 
