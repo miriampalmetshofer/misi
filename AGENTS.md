@@ -211,10 +211,8 @@ These are the subtle errors that look like productivity but create problems:
 
 ### GitHub Identity and Permissions
 
-- For local development, use the separate GitHub collaborator account `mip-ai-bot`. Treat it as a contributor, not an owner or administrator.
-- In the managed cloud environment, Miriam explicitly authorizes agents to use the connected GitHub account `miriampalmetshofer` through the GitHub connector for branches, commits, PRs, and review follow-ups. This cloud exception does not require renewed approval on each task.
-- Check the authenticated account rather than assuming that `gh` and the GitHub connector share an identity. An unavailable or invalid bot CLI token does not block cloud work when the authorized connector is available.
-- The same review and deployment boundaries apply to both accounts: do not push to `main`, approve your own PRs, bypass review, or merge/deploy without the required human approval.
+- Use Miriam's personal GitHub account, `miriampalmetshofer`, for agent work in this repository. Verify the authenticated account before writing to GitHub.
+- Do not push to `main`, approve your own PRs, bypass review, or merge or deploy without the required human approval.
 
 ## Pull Requests
 
@@ -227,6 +225,18 @@ These are the subtle errors that look like productivity but create problems:
 - Do not add subheadings to the PR description.
 - Rebase the branch onto the latest `main` before opening a PR.
 - Open PRs as ready for review after local verification passes; use drafts only for unfinished or exploratory work.
+
+## Local Review Before Push
+
+- Run `python3 scripts/review-hook.py install` in each clone before pushing.
+- After committing, run `python3 scripts/review-hook.py prepare` and delegate
+  the printed review task to a native Codex subagent. Wait for its findings,
+  then record the findings and your assessment for the exact commit before pushing.
+  See `docs/agent-review.md` for commands and target branch selection.
+- Evaluate the findings yourself. If you commit corrections, review and assess
+  the new commit before pushing. A failed reviewer run cannot approve a push.
+- Open the GitHub PR after the reviewed push. Leave the reviewer findings in the
+  local report and explain your decisions in the implementer session.
 
 ## Code Review Rules
 

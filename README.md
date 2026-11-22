@@ -2,6 +2,10 @@
 
 Private household web app for shared everyday planning.
 
+Before pushing, the implementer asks a native Codex subagent to review the
+local commit and records the findings and assessment. See
+[Agent reviews](docs/agent-review.md) for setup and usage.
+
 ## Setup
 
 Install dependencies:
