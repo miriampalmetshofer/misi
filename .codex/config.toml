@@ -1,0 +1,5 @@
+[[hooks.SessionStart]]
+hooks = [{ type = "command", command = "python3 \"$(git rev-parse --show-toplevel)/scripts/review-hook.py\"", timeout = 10 }]
+
+[[hooks.PostToolUse]]
+hooks = [{ type = "command", command = "python3 \"$(git rev-parse --show-toplevel)/scripts/review-hook.py\"", async = true, timeout = 1200 }]

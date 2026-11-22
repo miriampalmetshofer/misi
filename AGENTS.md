@@ -228,6 +228,24 @@ These are the subtle errors that look like productivity but create problems:
 - Rebase the branch onto the latest `main` before opening a PR.
 - Open PRs as ready for review after local verification passes; use drafts only for unfinished or exploratory work.
 
+## Automatic Review After Push
+
+- Codex automatically runs the Misi review hook after pushes to an open PR.
+  See `docs/agent-review.md`; reviewer input is `.codex/reviewer.md`.
+- Evaluate the background review feedback and explain which findings you accept
+  or decline. Check its commit SHA before acting on a report for an older push.
+- After committing corrections from automatic review, run
+  `python3 scripts/review-hook.py continue <cycle-id>` before pushing. Use the
+  cycle ID from the feedback. This keeps corrections within the three-round
+  limit, including final corrections after round three.
+- Independent changes requested by the user start a new cycle: do not carry
+  forward the previous cycle marker.
+- Skip only for a concrete exceptional reason, such as a documented reviewer
+  outage, using `python3 scripts/review-hook.py skip --reason "..."` after the
+  commit and before pushing. Explain the reason to the user. Saving time alone
+  is not sufficient. Never disable the hooks to bypass review.
+- A hook/reviewer failure is not a successful review. Report it explicitly.
+
 ## Code Review Rules
 
 - Report actionable correctness and maintainability problems introduced by the
