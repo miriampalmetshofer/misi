@@ -211,10 +211,8 @@ These are the subtle errors that look like productivity but create problems:
 
 ### GitHub Identity and Permissions
 
-- For local development, use the separate GitHub collaborator account `mip-ai-bot`. Treat it as a contributor, not an owner or administrator.
-- In the managed cloud environment, Miriam explicitly authorizes agents to use the connected GitHub account `miriampalmetshofer` through the GitHub connector for branches, commits, PRs, and review follow-ups. This cloud exception does not require renewed approval on each task.
-- Check the authenticated account rather than assuming that `gh` and the GitHub connector share an identity. An unavailable or invalid bot CLI token does not block cloud work when the authorized connector is available.
-- The same review and deployment boundaries apply to both accounts: do not push to `main`, approve your own PRs, bypass review, or merge/deploy without the required human approval.
+- Use Miriam's personal GitHub account, `miriampalmetshofer`, for agent work in this repository. Verify the authenticated account before writing to GitHub.
+- Do not push to `main`, approve your own PRs, bypass review, or merge or deploy without the required human approval.
 
 ## Pull Requests
 
@@ -228,23 +226,17 @@ These are the subtle errors that look like productivity but create problems:
 - Rebase the branch onto the latest `main` before opening a PR.
 - Open PRs as ready for review after local verification passes; use drafts only for unfinished or exploratory work.
 
-## Automatic Review After Push
+## Local Review Before Push
 
-- Codex automatically runs the Misi review hook after pushes to an open PR.
-  See `docs/agent-review.md`; reviewer input is `.codex/reviewer.md`.
-- Evaluate the background review feedback and explain which findings you accept
-  or decline. Check its commit SHA before acting on a report for an older push.
-- After committing corrections from automatic review, run
-  `python3 scripts/review-hook.py continue <cycle-id>` before pushing. Use the
-  cycle ID from the feedback. This keeps corrections within the three-round
-  limit, including final corrections after round three.
-- Independent changes requested by the user start a new cycle: do not carry
-  forward the previous cycle marker.
-- Skip only for a concrete exceptional reason, such as a documented reviewer
-  outage, using `python3 scripts/review-hook.py skip --reason "..."` after the
-  commit and before pushing. Explain the reason to the user. Saving time alone
-  is not sufficient. Never disable the hooks to bypass review.
-- A hook/reviewer failure is not a successful review. Report it explicitly.
+- Run `python3 scripts/review-hook.py install` in each clone before pushing.
+- After committing, run `python3 scripts/review-hook.py prepare` and delegate
+  the printed review task to a native Codex subagent. Wait for its findings,
+  then record the findings and your assessment for the exact commit before pushing.
+  See `docs/agent-review.md` for commands and target branch selection.
+- Evaluate the findings yourself. If you commit corrections, review and assess
+  the new commit before pushing. A failed reviewer run cannot approve a push.
+- Open the GitHub PR after the reviewed push. Leave the reviewer findings in the
+  local report and explain your decisions in the implementer session.
 
 ## Code Review Rules
 
