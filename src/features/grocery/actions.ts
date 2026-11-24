@@ -5,10 +5,35 @@ import { and, eq, isNotNull, sql } from "drizzle-orm";
 
 import { getDb, schema } from "@/db";
 import { getGroceryCategories } from "./queries";
+import { normalizeItemName } from "./categories";
+import { parseGroceryStores } from "./stores";
 import { normalizeItemNameSql } from "./itemNameSql";
 
 const MAX_ITEM_NAME_LENGTH = 80;
 const SHOPPING_LIST_PATH = "/einkauf";
+
+export async function saveGroceryStores(formData: FormData) {
+  const name = getString(formData, "name").trim();
+  const submitted = formData.getAll("stores");
+  const stores = parseGroceryStores(submitted);
+
+  if (!name || name.length > MAX_ITEM_NAME_LENGTH || stores.length !== submitted.length) {
+    throw new Error("Ungültige Geschäftsauswahl");
+  }
+
+  const normalizedName = normalizeItemName(name);
+  const db = getDb();
+  if (stores.length === 0) {
+    await db.delete(schema.groceryStorePreferences)
+      .where(eq(schema.groceryStorePreferences.normalizedName, normalizedName));
+  } else {
+    await db.insert(schema.groceryStorePreferences)
+      .values({ normalizedName, stores })
+      .onConflictDoUpdate({ target: schema.groceryStorePreferences.normalizedName, set: { stores } });
+  }
+
+  revalidatePath(SHOPPING_LIST_PATH);
+}
 
 export async function addGroceryItem(formData: FormData) {
   const name = getString(formData, "name").trim();

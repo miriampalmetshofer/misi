@@ -6,16 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronLeft } from "lucide-react";
 
-import type { OptimisticShoppingListCategory } from "./types";
+import type { GroceryStorePreferences, OptimisticShoppingListCategory } from "./types";
 import { ShoppingCategorySection } from "./ShoppingCategorySection";
 import { DragProvider } from "./drag/DragContext";
 import { UndoBar } from "./UndoBar";
 import { GroceryQuickEntry } from "./GroceryQuickEntry";
 import { itemCategoryId, UNCATEGORIZED_ID } from "./categories";
+import { GROCERY_STORES, storesForItem, type GroceryStore } from "./stores";
+import { StoreLogo } from "./StoreLogo";
 
 type ShoppingListViewProps = {
   categories: OptimisticShoppingListCategory[];
   categoryPreferences: Record<string, string>;
+  storePreferences: GroceryStorePreferences;
   onQuickEntry: (name: string, categoryId: string | null, rememberCategory: boolean) => void;
   onAddDraft: (categoryId: string | null) => void;
   onCheckItem: (itemId: string) => void;
@@ -32,6 +35,7 @@ type ShoppingListViewProps = {
 export function ShoppingListView({
   categories,
   categoryPreferences,
+  storePreferences,
   onQuickEntry,
   onAddDraft,
   onCheckItem,
@@ -45,9 +49,17 @@ export function ShoppingListView({
   undo,
 }: ShoppingListViewProps) {
   const [shoppingMode, setShoppingMode] = useState(false);
-  const openItemCount = categories.reduce(
-    (total, category) =>
-      total + category.items.filter((item) => !item.isDraft).length,
+  const [storeFilter, setStoreFilter] = useState<GroceryStore | null>(null);
+  const shoppingCategories = categories.map((category) => ({
+    ...category,
+    items: category.items.filter((item) => {
+      if (item.isDraft) return false;
+      const stores = storesForItem(storePreferences, item.name);
+      return !storeFilter || !stores.length || stores.includes(storeFilter);
+    }),
+  }));
+  const openItemCount = (shoppingMode ? shoppingCategories : categories).reduce(
+    (total, category) => total + category.items.filter((item) => !item.isDraft).length,
     0,
   );
 
@@ -87,8 +99,21 @@ export function ShoppingListView({
 
         {shoppingMode ? (
           <div className="mt-8 space-y-6">
-            {categories.map((category) => {
-              const items = category.items.filter((item) => !item.isDraft);
+            <div role="group" aria-label="Nach Geschäft filtern" className="flex flex-wrap gap-2">
+              {GROCERY_STORES.map((store) => (
+                <Button
+                  key={store.id}
+                  variant={storeFilter === store.id ? "secondary" : "outline"}
+                  aria-pressed={storeFilter === store.id}
+                  className="h-10 rounded-full aria-pressed:ring-1 aria-pressed:ring-foreground"
+                  aria-label={store.name}
+                  onClick={() => setStoreFilter((active) => active === store.id ? null : store.id)}
+                >
+                  <StoreLogo store={store.id} />
+                </Button>
+              ))}
+            </div>
+            {shoppingCategories.map(({ items, ...category }) => {
               if (items.length === 0) return null;
               return (
                 <section key={category.id} aria-labelledby={`shopping-${category.id}`}>
@@ -106,7 +131,14 @@ export function ShoppingListView({
                             checked={false}
                             onCheckedChange={() => onCheckItem(item.id)}
                           />
-                          <span className="min-w-0 break-words">{item.name}</span>
+                          <span className="min-w-0 flex-1 break-words">{item.name}</span>
+                          {!storeFilter && (
+                            <span className="flex gap-1">
+                              {storesForItem(storePreferences, item.name).map((store) => (
+                                <StoreLogo key={store} store={store} />
+                              ))}
+                            </span>
+                          )}
                         </label>
                       </li>
                     ))}
@@ -123,6 +155,7 @@ export function ShoppingListView({
               ).map((category) => (
                 <ShoppingCategorySection
                   category={category}
+                  storePreferences={storePreferences}
                   key={category.id}
                   onAddDraft={onAddDraft}
                   onCheckItem={onCheckItem}

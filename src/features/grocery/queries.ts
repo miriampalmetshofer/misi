@@ -8,6 +8,7 @@ import {
   UNCATEGORIZED_ID,
   QUICK_ADD_GROCERY_ITEMS,
 } from "./categories";
+import { parseGroceryStores } from "./stores";
 import type { ShoppingListData, ShoppingListItem } from "./types";
 
 export async function getShoppingListData(): Promise<ShoppingListData> {
@@ -36,7 +37,12 @@ export async function getShoppingListData(): Promise<ShoppingListData> {
 
   const preferences = await db.select().from(schema.groceryCategoryPreferences);
 
+  const storePreferences = await db.select().from(schema.groceryStorePreferences);
+
   return {
+    storePreferences: Object.fromEntries(
+      storePreferences.map(({ normalizedName, stores }) => [normalizedName, parseGroceryStores(stores)]),
+    ),
     categoryPreferences: Object.fromEntries(
       preferences.map((preference) => [preference.normalizedName, preference.categoryId]),
     ),

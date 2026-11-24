@@ -1,3 +1,7 @@
+import type { GroceryStore } from "./stores";
+
+export type GroceryStorePreferences = Partial<Record<string, GroceryStore[]>>;
+
 export type ShoppingListItem = {
   id: string;
   name: string;
@@ -16,6 +20,7 @@ export type ShoppingListCategory = {
 export type ShoppingListData = {
   categories: ShoppingListCategory[];
   categoryPreferences: Record<string, string>;
+  storePreferences: GroceryStorePreferences;
 };
 
 // Client-only: optimistic UI state for items that are not yet persisted.
