@@ -16,6 +16,8 @@ export function GroceryStorePicker({ name, stores }: { name: string; stores: Gro
   const [error, setError] = useState(false);
 
   function toggleStore(store: GroceryStore, checked: boolean) {
+    if (saving) return;
+
     const nextStores = GROCERY_STORES.map(({ id }) => id).filter(
       (id) => id === store ? checked : selectedStores.includes(id),
     );
@@ -53,12 +55,16 @@ export function GroceryStorePicker({ name, stores }: { name: string; stores: Gro
       </PopoverTrigger>
       <PopoverContent align="end" onPointerDown={(event) => event.stopPropagation()}>
         <PopoverTitle className="break-words">Geschäfte für {name}</PopoverTitle>
-        <fieldset disabled={saving} className="space-y-2">
+        <fieldset className="space-y-2">
           {GROCERY_STORES.map(({ id, name: storeName }) => (
             <label key={id} className="flex min-h-10 cursor-pointer items-center gap-3 rounded-md border px-3">
               <input
                 type="checkbox"
                 checked={selectedStores.includes(id)}
+                aria-disabled={saving || undefined}
+                onClick={(event) => {
+                  if (saving) event.preventDefault();
+                }}
                 onChange={(event) => toggleStore(id, event.currentTarget.checked)}
                 className="size-4 accent-primary"
               />
@@ -67,7 +73,6 @@ export function GroceryStorePicker({ name, stores }: { name: string; stores: Gro
             </label>
           ))}
         </fieldset>
-        {saving && <p role="status">Wird gespeichert …</p>}
         {error && <p role="alert">Die Geschäfte konnten nicht gespeichert werden.</p>}
       </PopoverContent>
     </Popover>

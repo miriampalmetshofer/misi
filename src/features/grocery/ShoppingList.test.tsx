@@ -893,7 +893,11 @@ it("saves a store as soon as its checkbox changes", async () => {
   await user.click(spar);
 
   expect(spar).toBeChecked();
-  expect(spar).toBeDisabled();
+  expect(spar).toHaveAttribute("aria-disabled", "true");
+  expect(screen.queryByText("Wird gespeichert …")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("checkbox", { name: "HOFER" }));
+  expect(screen.getByRole("checkbox", { name: "HOFER" })).not.toBeChecked();
+  expect(actions.setGroceryStore).toHaveBeenCalledTimes(1);
   expect(screen.getByRole("dialog")).toBeVisible();
   expect(screen.queryByRole("button", { name: "Speichern" })).not.toBeInTheDocument();
   const data = fieldsOf(actions.setGroceryStore);
