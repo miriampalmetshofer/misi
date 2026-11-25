@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { itemCategoryId, normalizeItemName, UNCATEGORIZED_ID } from "./categories";
+import { MAX_PRODUCT_INPUT_LENGTH, parseProduct, validProduct } from "./product";
 import type { ShoppingListCategory } from "./types";
 
 type Props = {
@@ -22,7 +23,9 @@ export function GroceryQuickEntry({
   const [name, setName] = useState("");
   const [selection, setSelection] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const remembered = categoryPreferences[normalizeItemName(name)];
+  const product = parseProduct(name);
+  const canAdd = validProduct(product);
+  const remembered = categoryPreferences[normalizeItemName(product.name)];
   const categoryId = selection ?? (
     categories.some((category) => category.id === remembered)
       ? remembered : UNCATEGORIZED_ID
@@ -36,7 +39,7 @@ export function GroceryQuickEntry({
         onSubmit={(event) => {
           event.preventDefault();
           const trimmed = name.trim();
-          if (!trimmed || trimmed.length > 80) return;
+          if (!canAdd) return;
           onAdd(
             trimmed,
             itemCategoryId(categoryId),
@@ -53,7 +56,7 @@ export function GroceryQuickEntry({
             autoComplete="off"
             className="h-11 min-w-0 flex-1"
             enterKeyHint="done"
-            maxLength={80}
+            maxLength={MAX_PRODUCT_INPUT_LENGTH}
             placeholder="Was brauchst du?"
             ref={inputRef}
             value={name}
@@ -64,7 +67,7 @@ export function GroceryQuickEntry({
           <Button
             aria-label="Artikel zur Liste hinzufügen"
             className="size-11 shrink-0"
-            disabled={!name.trim()}
+            disabled={!canAdd}
             type="submit"
           >
             <Plus aria-hidden="true" />

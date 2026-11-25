@@ -5,6 +5,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   numeric,
   pgTable,
   text,
@@ -13,6 +14,8 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+
+import type { Product } from "@/features/grocery/product";
 
 export const groceryCategories = pgTable(
   "grocery_category",
@@ -40,6 +43,7 @@ export const groceryItems = pgTable(
       onDelete: "set null",
     }),
     name: varchar("name").notNull(),
+    quantity: integer("quantity").notNull().default(1),
     isChecked: boolean("is_checked").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -51,6 +55,7 @@ export const groceryItems = pgTable(
   (table) => [
     index("grocery_item_category_idx").on(table.categoryId),
     index("grocery_item_checked_idx").on(table.isChecked),
+    check("grocery_item_quantity_valid", sql`${table.quantity} between 1 and 999999999`),
   ],
 );
 
@@ -176,6 +181,11 @@ export const carExpenses = pgTable(
 );
 
 export type CarExpense = typeof carExpenses.$inferSelect;
+
+export const mealProducts = pgTable("meal_product_list", {
+  dishKey: text("dish_key").primaryKey(),
+  products: jsonb("products").$type<Product[]>().notNull(),
+});
 
 export const mealEntries = pgTable(
   "meal_entry",

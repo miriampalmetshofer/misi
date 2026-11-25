@@ -9,6 +9,7 @@ import {
   QUICK_ADD_GROCERY_ITEMS,
 } from "./categories";
 import { parseGroceryStores } from "./stores";
+import { formatProduct } from "./product";
 import type { ShoppingListData, ShoppingListItem } from "./types";
 
 export async function getShoppingListData(): Promise<ShoppingListData> {
@@ -19,6 +20,7 @@ export async function getShoppingListData(): Promise<ShoppingListData> {
     .select({
       id: schema.groceryItems.id,
       name: schema.groceryItems.name,
+      quantity: schema.groceryItems.quantity,
       isChecked: schema.groceryItems.isChecked,
       categoryId: schema.groceryItems.categoryId,
     })
@@ -28,10 +30,10 @@ export async function getShoppingListData(): Promise<ShoppingListData> {
 
   const categoryItems = new Map<string, ShoppingListItem[]>();
 
-  for (const item of items) {
+  for (const { quantity, ...item } of items) {
     const key = item.categoryId ?? UNCATEGORIZED_ID;
     const existing = categoryItems.get(key) ?? [];
-    existing.push(item);
+    existing.push({ ...item, name: formatProduct({ name: item.name, quantity }) });
     categoryItems.set(key, existing);
   }
 

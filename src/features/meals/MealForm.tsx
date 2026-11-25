@@ -6,6 +6,10 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { normalizeItemName } from "@/features/grocery/categories";
+import { fitVisualViewport } from "./fitVisualViewport";
+import { formatProduct } from "@/features/grocery/product";
+import { productsForDish, type DishProducts } from "./products";
 import { saveMeal, deleteMeal } from "./actions";
 import {
   personLabels,
@@ -16,12 +20,14 @@ import {
 
 export function MealForm({
   entry,
+  dishes,
   plannedOn,
   mealTime,
   onClose,
   context,
 }: {
   entry?: MealEntry;
+  dishes: DishProducts;
   plannedOn: string;
   mealTime: MealTime;
   onClose: () => void;
@@ -31,6 +37,26 @@ export function MealForm({
   const inputRef = useRef<HTMLInputElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const [name, setName] = useState(entry?.name ?? "");
+  const dishKey = normalizeItemName(name);
+  const originalProducts = productsForDish(dishes, dishKey)
+    .map(formatProduct)
+    .join("\n");
+  const [productDraft, setProductDraft] = useState<string | null>(null);
+  const products =
+    productDraft ??
+    (entry && !Object.hasOwn(dishes, dishKey)
+      ? productsForDish(dishes, normalizeItemName(entry.name))
+          .map(formatProduct)
+          .join("\n")
+      : originalProducts);
+  const knownProducts = [
+    ...new Set(
+      Object.values(dishes)
+        .flat()
+        .map((product) => product.name),
+    ),
+  ].sort((a, b) => a.localeCompare(b, "de-AT"));
+  const [productSuggestion, setProductSuggestion] = useState("");
   const [selected, setSelected] = useState({
     miriam: entry?.person !== "simon",
     simon: entry?.person !== "miriam",
@@ -59,6 +85,10 @@ export function MealForm({
           name,
         }))
           form.set(key, value);
+        if (products !== originalProducts) {
+          form.set("products", products);
+          form.set("originalProducts", originalProducts);
+        }
         if (entry) {
           form.set("id", entry.id);
           form.set("version", String(entry.version));
@@ -146,6 +176,75 @@ export function MealForm({
                     onChange={(event) => setName(event.target.value)}
                   />
                 </label>
+                <details>
+                  <summary className="cursor-pointer rounded-sm py-1 text-sm font-medium">
+                    Produkte für den Einkauf
+                  </summary>
+                  <div className="mt-2 grid gap-2">
+                    <label className="flex flex-col gap-1.5">
+                      <span className="sr-only">Produkte für den Einkauf</span>
+                      <textarea
+                        rows={3}
+                        disabled={!dishKey}
+                        maxLength={3000}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-ring md:text-sm"
+                        placeholder={"2x Mozzarella\nTomatensauce"}
+                        value={products}
+                        onChange={(event) =>
+                          setProductDraft(event.target.value)
+                        }
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        Ein Produkt pro Zeile. Ohne Stückzahl gilt 1.
+                      </span>
+                    </label>
+                    {knownProducts.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        <Input
+                          aria-label="Bekanntes Produkt suchen"
+                          placeholder="Produkt suchen"
+                          list={`${id}-products`}
+                          value={productSuggestion}
+                          onChange={(event) =>
+                            setProductSuggestion(event.target.value)
+                          }
+                          className="w-auto flex-1"
+                        />
+                        <datalist id={`${id}-products`}>
+                          {knownProducts.map((product) => (
+                            <option key={product} value={product} />
+                          ))}
+                        </datalist>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={
+                            !dishKey ||
+                            !knownProducts.includes(productSuggestion)
+                          }
+                          onClick={() => {
+                            if (!knownProducts.includes(productSuggestion))
+                              return;
+                            setProductDraft(
+                              [
+                                products.trim(),
+                                formatProduct({
+                                  name: productSuggestion,
+                                  quantity: 1,
+                                }),
+                              ]
+                                .filter(Boolean)
+                                .join("\n"),
+                            );
+                            setProductSuggestion("");
+                          }}
+                        >
+                          Hinzufügen
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </details>
                 <fieldset className="flex flex-wrap items-start gap-2">
                   <legend className="mb-1.5 text-sm font-medium">
                     Für wen?
@@ -236,21 +335,4 @@ export function MealForm({
       </Dialog.Portal>
     </Dialog.Root>
   );
-}
-
-// iOS keyboards shrink the visual viewport without resizing fixed-position layouts.
-function fitVisualViewport(node: HTMLDivElement | null) {
-  const viewport = window.visualViewport;
-  if (!node || !viewport) return;
-  const update = () => {
-    node.style.top = `${viewport.offsetTop}px`;
-    node.style.height = `${viewport.height}px`;
-  };
-  update();
-  viewport.addEventListener("resize", update);
-  viewport.addEventListener("scroll", update);
-  return () => {
-    viewport.removeEventListener("resize", update);
-    viewport.removeEventListener("scroll", update);
-  };
 }

@@ -146,7 +146,7 @@ it("keeps days expanded when browsing a different week", () => {
     screen.getAllByRole("button", { name: "Mittagessen eintragen" }),
   ).toHaveLength(7);
   expect(
-    screen.queryByRole("button", { expanded: false }),
+    screen.queryByRole("button", { name: /Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag/, expanded: false }),
   ).not.toBeInTheDocument();
 });
 

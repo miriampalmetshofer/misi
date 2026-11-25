@@ -18,6 +18,8 @@ import { cn } from "@/lib/utils";
 import { DragProvider } from "@/features/grocery/drag/DragContext";
 import { MealItem, MealSlot } from "./MealDrag";
 import { saveMeal } from "./actions";
+import { MealShopping } from "./MealShopping";
+import type { DishProducts } from "./products";
 import { MealForm } from "./MealForm";
 import {
   mealLabels,
@@ -33,10 +35,12 @@ export function MealPlanner({
   start,
   today,
   entries,
+  dishes = {},
 }: {
   start: string;
   today: string;
   entries: MealEntry[];
+  dishes?: DishProducts;
 }) {
   const [moving, startMove] = useTransition();
   const moveInFlight = useRef(false);
@@ -141,6 +145,7 @@ export function MealPlanner({
             </Link>
           ) : null}
         </nav>
+        <MealShopping start={start} disabled={moving || editing !== null} />
         <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 7 }, (_, index) => {
             const day = shiftDate(start, index);
@@ -289,6 +294,7 @@ export function MealPlanner({
         {editing ? (
           <MealForm
             entry={editing.entry}
+            dishes={dishes}
             plannedOn={editing.plannedOn}
             mealTime={editing.mealTime}
             context={`${dateLabel(editing.plannedOn, "EEEE")} ${mealLabels[editing.mealTime]}`}
