@@ -195,3 +195,46 @@ jobs:
             echo "Neon branch ID: $NEON_BRANCH_ID"
           } > preview-comment.md
           gh pr comment "$PR_NUMBER" --body-file preview-comment.md
+
+  cleanup-closed-preview:
+    name: Clean up a closed pull request's Neon preview
+    needs: deploy-preview
+    if: ${{ always() && needs.deploy-preview.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+
+    steps:
+      - name: Delete Neon preview branch if the pull request has closed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          pr_state="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .state)"
+          if [ "$pr_state" != "closed" ]; then
+            exit 0
+          fi
+
+          safe_head_branch="$(printf '%s' "$HEAD_BRANCH" | tr '/[:space:]' '-' | tr -cd '[:alnum:]._-' | cut -c1-40)"
+          branch_name="preview/pr-${PR_NUMBER}-${safe_head_branch}"
+          branches_url="https://console.neon.tech/api/v2/projects/$NEON_PROJECT_ID/branches"
+          branches="$(curl --fail --silent --show-error --get \
+            --header "Authorization: Bearer $NEON_API_KEY" \
+            --data-urlencode "search=$branch_name" "$branches_url")"
+          branch_id="$(jq -r --arg name "$branch_name" \
+            '.branches[] | select(.name == $name) | .id' <<< "$branches")"
+          if [ -z "$branch_id" ]; then
+            exit 0
+          fi
+
+          # The PR-close workflow can delete the branch between lookup and deletion.
+          status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+            --request DELETE --header "Authorization: Bearer $NEON_API_KEY" \
+            "$branches_url/$branch_id")"
+          case "$status" in
+            2??|404) ;;
+            *) echo "Neon preview branch deletion failed (HTTP $status)." >&2; exit 1 ;;
+          esac
