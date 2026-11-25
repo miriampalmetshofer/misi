@@ -12,24 +12,31 @@ import { normalizeItemNameSql } from "./itemNameSql";
 const MAX_ITEM_NAME_LENGTH = 80;
 const SHOPPING_LIST_PATH = "/einkauf";
 
-export async function saveGroceryStores(formData: FormData) {
+export async function setGroceryStore(formData: FormData) {
   const name = getString(formData, "name").trim();
-  const submitted = formData.getAll("stores");
-  const stores = parseGroceryStores(submitted);
+  const [store] = parseGroceryStores([getString(formData, "store")]);
+  const checked = getString(formData, "checked");
 
-  if (!name || name.length > MAX_ITEM_NAME_LENGTH || stores.length !== submitted.length) {
+  if (!name || name.length > MAX_ITEM_NAME_LENGTH || !store || !["true", "false"].includes(checked)) {
     throw new Error("Ungültige Geschäftsauswahl");
   }
 
   const normalizedName = normalizeItemName(name);
   const db = getDb();
-  if (stores.length === 0) {
-    await db.delete(schema.groceryStorePreferences)
-      .where(eq(schema.groceryStorePreferences.normalizedName, normalizedName));
+  const preferences = schema.groceryStorePreferences;
+
+  if (checked === "true") {
+    await db.insert(preferences)
+      .values({ normalizedName, stores: [store] })
+      .onConflictDoUpdate({
+        target: preferences.normalizedName,
+        set: { stores: sql`array_append(${preferences.stores}, ${store})` },
+        setWhere: sql`not (${store} = any(${preferences.stores}))`,
+      });
   } else {
-    await db.insert(schema.groceryStorePreferences)
-      .values({ normalizedName, stores })
-      .onConflictDoUpdate({ target: schema.groceryStorePreferences.normalizedName, set: { stores } });
+    await db.update(preferences)
+      .set({ stores: sql`array_remove(${preferences.stores}, ${store})` })
+      .where(eq(preferences.normalizedName, normalizedName));
   }
 
   revalidatePath(SHOPPING_LIST_PATH);

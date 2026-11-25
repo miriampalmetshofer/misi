@@ -36,6 +36,7 @@ const actions = vi.hoisted(() => {
     moveGroceryItem: action("move"),
     renameGroceryItem: action("rename"),
     setGroceryItemChecked: action("check"),
+    setGroceryStore: action("stores"),
   };
 });
 
@@ -45,6 +46,7 @@ vi.mock("./actions", () => ({
   moveGroceryItem: actions.moveGroceryItem,
   renameGroceryItem: actions.renameGroceryItem,
   setGroceryItemChecked: actions.setGroceryItemChecked,
+  setGroceryStore: actions.setGroceryStore,
 }));
 
 import { ShoppingList } from "./ShoppingList";
@@ -881,6 +883,21 @@ describe("taking a check-off back", () => {
   // The window expiring is covered in useUndo.test.ts. Driving it from here
   // would mean fake timers, and the action mocks deliberately never resolve, so
   // the transition would wait on a clock the test has frozen.
+});
+
+it("saves a store as soon as its checkbox changes", async () => {
+  const { user } = renderList();
+  await user.click(screen.getByRole("button", { name: "Geschäfte für Äpfel bearbeiten" }));
+
+  const spar = screen.getByRole("checkbox", { name: "SPAR" });
+  await user.click(spar);
+
+  expect(spar).toBeChecked();
+  expect(spar).toBeDisabled();
+  expect(screen.getByRole("dialog")).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Speichern" })).not.toBeInTheDocument();
+  const data = fieldsOf(actions.setGroceryStore);
+  expect(data).toEqual({ name: "Äpfel", store: "spar", checked: "true" });
 });
 
 describe("shopping mode", () => {
