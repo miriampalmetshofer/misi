@@ -147,17 +147,7 @@ export function MealPlanner({
             </Link>
           ) : null}
         </nav>
-        <div className="flex flex-wrap gap-2">
-          <MealShopping start={start} disabled={moving || editing !== null} />
-          <Button
-            role="link"
-            nativeButton={false}
-            render={<Link href="/rezepte" />}
-            variant="outline"
-          >
-            Rezepte
-          </Button>
-        </div>
+        <MealShopping start={start} disabled={moving || editing !== null} />
         <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 7 }, (_, index) => {
             const day = shiftDate(start, index);

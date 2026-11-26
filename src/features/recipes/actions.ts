@@ -11,7 +11,7 @@ export async function saveRecipe(form: FormData) {
   const name = String(form.get("name") ?? "").trim();
   const oldKey = String(form.get("dishKey") ?? "");
   const version = Number(form.get("version"));
-  const products = parseDishProducts(String(form.get("products") ?? ""));
+  const products = parseDishProducts(form);
   if (!name || name.length > 200)
     return { error: "Bitte einen Rezeptnamen eingeben." };
   if (!products)
@@ -71,7 +71,7 @@ export async function saveRecipe(form: FormData) {
       error: "Speichern fehlgeschlagen. Deine Eingaben bleiben erhalten.",
     };
   }
-  revalidatePath("/rezepte");
+  revalidatePath("/speiseplan/rezepte");
   revalidatePath("/speiseplan");
   return { error: null };
 }

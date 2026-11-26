@@ -8,7 +8,7 @@ test("independent meals and people persist across reloads and week navigation", 
   const workMeal = `Essen in der Arbeit ${token}`;
   const pasta = `Pasta ${token}`;
   await page.goto("/");
-  await page.getByRole("link", { name: /^Speiseplan/ }).click();
+  await page.getByRole("link", { name: /^Kochen/ }).click();
   await page.goto("/speiseplan?woche=2026-11-02");
   const monday = page.getByRole("region", { name: "Montag, 2. November" });
   async function expandMonday() {
@@ -271,17 +271,24 @@ test("saved dish products are reused and reviewed before they reach the grocery 
   const week = "/speiseplan?woche=2038-10-11";
   await page.goto(week);
   await page.getByRole("link", { name: "Rezepte", exact: true }).click();
-  await expect(page).toHaveURL(/\/rezepte$/);
+  await expect(page).toHaveURL("/speiseplan/rezepte?woche=2038-10-11");
+  await expect(page.getByRole("link", { name: "Rezepte", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("heading", { name: "Kochen" })).toBeVisible();
   await page.getByRole("button", { name: "Rezept hinzufügen" }).click();
   const editor = page.getByRole("dialog");
   await editor.getByLabel("Rezeptname").fill(recipeName);
-  await editor.getByLabel("Zutaten", { exact: true }).fill(`${mozzarella}\n${sauce}`);
+  await editor.getByLabel("Produkt 1", { exact: true }).fill(mozzarella);
+  await expect(editor.getByRole("spinbutton", { name: "Stückzahl 1" })).toHaveValue("1");
+  await editor.getByRole("button", { name: "Zutat hinzufügen" }).click();
+  await expect(editor.getByLabel("Produkt 2", { exact: true })).toBeFocused();
+  await editor.getByLabel("Produkt 2", { exact: true }).fill(sauce);
   await editor.getByRole("button", { name: "Speichern", exact: true }).click();
   await expect(editor).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole("button", { name: `${recipeName} bearbeiten` })).toBeVisible();
 
-  await page.goto(week);
+  await page.getByRole("link", { name: "Speiseplan", exact: true }).click();
+  await expect(page).toHaveURL(week);
   const monday = page.getByRole("region", { name: "Montag, 11. Oktober" });
   const dinner = monday.getByRole("region", { name: "Abend", exact: true });
   const form = page.getByRole("dialog");
@@ -304,11 +311,16 @@ test("saved dish products are reused and reviewed before they reach the grocery 
   await expect(dinner.getByText("Rezept", { exact: true })).toHaveCount(2);
   await expect(dinner.getByRole("button", { name: `Essen in der Arbeit ${suffix} bearbeiten` })).toBeVisible();
 
-  await page.goto("/rezepte");
+  await page.goto("/speiseplan/rezepte");
   await page.getByRole("button", { name: `${recipeName} bearbeiten` }).click();
-  await expect(editor.getByLabel("Zutaten", { exact: true })).toHaveValue(`${mozzarella}\n${sauce}`);
+  await expect(editor.getByLabel("Produkt 1", { exact: true })).toHaveValue(mozzarella);
+  await expect(editor.getByLabel("Produkt 2", { exact: true })).toHaveValue(sauce);
   await editor.getByLabel("Rezeptname").fill(`${recipeName} neu`);
-  await editor.getByLabel("Zutaten", { exact: true }).fill(`2x ${mozzarella}\n${sauce}`);
+  await editor.getByRole("button", { name: "Zutat 2 entfernen" }).click();
+  await expect(editor.getByLabel("Produkt 2", { exact: true })).toHaveCount(0);
+  await editor.getByRole("button", { name: "Zutat hinzufügen" }).click();
+  await editor.getByLabel("Produkt 2", { exact: true }).fill(sauce);
+  await editor.getByRole("spinbutton", { name: "Stückzahl 1" }).fill("2");
   await editor.getByRole("button", { name: "Speichern", exact: true }).click();
   await expect(editor).toHaveCount(0);
   await page.goto(week);

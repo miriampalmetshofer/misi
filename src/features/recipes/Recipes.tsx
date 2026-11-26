@@ -2,14 +2,17 @@
 
 import { useId, useRef, useState, useTransition } from "react";
 import { Dialog } from "@base-ui/react/dialog";
-import { Plus, X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatProduct } from "@/features/grocery/product";
+import {
+  MAX_PRODUCT_NAME_LENGTH,
+  MAX_PRODUCT_QUANTITY,
+} from "@/features/grocery/product";
 import { fitVisualViewport } from "@/lib/fitVisualViewport";
 import { saveRecipe } from "./actions";
-import type { Recipe } from "./types";
+import { MAX_DISH_PRODUCTS, type Recipe } from "./types";
 
 export function Recipes({ recipes }: { recipes: Recipe[] }) {
   const [editing, setEditing] = useState<Recipe | "new" | null>(null);
@@ -78,10 +81,14 @@ function RecipeEditor({
   const id = useId();
   const nameInput = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(recipe?.name ?? "");
-  const [products, setProducts] = useState(
-    recipe?.products.map(formatProduct).join("\n") ?? "",
+  const [ingredients, setIngredients] = useState(() =>
+    (recipe?.products.length
+      ? recipe.products
+      : [{ name: "", quantity: 1 }]
+    ).map((product, index) => ({ ...product, id: index })),
   );
-  const [suggestion, setSuggestion] = useState("");
+  const nextIngredient = useRef(ingredients.length);
+  const addedIngredient = useRef<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, run] = useTransition();
 
@@ -161,65 +168,94 @@ function RecipeEditor({
                     onChange={(event) => setName(event.target.value)}
                   />
                 </label>
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor={`${id}-ingredients`}
-                    className="text-sm font-medium"
-                  >
-                    Zutaten
-                  </label>
-                  <textarea
-                    id={`${id}-ingredients`}
-                    name="products"
-                    rows={5}
-                    maxLength={3000}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-ring md:text-sm"
-                    aria-describedby={`${id}-count-hint`}
-                    placeholder={"2x Mozzarella\nTomatensauce"}
-                    value={products}
-                    onChange={(event) => setProducts(event.target.value)}
-                  />
-                  <p
-                    id={`${id}-count-hint`}
-                    className="text-xs text-muted-foreground"
-                  >
-                    Eine Zutat pro Zeile. Ohne Stückzahl gilt 1.
-                  </p>
-                </div>
-                {knownProducts.length > 0 && (
-                  <div className="flex gap-2">
-                    <Input
-                      aria-label="Bekannte Zutat suchen"
-                      placeholder="Zutat suchen"
-                      list={`${id}-suggestions`}
-                      value={suggestion}
-                      onChange={(event) => setSuggestion(event.target.value)}
-                    />
-                    <datalist id={`${id}-suggestions`}>
-                      {knownProducts.map((product) => (
-                        <option key={product} value={product} />
-                      ))}
-                    </datalist>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={!knownProducts.includes(suggestion)}
-                      onClick={() => {
-                        setProducts(
-                          [
-                            products.trim(),
-                            formatProduct({ name: suggestion, quantity: 1 }),
-                          ]
-                            .filter(Boolean)
-                            .join("\n"),
-                        );
-                        setSuggestion("");
-                      }}
+                <fieldset className="min-w-0">
+                  <legend className="mb-2 text-sm font-medium">Zutaten</legend>
+                  {ingredients.length > 0 && (
+                    <div
+                      aria-hidden="true"
+                      className="mb-1 grid grid-cols-[minmax(0,1fr)_4.5rem_2rem] gap-2 text-xs text-muted-foreground"
                     >
-                      Hinzufügen
-                    </Button>
-                  </div>
-                )}
+                      <span>Produkt</span>
+                      <span>Stück</span>
+                    </div>
+                  )}
+                  <ul className="grid gap-2">
+                    {ingredients.map((ingredient, index) => (
+                      <li
+                        key={ingredient.id}
+                        className="grid grid-cols-[minmax(0,1fr)_4.5rem_2rem] items-center gap-2"
+                      >
+                        <Input
+                          ref={(input) => {
+                            if (
+                              input &&
+                              addedIngredient.current === ingredient.id
+                            ) {
+                              addedIngredient.current = null;
+                              input.focus();
+                            }
+                          }}
+                          aria-label={`Produkt ${index + 1}`}
+                          name="productName"
+                          defaultValue={ingredient.name}
+                          maxLength={MAX_PRODUCT_NAME_LENGTH}
+                          list={
+                            knownProducts.length
+                              ? `${id}-suggestions`
+                              : undefined
+                          }
+                          placeholder="z. B. Mozzarella"
+                        />
+                        <Input
+                          aria-label={`Stückzahl ${index + 1}`}
+                          name="productQuantity"
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          max={MAX_PRODUCT_QUANTITY}
+                          step={1}
+                          required
+                          defaultValue={ingredient.quantity}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Zutat ${index + 1} entfernen`}
+                          onClick={() =>
+                            setIngredients((rows) =>
+                              rows.filter(({ id }) => id !== ingredient.id),
+                            )
+                          }
+                        >
+                          <Trash2 aria-hidden="true" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                  <datalist id={`${id}-suggestions`}>
+                    {knownProducts.map((product) => (
+                      <option key={product} value={product} />
+                    ))}
+                  </datalist>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mt-2"
+                    disabled={ingredients.length >= MAX_DISH_PRODUCTS}
+                    onClick={() => {
+                      const id = nextIngredient.current++;
+                      addedIngredient.current = id;
+                      setIngredients((rows) => [
+                        ...rows,
+                        { id, name: "", quantity: 1 },
+                      ]);
+                    }}
+                  >
+                    <Plus aria-hidden="true" />
+                    Zutat hinzufügen
+                  </Button>
+                </fieldset>
                 {error && (
                   <p role="alert" className="text-sm text-destructive">
                     {error}

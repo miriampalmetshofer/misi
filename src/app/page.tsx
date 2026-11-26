@@ -11,14 +11,9 @@ const modules = [
     href: "/einkauf",
   },
   {
-    title: "Speiseplan",
-    description: "Essen für die Woche",
+    title: "Kochen",
+    description: "Speiseplan und Rezepte",
     href: "/speiseplan",
-  },
-  {
-    title: "Rezepte",
-    description: "Zutaten für den Speiseplan",
-    href: "/rezepte",
   },
   {
     title: "Auto",
