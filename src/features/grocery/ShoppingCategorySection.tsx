@@ -1,5 +1,8 @@
 "use client";
 
+import { parseProduct } from "./product";
+import { normalizeItemName } from "./categories";
+
 import { useState } from "react";
 import { Pencil, Plus } from "lucide-react";
 import { cn } from "cn";
@@ -47,10 +50,10 @@ export function ShoppingCategorySection({
   const isUncategorized = category.id === UNCATEGORIZED_ID;
 
   const existingItemNames = new Set(
-    category.items.map((item) => normalizeItemName(item.name)),
+    category.items.map((item) => normalizeItemName(parseProduct(item.name).name)),
   );
   const quickAddItems = category.quickAddItems.filter(
-    (itemName) => !existingItemNames.has(normalizeItemName(itemName)),
+    (itemName) => !existingItemNames.has(normalizeItemName(parseProduct(itemName).name)),
   );
 
   // Checked items never reach the client (queries.ts), so this is what is
@@ -187,8 +190,4 @@ export function ShoppingCategorySection({
       )}
     </section>
   );
-}
-
-function normalizeItemName(name: string) {
-  return name.trim().toLocaleLowerCase("de-AT");
 }

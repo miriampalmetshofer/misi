@@ -1,4 +1,5 @@
 import { normalizeItemName } from "./categories";
+import { parseProduct } from "./product";
 import type { GroceryStorePreferences } from "./types";
 
 export const GROCERY_STORES = [
@@ -14,6 +15,6 @@ export function parseGroceryStores(values: unknown[]): GroceryStore[] {
 }
 
 export function storesForItem(preferences: GroceryStorePreferences, name: string): GroceryStore[] {
-  const key = normalizeItemName(name);
+  const key = normalizeItemName(parseProduct(name).name);
   return (Object.hasOwn(preferences, key) && preferences[key]) || [];
 }

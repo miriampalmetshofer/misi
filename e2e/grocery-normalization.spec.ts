@@ -12,7 +12,7 @@ test("SQL and client category-memory keys agree on grocery names and whitespace"
   const db = drizzle(neon(uri));
   for (const name of [
     "Tomate", "  ROTE   Tomaten  ", "\tHafer\nMilch\r\n", "\vEier\f",
-    "ÄPFEL", "Öl", "SÜẞKARTOFFELN", "Crème fraîche", "", "   ",
+    "Mozzarella\u00a0Mini", "\u2003Milch\u202fBio", "ÄPFEL", "Öl", "SÜẞKARTOFFELN", "Crème fraîche", "", "   ",
   ]) {
     const { rows: [row] } = await db.execute<{ normalizedName: string }>(
       sql`select ${normalizeItemNameSql(sql`${name}`)} as "normalizedName"`,

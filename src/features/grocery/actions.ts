@@ -8,16 +8,22 @@ import { getGroceryCategories } from "./queries";
 import { normalizeItemName } from "./categories";
 import { parseGroceryStores } from "./stores";
 import { normalizeItemNameSql } from "./itemNameSql";
+import {
+  formatProduct,
+  MAX_PRODUCT_NAME_LENGTH,
+  parseProduct,
+  validProduct,
+} from "./product";
+import type { ShoppingListItem } from "./types";
 
-const MAX_ITEM_NAME_LENGTH = 80;
 const SHOPPING_LIST_PATH = "/einkauf";
 
 export async function setGroceryStore(formData: FormData) {
-  const name = getString(formData, "name").trim();
+  const { name } = parseProduct(getString(formData, "name"));
   const [store] = parseGroceryStores([getString(formData, "store")]);
   const checked = getString(formData, "checked");
 
-  if (!name || name.length > MAX_ITEM_NAME_LENGTH || !store || !["true", "false"].includes(checked)) {
+  if (!name || name.length > MAX_PRODUCT_NAME_LENGTH || !store || !["true", "false"].includes(checked)) {
     throw new Error("Ungültige Geschäftsauswahl");
   }
 
@@ -43,10 +49,10 @@ export async function setGroceryStore(formData: FormData) {
 }
 
 export async function addGroceryItem(formData: FormData) {
-  const name = getString(formData, "name").trim();
+  const product = parseProduct(getString(formData, "name"));
   const categoryId = getString(formData, "categoryId") || null;
 
-  if (!name || name.length > MAX_ITEM_NAME_LENGTH) {
+  if (!validProduct(product)) {
     return;
   }
 
@@ -60,23 +66,24 @@ export async function addGroceryItem(formData: FormData) {
 
   const insertItem = db
     .insert(schema.groceryItems)
-    .values({ categoryId, name })
+    .values({ categoryId, ...product })
     .returning({
       id: schema.groceryItems.id,
       categoryId: schema.groceryItems.categoryId,
       isChecked: schema.groceryItems.isChecked,
       name: schema.groceryItems.name,
+      quantity: schema.groceryItems.quantity,
     });
 
   if (categoryId && getString(formData, "rememberCategory") !== "false") {
-    const [items] = await db.batch([insertItem, rememberCategory(name, categoryId)]);
+    const [items] = await db.batch([insertItem, rememberCategory(product.name, categoryId)]);
     revalidatePath(SHOPPING_LIST_PATH);
-    return items[0];
+    return presentItem(items[0]);
   }
 
   const [item] = await insertItem;
   revalidatePath(SHOPPING_LIST_PATH);
-  return item;
+  return presentItem(item);
 }
 
 export async function setGroceryItemChecked(formData: FormData) {
@@ -115,9 +122,9 @@ export async function deleteGroceryItem(formData: FormData) {
 
 export async function renameGroceryItem(formData: FormData) {
   const itemId = getString(formData, "itemId");
-  const name = getString(formData, "name").trim();
+  const product = parseProduct(getString(formData, "name"));
 
-  if (!itemId || !name || name.length > MAX_ITEM_NAME_LENGTH) {
+  if (!itemId || !validProduct(product)) {
     return;
   }
 
@@ -125,7 +132,7 @@ export async function renameGroceryItem(formData: FormData) {
 
   await db.batch([
     db.update(schema.groceryItems)
-      .set({ name, updatedAt: new Date() })
+      .set({ ...product, updatedAt: new Date() })
       .where(eq(schema.groceryItems.id, itemId)),
     rememberItemCategory(itemId),
   ]);
@@ -158,6 +165,10 @@ export async function moveGroceryItem(formData: FormData) {
   ]);
 
   revalidatePath(SHOPPING_LIST_PATH);
+}
+
+function presentItem({ quantity, ...item }: ShoppingListItem & { quantity: number }) {
+  return { ...item, name: formatProduct({ name: item.name, quantity }) };
 }
 
 function getString(formData: FormData, key: string) {
@@ -196,7 +207,7 @@ export async function saveGrocerySuggestions(formData: FormData) {
     .map((name) => name.trim())
     .filter(Boolean);
 
-  if (names.length > 30 || names.some((name) => name.length > MAX_ITEM_NAME_LENGTH)) {
+  if (names.length > 30 || names.some((name) => name.length > MAX_PRODUCT_NAME_LENGTH)) {
     return { error: "Bitte höchstens 30 Vorschläge mit je maximal 80 Zeichen eingeben." };
   }
 

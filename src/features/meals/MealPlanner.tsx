@@ -18,6 +18,9 @@ import { cn } from "@/lib/utils";
 import { DragProvider } from "@/features/grocery/drag/DragContext";
 import { MealItem, MealSlot } from "./MealDrag";
 import { saveMeal } from "./actions";
+import { MealShopping } from "./MealShopping";
+import type { RecipeName } from "@/features/recipes/types";
+import { normalizeItemName } from "@/features/grocery/categories";
 import { MealForm } from "./MealForm";
 import {
   mealLabels,
@@ -33,11 +36,14 @@ export function MealPlanner({
   start,
   today,
   entries,
+  recipes = [],
 }: {
   start: string;
   today: string;
   entries: MealEntry[];
+  recipes?: RecipeName[];
 }) {
+  const recipeKeys = new Set(recipes.map(({ dishKey }) => dishKey));
   const [moving, startMove] = useTransition();
   const moveInFlight = useRef(false);
   const [moveError, setMoveError] = useState<string | null>(null);
@@ -141,6 +147,7 @@ export function MealPlanner({
             </Link>
           ) : null}
         </nav>
+        <MealShopping start={start} disabled={moving || editing !== null} />
         <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 7 }, (_, index) => {
             const day = shiftDate(start, index);
@@ -250,6 +257,9 @@ export function MealPlanner({
                               <MealItem
                                 key={entry.id}
                                 entry={entry}
+                                hasRecipe={recipeKeys.has(
+                                  normalizeItemName(entry.name),
+                                )}
                                 disabled={editing !== null || moving}
                                 onEdit={() =>
                                   setEditing({
@@ -289,6 +299,7 @@ export function MealPlanner({
         {editing ? (
           <MealForm
             entry={editing.entry}
+            recipes={recipes}
             plannedOn={editing.plannedOn}
             mealTime={editing.mealTime}
             context={`${dateLabel(editing.plannedOn, "EEEE")} ${mealLabels[editing.mealTime]}`}

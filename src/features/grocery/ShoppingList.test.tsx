@@ -907,16 +907,22 @@ it("saves a store as soon as its checkbox changes", async () => {
 describe("shopping mode", () => {
   it("shows tagged items at their assigned stores and includes unassigned items", async () => {
     const user = userEvent.setup();
-    render(<ShoppingList categories={categories()} storePreferences={{ äpfel: ["spar", "hofer"] }} />);
+    const groceries = categories().map((category) => ({
+      ...category,
+      items: category.items.map((item) =>
+        item.name === "Äpfel" ? { ...item, name: "2× Äpfel" } : item,
+      ),
+    }));
+    render(<ShoppingList categories={groceries} storePreferences={{ äpfel: ["spar", "hofer"] }} />);
 
     await user.click(screen.getByRole("button", { name: "Einkaufsmodus" }));
     await user.click(screen.getByRole("button", { name: "BILLA" }));
-    expect(screen.queryByText("Äpfel")).not.toBeInTheDocument();
+    expect(screen.queryByText("2× Äpfel")).not.toBeInTheDocument();
     expect(screen.getByText("Bananen")).toBeVisible();
 
     for (const store of ["SPAR", "HOFER"]) {
       await user.click(screen.getByRole("button", { name: store }));
-      expect(screen.getByText("Äpfel")).toBeVisible();
+      expect(screen.getByText("2× Äpfel")).toBeVisible();
       expect(screen.getByText("2 Artikel offen")).toBeVisible();
     }
 
@@ -925,7 +931,7 @@ describe("shopping mode", () => {
     expect(billa).toHaveAttribute("aria-pressed", "true");
     await user.click(billa);
     expect(billa).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByText("Äpfel")).toBeVisible();
+    expect(screen.getByText("2× Äpfel")).toBeVisible();
     expect(screen.getByText("Bananen")).toBeVisible();
   });
 

@@ -9,6 +9,7 @@ import {
   renameGroceryItem,
   setGroceryItemChecked,
 } from "./actions";
+import { formatProduct, parseProduct, validProduct } from "./product";
 import type {
   GroceryStorePreferences,
   OptimisticShoppingListCategory,
@@ -107,6 +108,8 @@ export function ShoppingList({
   }
 
   function addItem(name: string, categoryId: string | null, rememberCategory = true) {
+    const product = parseProduct(name);
+    if (!validProduct(product)) return;
     const itemId = `${PENDING_ID_PREFIX}${crypto.randomUUID()}`;
     mutate(
       addGroceryItem,
@@ -115,7 +118,7 @@ export function ShoppingList({
         categoryId: categoryId ?? "",
         ...(rememberCategory ? {} : { rememberCategory: "false" }),
       },
-      { type: "add", itemId, name, categoryId },
+      { type: "add", itemId, name: formatProduct(product), categoryId },
     );
   }
 
@@ -132,12 +135,13 @@ export function ShoppingList({
 
   function renameItem(itemId: string, name: string) {
     const nextName = name.trim();
-    if (!nextName || isClientOnlyId(itemId)) return;
+    const product = parseProduct(nextName);
+    if (!validProduct(product) || isClientOnlyId(itemId)) return;
 
     mutate(
       renameGroceryItem,
       { itemId, name: nextName },
-      { type: "rename", itemId, name: nextName },
+      { type: "rename", itemId, name: formatProduct(product) },
     );
   }
 

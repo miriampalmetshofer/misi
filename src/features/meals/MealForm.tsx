@@ -6,6 +6,9 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { normalizeItemName } from "@/features/grocery/categories";
+import { fitVisualViewport } from "@/lib/fitVisualViewport";
+import type { RecipeName } from "@/features/recipes/types";
 import { saveMeal, deleteMeal } from "./actions";
 import {
   personLabels,
@@ -16,12 +19,14 @@ import {
 
 export function MealForm({
   entry,
+  recipes,
   plannedOn,
   mealTime,
   onClose,
   context,
 }: {
   entry?: MealEntry;
+  recipes: RecipeName[];
   plannedOn: string;
   mealTime: MealTime;
   onClose: () => void;
@@ -31,6 +36,9 @@ export function MealForm({
   const inputRef = useRef<HTMLInputElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const [name, setName] = useState(entry?.name ?? "");
+  const recipe = recipes.find(
+    ({ dishKey }) => dishKey === normalizeItemName(name),
+  );
   const [selected, setSelected] = useState({
     miriam: entry?.person !== "simon",
     simon: entry?.person !== "miriam",
@@ -142,10 +150,24 @@ export function MealForm({
                     required
                     maxLength={200}
                     placeholder="z. B. Pasta oder Essen in der Arbeit"
+                    list={`${id}-recipes`}
+                    aria-describedby={`${id}-recipe-status`}
                     value={name}
                     onChange={(event) => setName(event.target.value)}
                   />
                 </label>
+                <datalist id={`${id}-recipes`}>
+                  {recipes.map(({ dishKey, name }) => (
+                    <option key={dishKey} value={name} />
+                  ))}
+                </datalist>
+                <span
+                  id={`${id}-recipe-status`}
+                  role="status"
+                  className="text-sm font-medium text-foreground empty:sr-only"
+                >
+                  {recipe ? `Rezept erkannt: ${recipe.name}` : ""}
+                </span>
                 <fieldset className="flex flex-wrap items-start gap-2">
                   <legend className="mb-1.5 text-sm font-medium">
                     Für wen?
@@ -236,21 +258,4 @@ export function MealForm({
       </Dialog.Portal>
     </Dialog.Root>
   );
-}
-
-// iOS keyboards shrink the visual viewport without resizing fixed-position layouts.
-function fitVisualViewport(node: HTMLDivElement | null) {
-  const viewport = window.visualViewport;
-  if (!node || !viewport) return;
-  const update = () => {
-    node.style.top = `${viewport.offsetTop}px`;
-    node.style.height = `${viewport.height}px`;
-  };
-  update();
-  viewport.addEventListener("resize", update);
-  viewport.addEventListener("scroll", update);
-  return () => {
-    viewport.removeEventListener("resize", update);
-    viewport.removeEventListener("scroll", update);
-  };
 }

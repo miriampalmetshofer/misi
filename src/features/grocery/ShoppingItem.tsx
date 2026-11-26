@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import type { OptimisticShoppingListItem } from "./types";
+import { MAX_PRODUCT_INPUT_LENGTH } from "./product";
 import { UNCATEGORIZED_ID } from "./categories";
 import { GroceryStorePicker } from "./GroceryStorePicker";
 import type { GroceryStore } from "./stores";
@@ -123,7 +124,7 @@ export function ShoppingItem({
         <Input
           aria-label={`${item.name || "Artikel"} bearbeiten`}
           className="h-auto rounded-none border-0 bg-transparent p-0 leading-snug focus-visible:ring-0"
-          maxLength={80}
+          maxLength={MAX_PRODUCT_INPUT_LENGTH}
           ref={inputRef}
           value={draft}
           onBlur={save}
