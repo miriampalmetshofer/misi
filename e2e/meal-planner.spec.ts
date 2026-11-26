@@ -265,6 +265,7 @@ test("a dragged meal keeps its new day and meal after reload", async ({
 test("saved dish products are reused and reviewed before they reach the grocery list", async ({ page }) => {
   const suffix = Date.now();
   const recipeName = `İmam ${suffix}`;
+  const secondRecipe = `Pasta ${suffix}`;
   const mozzarella = `Mozzarella Mini ${suffix}`;
   const pastedMozzarella = `Mozzarella\u00a0Mini ${suffix}`;
   const sauce = `Tomatensauce ${suffix}`;
@@ -286,6 +287,11 @@ test("saved dish products are reused and reviewed before they reach the grocery 
   await expect(editor).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole("button", { name: `${recipeName} bearbeiten` })).toBeVisible();
+  await page.getByRole("button", { name: "Rezept hinzufügen" }).click();
+  await editor.getByLabel("Rezeptname").fill(secondRecipe);
+  await editor.getByLabel("Produkt 1", { exact: true }).fill(mozzarella);
+  await editor.getByRole("button", { name: "Speichern", exact: true }).click();
+  await expect(editor).toHaveCount(0);
 
   await page.getByRole("link", { name: "Speiseplan", exact: true }).click();
   await expect(page).toHaveURL(week);
@@ -294,21 +300,28 @@ test("saved dish products are reused and reviewed before they reach the grocery 
   const form = page.getByRole("dialog");
   const mealName = form.getByLabel("Gericht oder Essen");
   const save = form.getByRole("button", { name: "Speichern", exact: true });
-  const addMeal = dinner.getByRole("button", { name: /Abendessen eintragen|Eintrag hinzufügen/ });
+  const tuesday = page.getByRole("region", { name: "Dienstag, 12. Oktober" });
+  const tuesdayDinner = tuesday.getByRole("region", { name: "Abend", exact: true });
 
-  for (const name of [`  İMAM   ${suffix}`, recipeName, `Essen in der Arbeit ${suffix}`]) {
-    await addMeal.click();
+  for (const [name, slot, expectedRecipe] of [
+    [`  İMAM   ${suffix}`, dinner, recipeName],
+    [recipeName, tuesdayDinner, recipeName],
+    [secondRecipe, tuesdayDinner, secondRecipe],
+    [`Essen in der Arbeit ${suffix}`, dinner, null],
+  ] as const) {
+    await slot.getByRole("button", { name: /Abendessen eintragen|Eintrag hinzufügen/ }).click();
     await mealName.fill(name);
-    if (name.startsWith("Essen")) {
-      await expect(form.getByRole("status")).toBeEmpty();
+    if (expectedRecipe) {
+      await expect(form.getByRole("status")).toHaveText(`Rezept erkannt: ${expectedRecipe}`);
     } else {
-      await expect(form.getByRole("status")).toHaveText(`Rezept erkannt: ${recipeName}`);
+      await expect(form.getByRole("status")).toBeEmpty();
     }
     await save.click();
     await expect(form).toHaveCount(0);
   }
   await page.reload();
-  await expect(dinner.getByText("Rezept", { exact: true })).toHaveCount(2);
+  await expect(dinner.getByText("Rezept", { exact: true })).toHaveCount(1);
+  await expect(tuesdayDinner.getByText("Rezept", { exact: true })).toHaveCount(2);
   await expect(dinner.getByRole("button", { name: `Essen in der Arbeit ${suffix} bearbeiten` })).toBeVisible();
 
   await page.goto("/speiseplan/rezepte");
@@ -324,16 +337,26 @@ test("saved dish products are reused and reviewed before they reach the grocery 
   await editor.getByRole("button", { name: "Speichern", exact: true }).click();
   await expect(editor).toHaveCount(0);
   await page.goto(week);
-  await expect(dinner.getByRole("button", { name: `${recipeName} neu bearbeiten` })).toHaveCount(2);
-  await expect(dinner.getByText("Rezept", { exact: true })).toHaveCount(2);
+  for (const slot of [dinner, tuesdayDinner]) {
+    await expect(slot.getByRole("button", { name: `${recipeName} neu bearbeiten` })).toBeVisible();
+  }
 
   const prepare = page.getByRole("button", { name: "Einkauf vorbereiten" });
   const review = page.getByRole("dialog", { name: "Einkauf vorbereiten" });
   const apply = review.getByRole("button", { name: "Auswahl übernehmen" });
   await prepare.click();
-  await expect(review.getByLabel(`Stückzahl für ${mozzarella}`)).toHaveValue("4");
-  await review.getByRole("checkbox", { name: sauce }).uncheck();
-  await review.getByLabel(`Stückzahl für ${mozzarella}`).fill("3");
+  await expect(review.getByLabel(`Stückzahl für ${mozzarella}`)).toHaveValue("3");
+  await expect(review.getByLabel(`Stückzahl für ${sauce}`)).toHaveValue("1");
+  const sauceName = review.getByText(sauce, { exact: true });
+  const sauceCheckbox = review.getByRole("checkbox", { name: sauce });
+  await sauceName.click();
+  await expect(sauceCheckbox).not.toBeChecked();
+  await expect(sauceName).toHaveCSS("text-decoration-line", "line-through");
+  await sauceName.click();
+  await expect(sauceCheckbox).toBeChecked();
+  await expect(sauceName).toHaveCSS("text-decoration-line", "none");
+  await sauceCheckbox.uncheck();
+  await review.getByLabel(`Stückzahl für ${mozzarella}`).fill("4");
   const other = await page.context().newPage();
   await other.goto(week);
   await other.getByRole("button", { name: "Einkauf vorbereiten" }).click();
@@ -347,13 +370,13 @@ test("saved dish products are reused and reviewed before they reach the grocery 
   await review.getByRole("link", { name: "Zur Einkaufsliste" }).click();
   await expect(page).toHaveURL(/\/einkauf$/);
   await page.reload();
-  await expect(page.getByRole("button", { name: `3× ${mozzarella}`, exact: true })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: `4× ${mozzarella}`, exact: true })).toHaveCount(1);
   await expect(page.getByRole("button", { name: new RegExp(sauce) })).toHaveCount(0);
 
-  const grocery = page.getByRole("button", { name: `3× ${mozzarella}`, exact: true });
+  const grocery = page.getByRole("button", { name: `4× ${mozzarella}`, exact: true });
   await grocery.click();
   const groceryName = page.getByRole("textbox", { name: /Mozzarella Mini.*bearbeiten/ });
-  await groceryName.fill(`3x ${pastedMozzarella}`);
+  await groceryName.fill(`4x ${pastedMozzarella}`);
   await Promise.all([
     page.waitForResponse((response) =>
       response.request().method() === "POST" && new URL(response.url()).pathname === "/einkauf",
@@ -364,7 +387,7 @@ test("saved dish products are reused and reviewed before they reach the grocery 
   await page.goto(week);
   await prepare.click();
   const existing = review.getByRole("listitem").filter({ hasText: mozzarella });
-  await expect(existing).toContainText("3 auf der Liste · 4 für den Speiseplan");
+  await expect(existing).toContainText("4 auf der Liste · 3 für den Speiseplan");
   await expect(existing.getByRole("checkbox")).not.toBeChecked();
   await review.getByRole("checkbox", { name: sauce }).uncheck();
   await expect(apply).toBeDisabled();
@@ -374,6 +397,6 @@ test("saved dish products are reused and reviewed before they reach the grocery 
   await review.getByRole("link", { name: "Zur Einkaufsliste" }).click();
   await expect(page).toHaveURL(/\/einkauf$/);
   await page.reload();
-  await expect(page.getByRole("button", { name: `4× ${pastedMozzarella}`, exact: true })).toHaveCount(1);
-  await expect(page.getByRole("button", { name: `3× ${pastedMozzarella}`, exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: `3× ${pastedMozzarella}`, exact: true })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: `4× ${pastedMozzarella}`, exact: true })).toHaveCount(0);
 });

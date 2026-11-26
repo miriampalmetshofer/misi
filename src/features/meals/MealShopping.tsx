@@ -13,6 +13,7 @@ import {
   validQuantity,
 } from "@/features/grocery/product";
 import { fitVisualViewport } from "@/lib/fitVisualViewport";
+import { cn } from "@/lib/utils";
 import { applyMealShopping, prepareMealShopping } from "./shoppingActions";
 import type { ShoppingReviewRow } from "./products";
 
@@ -99,8 +100,7 @@ export function MealShopping({
               Einkauf vorbereiten
             </Dialog.Title>
             <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-              Produkte für die angezeigte Woche. Wähle aus, was du übernehmen
-              möchtest.
+              Jedes Rezept der Woche zählt einmal. Streiche, was du schon hast.
             </Dialog.Description>
             {pending && rows === null && (
               <p role="status" className="mt-4 text-sm">
@@ -158,6 +158,7 @@ export function MealShopping({
                       className="grid grid-cols-[auto_minmax(0,1fr)_5rem] items-center gap-2 py-2"
                     >
                       <Checkbox
+                        id={`${id}-include-${index}`}
                         aria-labelledby={`${id}-name-${index}`}
                         className="size-5 border-muted-foreground"
                         checked={row.selected}
@@ -169,8 +170,12 @@ export function MealShopping({
                       <div>
                         <label
                           id={`${id}-name-${index}`}
-                          htmlFor={`${id}-amount-${index}`}
-                          className="block break-words text-sm font-medium"
+                          htmlFor={`${id}-include-${index}`}
+                          className={cn(
+                            "block break-words text-sm font-medium",
+                            pending || stale ? "cursor-default" : "cursor-pointer",
+                            !row.selected && "text-muted-foreground line-through",
+                          )}
                         >
                           {row.name}
                         </label>
@@ -182,7 +187,6 @@ export function MealShopping({
                         )}
                       </div>
                       <Input
-                        id={`${id}-amount-${index}`}
                         aria-label={`Stückzahl für ${row.name}`}
                         type="number"
                         inputMode="numeric"

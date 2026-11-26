@@ -20,14 +20,17 @@ export async function prepareMealShopping(
     id: string | null;
     current_quantity: number | null;
   }>(sql`
-    with planned as (
+    with week_recipes as (
+      select distinct ${normalizeRecipeNameSql(mealEntries.name)} as dish_key
+      from ${mealEntries}
+      where ${mealEntries.plannedOn} >= ${start} and ${mealEntries.plannedOn} < ${shiftDate(start, 7)}
+    ), planned as (
       select min(product.name) as name, sum(product.quantity) as quantity,
         ${normalizeItemNameSql(sql`product.name`)} as product_key
-      from ${mealEntries}
-      join ${recipes} on ${recipes.dishKey} = ${normalizeRecipeNameSql(mealEntries.name)}
+      from week_recipes
+      join ${recipes} on ${recipes.dishKey} = week_recipes.dish_key
       cross join lateral jsonb_to_recordset(${recipes.products})
         as product(name text, quantity integer)
-      where ${mealEntries.plannedOn} >= ${start} and ${mealEntries.plannedOn} < ${shiftDate(start, 7)}
       group by product_key
     )
     select planned.name, planned.quantity, current_item.id,
