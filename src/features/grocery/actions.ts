@@ -14,6 +14,7 @@ import {
   parseProduct,
   validProduct,
 } from "./product";
+import { parseShoppingList } from "./lists";
 import type { ShoppingListItem } from "./types";
 
 const SHOPPING_LIST_PATH = "/einkauf";
@@ -50,23 +51,22 @@ export async function setGroceryStore(formData: FormData) {
 
 export async function addGroceryItem(formData: FormData) {
   const product = parseProduct(getString(formData, "name"));
-  const categoryId = getString(formData, "categoryId") || null;
+  const listId = parseShoppingList(formData.get("listId"));
+  const categoryId = listId === "groceries" ? getString(formData, "categoryId") || null : null;
 
   if (!validProduct(product)) {
     return;
   }
 
   const db = getDb();
-  const categories = await getGroceryCategories();
-
-  if (categoryId && !categories.some((category) => category.id === categoryId)) {
+  if (categoryId && !(await getGroceryCategories()).some((category) => category.id === categoryId)) {
     console.error(`addGroceryItem: category ${categoryId} not found`);
     return;
   }
 
   const insertItem = db
     .insert(schema.groceryItems)
-    .values({ categoryId, ...product })
+    .values({ listId, categoryId, ...product })
     .returning({
       id: schema.groceryItems.id,
       categoryId: schema.groceryItems.categoryId,
@@ -160,7 +160,7 @@ export async function moveGroceryItem(formData: FormData) {
   await db.batch([
     db.update(schema.groceryItems)
       .set({ categoryId, updatedAt: new Date() })
-      .where(eq(schema.groceryItems.id, itemId)),
+      .where(and(eq(schema.groceryItems.id, itemId), eq(schema.groceryItems.listId, "groceries"))),
     rememberItemCategory(itemId),
   ]);
 

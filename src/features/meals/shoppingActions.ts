@@ -53,7 +53,7 @@ export async function prepareMealShopping(
 function matchOpenItem(key: SQL) {
   return sql`left join lateral (
     select id, quantity from ${schema.groceryItems}
-    where not is_checked and ${normalizeItemNameSql(sql`name`)} = ${key}
+    where list_id = 'groceries' and not is_checked and ${normalizeItemNameSql(sql`name`)} = ${key}
     order by created_at, id limit 1
   ) as current_item on true`;
 }

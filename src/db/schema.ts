@@ -42,6 +42,7 @@ export const groceryItems = pgTable(
     categoryId: uuid("category_id").references(() => groceryCategories.id, {
       onDelete: "set null",
     }),
+    listId: text("list_id", { enum: ["groceries", "dm", "obi"] }).notNull().default("groceries"),
     name: varchar("name").notNull(),
     quantity: integer("quantity").notNull().default(1),
     isChecked: boolean("is_checked").notNull().default(false),
@@ -53,6 +54,7 @@ export const groceryItems = pgTable(
       .defaultNow(),
   },
   (table) => [
+    check("grocery_item_list_valid", sql`${table.listId} = 'groceries' or (${table.listId} in ('dm', 'obi') and ${table.categoryId} is null)`),
     index("grocery_item_category_idx").on(table.categoryId),
     index("grocery_item_checked_idx").on(table.isChecked),
     check("grocery_item_quantity_valid", sql`${table.quantity} between 1 and 999999999`),

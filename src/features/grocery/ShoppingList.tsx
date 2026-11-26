@@ -17,6 +17,7 @@ import type {
   ShoppingListCategory,
   ShoppingListItem,
 } from "./types";
+import type { ShoppingListId } from "./lists";
 import { ShoppingListView } from "./ShoppingListView";
 import { useOptimisticMutation } from "@/lib/useOptimisticMutation";
 import { useUndo } from "./useUndo";
@@ -24,6 +25,7 @@ import { categorySectionId, UNCATEGORIZED_ID } from "./categories";
 
 type ShoppingListProps = {
   categories: ShoppingListCategory[];
+  listId?: ShoppingListId;
   categoryPreferences?: Record<string, string>;
   storePreferences?: GroceryStorePreferences;
 };
@@ -50,6 +52,7 @@ type OptimisticAction =
 
 export function ShoppingList({
   categories: persistedCategories,
+  listId = "groceries",
   categoryPreferences = {},
   storePreferences = {},
 }: ShoppingListProps) {
@@ -115,6 +118,7 @@ export function ShoppingList({
       addGroceryItem,
       {
         name,
+        ...(listId === "groceries" ? {} : { listId }),
         categoryId: categoryId ?? "",
         ...(rememberCategory ? {} : { rememberCategory: "false" }),
       },
@@ -200,6 +204,7 @@ export function ShoppingList({
 
   return (
     <ShoppingListView
+      listId={listId}
       categories={withDrafts(categories, drafts)}
       categoryPreferences={categoryPreferences}
       storePreferences={storePreferences}
