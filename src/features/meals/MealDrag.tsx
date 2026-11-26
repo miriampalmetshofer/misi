@@ -35,10 +35,12 @@ export function MealSlot({
 
 export function MealItem({
   entry,
+  hasRecipe,
   disabled,
   onEdit,
 }: {
   entry: MealEntry;
+  hasRecipe: boolean;
   disabled: boolean;
   onEdit: () => void;
 }) {
@@ -61,12 +63,22 @@ export function MealItem({
         type="button"
         aria-label={`${entry.name} bearbeiten`}
         aria-haspopup="dialog"
-        aria-describedby={`meal-person-${entry.id}`}
+        aria-describedby={`meal-person-${entry.id}${hasRecipe ? ` meal-recipe-${entry.id}` : ""}`}
         disabled={disabled}
         onClick={onEdit}
         className="flex min-h-10 w-full items-center justify-between gap-3 rounded-lg px-2 py-1 text-left hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-default"
       >
-        <span className="min-w-0 break-words text-base">{entry.name}</span>
+        <span className="min-w-0">
+          <span className="block break-words text-base">{entry.name}</span>
+          {hasRecipe && (
+            <span
+              id={`meal-recipe-${entry.id}`}
+              className="block text-xs font-medium text-muted-foreground"
+            >
+              Rezept
+            </span>
+          )}
+        </span>
         <span
           id={`meal-person-${entry.id}`}
           className={cn(

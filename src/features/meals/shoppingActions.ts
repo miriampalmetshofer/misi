@@ -3,26 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { sql, type SQL } from "drizzle-orm";
 import { getDb, schema } from "@/db";
-import { normalizeItemName } from "@/features/grocery/categories";
 import { normalizeItemNameSql } from "@/features/grocery/itemNameSql";
 import { validProduct } from "@/features/grocery/product";
-import { productsForDish, type ShoppingReviewRow } from "./products";
-import { getDishProducts, getWeekMeals } from "./queries";
-import { isMealDate } from "./types";
+import { normalizeRecipeNameSql } from "@/features/recipes/nameSql";
+import type { ShoppingReviewRow } from "./products";
+import { isMealDate, shiftDate } from "./types";
 
 export async function prepareMealShopping(
   start: string,
 ): Promise<ShoppingReviewRow[]> {
   if (!isMealDate(start)) throw new Error("Ungültige Woche.");
-  const [entries, dishes] = await Promise.all([
-    getWeekMeals(start),
-    getDishProducts(),
-  ]);
-  const products = entries.flatMap((entry) =>
-    productsForDish(dishes, normalizeItemName(entry.name)),
-  );
-  if (!products.length) return [];
-
+  const { mealEntries, recipes } = schema;
   const result = await getDb().execute<{
     name: string;
     quantity: string;
@@ -30,10 +21,13 @@ export async function prepareMealShopping(
     current_quantity: number | null;
   }>(sql`
     with planned as (
-      select min(name) as name, sum(quantity) as quantity,
-        ${normalizeItemNameSql(sql`name`)} as product_key
-      from jsonb_to_recordset(${JSON.stringify(products)}::jsonb)
+      select min(product.name) as name, sum(product.quantity) as quantity,
+        ${normalizeItemNameSql(sql`product.name`)} as product_key
+      from ${mealEntries}
+      join ${recipes} on ${recipes.dishKey} = ${normalizeRecipeNameSql(mealEntries.name)}
+      cross join lateral jsonb_to_recordset(${recipes.products})
         as product(name text, quantity integer)
+      where ${mealEntries.plannedOn} >= ${start} and ${mealEntries.plannedOn} < ${shiftDate(start, 7)}
       group by product_key
     )
     select planned.name, planned.quantity, current_item.id,

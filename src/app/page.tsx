@@ -16,6 +16,11 @@ const modules = [
     href: "/speiseplan",
   },
   {
+    title: "Rezepte",
+    description: "Zutaten für den Speiseplan",
+    href: "/rezepte",
+  },
+  {
     title: "Auto",
     description: "Tanken und Reparaturen",
     href: "/auto",

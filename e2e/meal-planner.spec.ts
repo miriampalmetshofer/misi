@@ -264,34 +264,56 @@ test("a dragged meal keeps its new day and meal after reload", async ({
 
 test("saved dish products are reused and reviewed before they reach the grocery list", async ({ page }) => {
   const suffix = Date.now();
-  const pizza = `Pizza ${suffix}`;
+  const recipeName = `İmam ${suffix}`;
   const mozzarella = `Mozzarella Mini ${suffix}`;
   const pastedMozzarella = `Mozzarella\u00a0Mini ${suffix}`;
   const sauce = `Tomatensauce ${suffix}`;
   const week = "/speiseplan?woche=2038-10-11";
   await page.goto(week);
+  await page.getByRole("link", { name: "Rezepte", exact: true }).click();
+  await expect(page).toHaveURL(/\/rezepte$/);
+  await page.getByRole("button", { name: "Rezept hinzufügen" }).click();
+  const editor = page.getByRole("dialog");
+  await editor.getByLabel("Rezeptname").fill(recipeName);
+  await editor.getByLabel("Zutaten", { exact: true }).fill(`${mozzarella}\n${sauce}`);
+  await editor.getByRole("button", { name: "Speichern", exact: true }).click();
+  await expect(editor).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("button", { name: `${recipeName} bearbeiten` })).toBeVisible();
+
+  await page.goto(week);
   const monday = page.getByRole("region", { name: "Montag, 11. Oktober" });
   const dinner = monday.getByRole("region", { name: "Abend", exact: true });
-  const products = page.getByRole("textbox", { name: /Produkte für den Einkauf/ });
-  const save = page.getByRole("button", { name: "Speichern", exact: true });
+  const form = page.getByRole("dialog");
+  const mealName = form.getByLabel("Gericht oder Essen");
+  const save = form.getByRole("button", { name: "Speichern", exact: true });
+  const addMeal = dinner.getByRole("button", { name: /Abendessen eintragen|Eintrag hinzufügen/ });
 
-  await dinner.getByRole("button", { name: /Abendessen eintragen|Eintrag hinzufügen/ }).click();
-  await page.getByLabel("Gericht oder Essen").fill(`Piza ${suffix}`);
-  await page.locator("summary").filter({ hasText: "Produkte für den Einkauf" }).click();
-  await products.fill(`2x ${pastedMozzarella}\n${sauce}`);
-  await page.getByLabel("Gericht oder Essen").fill(pizza);
-  await expect(products).toHaveValue(`2x ${pastedMozzarella}\n${sauce}`);
-  await save.click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-
+  for (const name of [`  İMAM   ${suffix}`, recipeName, `Essen in der Arbeit ${suffix}`]) {
+    await addMeal.click();
+    await mealName.fill(name);
+    if (name.startsWith("Essen")) {
+      await expect(form.getByRole("status")).toBeEmpty();
+    } else {
+      await expect(form.getByRole("status")).toHaveText(`Rezept erkannt: ${recipeName}`);
+    }
+    await save.click();
+    await expect(form).toHaveCount(0);
+  }
   await page.reload();
-  await dinner.getByRole("button", { name: "Eintrag hinzufügen" }).click();
-  await page.getByLabel("Gericht oder Essen").fill(pizza);
-  await page.locator("summary").filter({ hasText: "Produkte für den Einkauf" }).click();
-  await expect(products).toHaveValue(`2× ${pastedMozzarella}\n${sauce}`);
-  await products.fill(`2x ${mozzarella}\n${sauce}`);
-  await save.click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(dinner.getByText("Rezept", { exact: true })).toHaveCount(2);
+  await expect(dinner.getByRole("button", { name: `Essen in der Arbeit ${suffix} bearbeiten` })).toBeVisible();
+
+  await page.goto("/rezepte");
+  await page.getByRole("button", { name: `${recipeName} bearbeiten` }).click();
+  await expect(editor.getByLabel("Zutaten", { exact: true })).toHaveValue(`${mozzarella}\n${sauce}`);
+  await editor.getByLabel("Rezeptname").fill(`${recipeName} neu`);
+  await editor.getByLabel("Zutaten", { exact: true }).fill(`2x ${mozzarella}\n${sauce}`);
+  await editor.getByRole("button", { name: "Speichern", exact: true }).click();
+  await expect(editor).toHaveCount(0);
+  await page.goto(week);
+  await expect(dinner.getByRole("button", { name: `${recipeName} neu bearbeiten` })).toHaveCount(2);
+  await expect(dinner.getByText("Rezept", { exact: true })).toHaveCount(2);
 
   const prepare = page.getByRole("button", { name: "Einkauf vorbereiten" });
   const review = page.getByRole("dialog", { name: "Einkauf vorbereiten" });

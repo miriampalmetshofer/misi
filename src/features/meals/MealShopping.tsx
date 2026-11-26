@@ -12,7 +12,7 @@ import {
   MAX_PRODUCT_QUANTITY,
   validQuantity,
 } from "@/features/grocery/product";
-import { fitVisualViewport } from "./fitVisualViewport";
+import { fitVisualViewport } from "@/lib/fitVisualViewport";
 import { applyMealShopping, prepareMealShopping } from "./shoppingActions";
 import type { ShoppingReviewRow } from "./products";
 

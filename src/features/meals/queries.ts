@@ -3,7 +3,6 @@ import "server-only";
 import { and, asc, gte, lt } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { shiftDate, type MealEntry } from "./types";
-import type { DishProducts } from "./products";
 
 export async function getWeekMeals(start: string): Promise<MealEntry[]> {
   const { mealEntries: table } = schema;
@@ -24,9 +23,4 @@ export async function getWeekMeals(start: string): Promise<MealEntry[]> {
       ),
     )
     .orderBy(asc(table.createdAt), asc(table.id));
-}
-
-export async function getDishProducts(): Promise<DishProducts> {
-  const lists = await getDb().select().from(schema.mealProducts);
-  return Object.fromEntries(lists.map(({ dishKey, products }) => [dishKey, products]));
 }

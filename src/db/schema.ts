@@ -182,8 +182,10 @@ export const carExpenses = pgTable(
 
 export type CarExpense = typeof carExpenses.$inferSelect;
 
-export const mealProducts = pgTable("meal_product_list", {
+export const recipes = pgTable("meal_product_list", {
   dishKey: text("dish_key").primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  version: integer("version").notNull().default(1),
   products: jsonb("products").$type<Product[]>().notNull(),
 });
 

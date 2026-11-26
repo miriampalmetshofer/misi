@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 import { MealPlanner } from "@/features/meals/MealPlanner";
-import { getDishProducts, getWeekMeals } from "@/features/meals/queries";
+import { getWeekMeals } from "@/features/meals/queries";
+import { getRecipeNames } from "@/features/recipes/queries";
 import { householdToday, isMealDate, weekStart } from "@/features/meals/types";
 
 export const dynamic = "force-dynamic";
@@ -18,9 +19,9 @@ export default async function MealPlanPage({
   const start = weekStart(
     typeof woche === "string" && isMealDate(woche) ? woche : today,
   );
-  const [entries, dishes] = await Promise.all([
+  const [entries, recipes] = await Promise.all([
     getWeekMeals(start),
-    getDishProducts(),
+    getRecipeNames(),
   ]);
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-5 pb-16 pt-6 sm:px-8 sm:pt-10">
@@ -34,7 +35,7 @@ export default async function MealPlanPage({
         start={start}
         today={today}
         entries={entries}
-        dishes={dishes}
+        recipes={recipes}
       />
     </main>
   );

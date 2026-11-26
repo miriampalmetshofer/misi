@@ -19,11 +19,11 @@ import type { ShoppingListItem } from "./types";
 const SHOPPING_LIST_PATH = "/einkauf";
 
 export async function setGroceryStore(formData: FormData) {
-  const name = getString(formData, "name").trim();
+  const { name } = parseProduct(getString(formData, "name"));
   const [store] = parseGroceryStores([getString(formData, "store")]);
   const checked = getString(formData, "checked");
 
-  if (!name || name.length > MAX_ITEM_NAME_LENGTH || !store || !["true", "false"].includes(checked)) {
+  if (!name || name.length > MAX_PRODUCT_NAME_LENGTH || !store || !["true", "false"].includes(checked)) {
     throw new Error("Ungültige Geschäftsauswahl");
   }
 

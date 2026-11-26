@@ -19,7 +19,8 @@ import { DragProvider } from "@/features/grocery/drag/DragContext";
 import { MealItem, MealSlot } from "./MealDrag";
 import { saveMeal } from "./actions";
 import { MealShopping } from "./MealShopping";
-import type { DishProducts } from "./products";
+import type { RecipeName } from "@/features/recipes/types";
+import { normalizeItemName } from "@/features/grocery/categories";
 import { MealForm } from "./MealForm";
 import {
   mealLabels,
@@ -35,13 +36,14 @@ export function MealPlanner({
   start,
   today,
   entries,
-  dishes = {},
+  recipes = [],
 }: {
   start: string;
   today: string;
   entries: MealEntry[];
-  dishes?: DishProducts;
+  recipes?: RecipeName[];
 }) {
+  const recipeKeys = new Set(recipes.map(({ dishKey }) => dishKey));
   const [moving, startMove] = useTransition();
   const moveInFlight = useRef(false);
   const [moveError, setMoveError] = useState<string | null>(null);
@@ -145,7 +147,17 @@ export function MealPlanner({
             </Link>
           ) : null}
         </nav>
-        <MealShopping start={start} disabled={moving || editing !== null} />
+        <div className="flex flex-wrap gap-2">
+          <MealShopping start={start} disabled={moving || editing !== null} />
+          <Button
+            role="link"
+            nativeButton={false}
+            render={<Link href="/rezepte" />}
+            variant="outline"
+          >
+            Rezepte
+          </Button>
+        </div>
         <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 7 }, (_, index) => {
             const day = shiftDate(start, index);
@@ -255,6 +267,9 @@ export function MealPlanner({
                               <MealItem
                                 key={entry.id}
                                 entry={entry}
+                                hasRecipe={recipeKeys.has(
+                                  normalizeItemName(entry.name),
+                                )}
                                 disabled={editing !== null || moving}
                                 onEdit={() =>
                                   setEditing({
@@ -294,7 +309,7 @@ export function MealPlanner({
         {editing ? (
           <MealForm
             entry={editing.entry}
-            dishes={dishes}
+            recipes={recipes}
             plannedOn={editing.plannedOn}
             mealTime={editing.mealTime}
             context={`${dateLabel(editing.plannedOn, "EEEE")} ${mealLabels[editing.mealTime]}`}
