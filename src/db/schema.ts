@@ -61,6 +61,11 @@ export const groceryCategoryPreferences = pgTable("grocery_category_preference",
   }),
 });
 
+export const groceryStorePreferences = pgTable("grocery_store_preference", {
+  normalizedName: text("normalized_name").primaryKey(),
+  stores: text("stores").array().notNull(),
+});
+
 export const groceryCategoriesRelations = relations(
   groceryCategories,
   ({ many }) => ({

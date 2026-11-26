@@ -36,6 +36,7 @@ const actions = vi.hoisted(() => {
     moveGroceryItem: action("move"),
     renameGroceryItem: action("rename"),
     setGroceryItemChecked: action("check"),
+    setGroceryStore: action("stores"),
   };
 });
 
@@ -45,6 +46,7 @@ vi.mock("./actions", () => ({
   moveGroceryItem: actions.moveGroceryItem,
   renameGroceryItem: actions.renameGroceryItem,
   setGroceryItemChecked: actions.setGroceryItemChecked,
+  setGroceryStore: actions.setGroceryStore,
 }));
 
 import { ShoppingList } from "./ShoppingList";
@@ -840,7 +842,7 @@ describe("taking a check-off back", () => {
 
     const names = await waitFor(() => {
       const rows = within(section("Obst")).getAllByRole("button", {
-        name: /Äpfel|Bananen/,
+        name: /^(Äpfel|Bananen)$/,
       });
       expect(rows).toHaveLength(2);
       return rows.map((row) => row.textContent);
@@ -883,7 +885,50 @@ describe("taking a check-off back", () => {
   // the transition would wait on a clock the test has frozen.
 });
 
+it("saves a store as soon as its checkbox changes", async () => {
+  const { user } = renderList();
+  await user.click(screen.getByRole("button", { name: "Geschäfte für Äpfel bearbeiten" }));
+
+  const spar = screen.getByRole("checkbox", { name: "SPAR" });
+  await user.click(spar);
+
+  expect(spar).toBeChecked();
+  expect(spar).toHaveAttribute("aria-disabled", "true");
+  expect(screen.queryByText("Wird gespeichert …")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("checkbox", { name: "HOFER" }));
+  expect(screen.getByRole("checkbox", { name: "HOFER" })).not.toBeChecked();
+  expect(actions.setGroceryStore).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("dialog")).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Speichern" })).not.toBeInTheDocument();
+  const data = fieldsOf(actions.setGroceryStore);
+  expect(data).toEqual({ name: "Äpfel", store: "spar", checked: "true" });
+});
+
 describe("shopping mode", () => {
+  it("shows tagged items at their assigned stores and includes unassigned items", async () => {
+    const user = userEvent.setup();
+    render(<ShoppingList categories={categories()} storePreferences={{ äpfel: ["spar", "hofer"] }} />);
+
+    await user.click(screen.getByRole("button", { name: "Einkaufsmodus" }));
+    await user.click(screen.getByRole("button", { name: "BILLA" }));
+    expect(screen.queryByText("Äpfel")).not.toBeInTheDocument();
+    expect(screen.getByText("Bananen")).toBeVisible();
+
+    for (const store of ["SPAR", "HOFER"]) {
+      await user.click(screen.getByRole("button", { name: store }));
+      expect(screen.getByText("Äpfel")).toBeVisible();
+      expect(screen.getByText("2 Artikel offen")).toBeVisible();
+    }
+
+    const billa = screen.getByRole("button", { name: "BILLA" });
+    await user.click(billa);
+    expect(billa).toHaveAttribute("aria-pressed", "true");
+    await user.click(billa);
+    expect(billa).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("Äpfel")).toBeVisible();
+    expect(screen.getByText("Bananen")).toBeVisible();
+  });
+
   it("hides planning controls and empty categories, checks off items and keeps undo across toggles", async () => {
     const { user } = renderList();
     const toggle = screen.getByRole("button", { name: "Einkaufsmodus" });

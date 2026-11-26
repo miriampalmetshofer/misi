@@ -5,10 +5,42 @@ import { and, eq, isNotNull, sql } from "drizzle-orm";
 
 import { getDb, schema } from "@/db";
 import { getGroceryCategories } from "./queries";
+import { normalizeItemName } from "./categories";
+import { parseGroceryStores } from "./stores";
 import { normalizeItemNameSql } from "./itemNameSql";
 
 const MAX_ITEM_NAME_LENGTH = 80;
 const SHOPPING_LIST_PATH = "/einkauf";
+
+export async function setGroceryStore(formData: FormData) {
+  const name = getString(formData, "name").trim();
+  const [store] = parseGroceryStores([getString(formData, "store")]);
+  const checked = getString(formData, "checked");
+
+  if (!name || name.length > MAX_ITEM_NAME_LENGTH || !store || !["true", "false"].includes(checked)) {
+    throw new Error("Ungültige Geschäftsauswahl");
+  }
+
+  const normalizedName = normalizeItemName(name);
+  const db = getDb();
+  const preferences = schema.groceryStorePreferences;
+
+  if (checked === "true") {
+    await db.insert(preferences)
+      .values({ normalizedName, stores: [store] })
+      .onConflictDoUpdate({
+        target: preferences.normalizedName,
+        set: { stores: sql`array_append(${preferences.stores}, ${store})` },
+        setWhere: sql`not (${store} = any(${preferences.stores}))`,
+      });
+  } else {
+    await db.update(preferences)
+      .set({ stores: sql`array_remove(${preferences.stores}, ${store})` })
+      .where(eq(preferences.normalizedName, normalizedName));
+  }
+
+  revalidatePath(SHOPPING_LIST_PATH);
+}
 
 export async function addGroceryItem(formData: FormData) {
   const name = getString(formData, "name").trim();

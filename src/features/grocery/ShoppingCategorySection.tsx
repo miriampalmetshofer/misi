@@ -13,13 +13,15 @@ import {
   itemCategoryId,
   UNCATEGORIZED_ID,
 } from "./categories";
-import type { OptimisticShoppingListCategory } from "./types";
+import type { GroceryStorePreferences, OptimisticShoppingListCategory } from "./types";
 import { GrocerySuggestionsEditor } from "./GrocerySuggestionsEditor";
+import { storesForItem } from "./stores";
 import { ShoppingItem } from "./ShoppingItem";
 import { useDropTarget } from "./drag/useDropTarget";
 
 type ShoppingCategorySectionProps = {
   category: OptimisticShoppingListCategory;
+  storePreferences: GroceryStorePreferences;
   onAddDraft: (categoryId: string | null) => void;
   onCheckItem: (itemId: string) => void;
   onDeleteItem: (itemId: string) => void;
@@ -31,6 +33,7 @@ type ShoppingCategorySectionProps = {
 
 export function ShoppingCategorySection({
   category,
+  storePreferences,
   onAddDraft,
   onCheckItem,
   onDeleteItem,
@@ -123,6 +126,7 @@ export function ShoppingCategorySection({
           {category.items.map((item) => (
             <ShoppingItem
               item={item}
+              stores={storesForItem(storePreferences, item.name)}
               key={item.id}
               onCheck={onCheckItem}
               onDelete={onDeleteItem}

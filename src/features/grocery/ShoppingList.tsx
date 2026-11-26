@@ -10,6 +10,7 @@ import {
   setGroceryItemChecked,
 } from "./actions";
 import type {
+  GroceryStorePreferences,
   OptimisticShoppingListCategory,
   OptimisticShoppingListItem,
   ShoppingListCategory,
@@ -23,6 +24,7 @@ import { categorySectionId, UNCATEGORIZED_ID } from "./categories";
 type ShoppingListProps = {
   categories: ShoppingListCategory[];
   categoryPreferences?: Record<string, string>;
+  storePreferences?: GroceryStorePreferences;
 };
 
 type Draft = { id: string; categoryId: string | null; name: string };
@@ -48,6 +50,7 @@ type OptimisticAction =
 export function ShoppingList({
   categories: persistedCategories,
   categoryPreferences = {},
+  storePreferences = {},
 }: ShoppingListProps) {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [categories, addOptimistic] = useOptimistic(
@@ -195,6 +198,7 @@ export function ShoppingList({
     <ShoppingListView
       categories={withDrafts(categories, drafts)}
       categoryPreferences={categoryPreferences}
+      storePreferences={storePreferences}
       onQuickEntry={addItem}
       onAddDraft={createDraftItem}
       onCheckItem={checkItem}

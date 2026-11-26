@@ -9,10 +9,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import type { OptimisticShoppingListItem } from "./types";
 import { UNCATEGORIZED_ID } from "./categories";
+import { GroceryStorePicker } from "./GroceryStorePicker";
+import type { GroceryStore } from "./stores";
 import { useDraggableItem } from "./drag/useDraggableItem";
 
 type ShoppingItemRowProps = {
   item: OptimisticShoppingListItem;
+  stores: GroceryStore[];
   onCheck: (itemId: string) => void;
   onDelete: (itemId: string) => void;
   onRename: (itemId: string, name: string) => void;
@@ -22,6 +25,7 @@ type ShoppingItemRowProps = {
 
 export function ShoppingItem({
   item,
+  stores,
   onCheck,
   onDelete,
   onRename,
@@ -154,11 +158,16 @@ export function ShoppingItem({
         </Button>
       )}
 
+      {isPersisted && (
+        <div className={cn("col-start-3 row-start-1 justify-self-end", isEditing && "invisible")} inert={isEditing}>
+          <GroceryStorePicker name={item.name} stores={stores} />
+        </div>
+      )}
       {/* Always render the trailing controls so their grid column keeps a
           constant width and height; hide them when not editing to avoid a
           layout shift (the row was reflowing as this column appeared). */}
       <div
-        className="flex items-center gap-1 data-[hidden=true]:pointer-events-none data-[hidden=true]:invisible"
+        className="col-start-3 row-start-1 flex items-center justify-self-end data-[hidden=true]:pointer-events-none data-[hidden=true]:invisible"
         data-hidden={!isEditing}
       >
         <Button
