@@ -100,7 +100,7 @@ export function MealShopping({
               Einkauf vorbereiten
             </Dialog.Title>
             <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-              Jedes Rezept der Woche zählt einmal. Streiche, was du schon hast.
+              Streiche, was du schon hast.
             </Dialog.Description>
             {pending && rows === null && (
               <p role="status" className="mt-4 text-sm">
