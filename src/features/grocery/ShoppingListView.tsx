@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { SectionNavigation } from "@/components/SectionNavigation";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronLeft } from "lucide-react";
 
@@ -83,8 +83,22 @@ export function ShoppingListView({
           <span>Home</span>
         </Link>
 
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 sm:mt-10">
-          <h1 className="page-headline mt-0 sm:mt-0">Einkaufsliste</h1>
+        <h1 className="page-headline">Einkaufsliste</h1>
+        <SectionNavigation
+          label="Einkaufslisten"
+          sections={Object.entries(SHOPPING_LIST_NAMES).map(([id, name]) => ({
+            href: id === "groceries" ? "/einkauf" : `/einkauf?liste=${id}`,
+            label: name,
+            active: id === listId,
+          }))}
+        />
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            {openItemCount === 0
+              ? "Nichts offen"
+              : `${openItemCount} Artikel offen`}
+          </p>
           {!simpleList && (
             <Button
               variant={shoppingMode ? "secondary" : "outline"}
@@ -95,30 +109,6 @@ export function ShoppingListView({
             </Button>
           )}
         </div>
-
-        <nav aria-label="Einkaufslisten" className="mt-4 flex flex-wrap gap-2">
-          {Object.entries(SHOPPING_LIST_NAMES).map(([id, name]) => (
-            <Link
-              key={id}
-              href={id === "groceries" ? "/einkauf" : `/einkauf?liste=${id}`}
-              aria-current={id === listId ? "page" : undefined}
-              className={cn(
-                buttonVariants({ variant: id === listId ? "secondary" : "outline" }),
-                "h-10 rounded-full aria-[current=page]:ring-1 aria-[current=page]:ring-foreground",
-              )}
-            >
-              {name}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Checked items never reach the client (queries.ts), so a
-            "done of total" pair would always read zero. */}
-        <p className="mt-2 text-sm text-muted-foreground">
-          {openItemCount === 0
-            ? "Nichts offen"
-            : `${openItemCount} Artikel offen`}
-        </p>
 
         {simpleList ? (
           <div className="mt-6">

@@ -221,6 +221,7 @@ test("DM and OBI keep separate items across reloads", async ({ page }) => {
     await page.getByRole("link", { name: list, exact: true }).click();
     await expect(page.getByRole("link", { name: list, exact: true })).toHaveAttribute("aria-current", "page");
     await expect(page.getByRole("combobox", { name: "Kategorie für neuen Artikel" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Einkaufsmodus" })).toHaveCount(0);
     const input = page.getByRole("textbox", { name: "Artikel hinzufügen" });
     await input.fill(name);
     await input.press("Enter");
@@ -232,6 +233,7 @@ test("DM and OBI keep separate items across reloads", async ({ page }) => {
   await expect(row(page, dmItem)).toHaveCount(0);
   await page.getByRole("link", { name: "Lebensmittel" }).click();
   await expect(page.getByRole("link", { name: "Lebensmittel" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("button", { name: "Einkaufsmodus" })).toBeVisible();
   await expect(row(page, dmItem)).toHaveCount(0);
   await expect(row(page, obiItem)).toHaveCount(0);
   await page.getByRole("link", { name: "DM", exact: true }).click();
