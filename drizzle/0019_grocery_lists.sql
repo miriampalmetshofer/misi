@@ -1,0 +1,2 @@
+ALTER TABLE "grocery_item" ADD COLUMN "list_id" text DEFAULT 'groceries' NOT NULL;--> statement-breakpoint
+ALTER TABLE "grocery_item" ADD CONSTRAINT "grocery_item_list_valid" CHECK ("grocery_item"."list_id" = 'groceries' or ("grocery_item"."list_id" in ('dm', 'obi') and "grocery_item"."category_id" is null));

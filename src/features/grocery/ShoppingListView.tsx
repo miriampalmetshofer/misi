@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronLeft } from "lucide-react";
 
-import type { GroceryStorePreferences, OptimisticShoppingListCategory } from "./types";
+import type { GroceryStorePreferences, OptimisticShoppingListCategory, OptimisticShoppingListItem } from "./types";
 import { ShoppingCategorySection } from "./ShoppingCategorySection";
 import { DragProvider } from "./drag/DragContext";
 import { UndoBar } from "./UndoBar";
@@ -14,8 +15,10 @@ import { GroceryQuickEntry } from "./GroceryQuickEntry";
 import { itemCategoryId, UNCATEGORIZED_ID } from "./categories";
 import { GROCERY_STORES, storesForItem, type GroceryStore } from "./stores";
 import { StoreLogo } from "./StoreLogo";
+import { SHOPPING_LIST_NAMES, type ShoppingListId } from "./lists";
 
 type ShoppingListViewProps = {
+  listId: ShoppingListId;
   categories: OptimisticShoppingListCategory[];
   categoryPreferences: Record<string, string>;
   storePreferences: GroceryStorePreferences;
@@ -33,6 +36,7 @@ type ShoppingListViewProps = {
 };
 
 export function ShoppingListView({
+  listId,
   categories,
   categoryPreferences,
   storePreferences,
@@ -48,6 +52,7 @@ export function ShoppingListView({
   onUpdateDraft,
   undo,
 }: ShoppingListViewProps) {
+  const simpleList = listId !== "groceries";
   const [shoppingMode, setShoppingMode] = useState(false);
   const [storeFilter, setStoreFilter] = useState<GroceryStore | null>(null);
   const shoppingCategories = categories.map((category) => ({
@@ -80,14 +85,32 @@ export function ShoppingListView({
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 sm:mt-10">
           <h1 className="page-headline mt-0 sm:mt-0">Einkaufsliste</h1>
-          <Button
-            variant={shoppingMode ? "secondary" : "outline"}
-            aria-pressed={shoppingMode}
-            onClick={() => setShoppingMode((active) => !active)}
-          >
-            Einkaufsmodus
-          </Button>
+          {!simpleList && (
+            <Button
+              variant={shoppingMode ? "secondary" : "outline"}
+              aria-pressed={shoppingMode}
+              onClick={() => setShoppingMode((active) => !active)}
+            >
+              Einkaufsmodus
+            </Button>
+          )}
         </div>
+
+        <nav aria-label="Einkaufslisten" className="mt-4 flex flex-wrap gap-2">
+          {Object.entries(SHOPPING_LIST_NAMES).map(([id, name]) => (
+            <Link
+              key={id}
+              href={id === "groceries" ? "/einkauf" : `/einkauf?liste=${id}`}
+              aria-current={id === listId ? "page" : undefined}
+              className={cn(
+                buttonVariants({ variant: id === listId ? "secondary" : "outline" }),
+                "h-10 rounded-full aria-[current=page]:ring-1 aria-[current=page]:ring-foreground",
+              )}
+            >
+              {name}
+            </Link>
+          ))}
+        </nav>
 
         {/* Checked items never reach the client (queries.ts), so a
             "done of total" pair would always read zero. */}
@@ -97,7 +120,14 @@ export function ShoppingListView({
             : `${openItemCount} Artikel offen`}
         </p>
 
-        {shoppingMode ? (
+        {simpleList ? (
+          <div className="mt-6">
+            <ShoppingChecklist
+              items={shoppingCategories.flatMap((category) => category.items)}
+              onCheckItem={onCheckItem}
+            />
+          </div>
+        ) : shoppingMode ? (
           <div className="mt-8 space-y-6">
             <div role="group" aria-label="Nach Geschäft filtern" className="flex flex-wrap gap-2">
               {GROCERY_STORES.map((store) => (
@@ -120,29 +150,11 @@ export function ShoppingListView({
                   <h2 id={`shopping-${category.id}`} className="mb-1 text-sm font-medium text-muted-foreground">
                     {category.name}
                   </h2>
-                  <ul className="divide-y">
-                    {items.map((item) => (
-                      <li key={item.id} data-syncing={item.isSyncing} className="data-[syncing=true]:opacity-70">
-                        <label className="flex min-h-12 cursor-pointer items-center gap-3 py-3">
-                          <Checkbox
-                            aria-label={`${item.name} erledigt markieren`}
-                            className="size-5 shrink-0 rounded-full border-muted-foreground"
-                            disabled={item.isSyncing}
-                            checked={false}
-                            onCheckedChange={() => onCheckItem(item.id)}
-                          />
-                          <span className="min-w-0 flex-1 break-words">{item.name}</span>
-                          {!storeFilter && (
-                            <span className="flex gap-1">
-                              {storesForItem(storePreferences, item.name).map((store) => (
-                                <StoreLogo key={store} store={store} />
-                              ))}
-                            </span>
-                          )}
-                        </label>
-                      </li>
-                    ))}
-                  </ul>
+                  <ShoppingChecklist
+                    items={items}
+                    onCheckItem={onCheckItem}
+                    storePreferences={storeFilter ? undefined : storePreferences}
+                  />
                 </section>
               );
             })}
@@ -180,6 +192,7 @@ export function ShoppingListView({
         </div>
         <div hidden={shoppingMode}>
           <GroceryQuickEntry
+            showCategories={!simpleList}
             categories={categories.filter((category) => category.id !== UNCATEGORIZED_ID)}
             categoryPreferences={categoryPreferences}
             onAdd={onQuickEntry}
@@ -187,5 +200,41 @@ export function ShoppingListView({
         </div>
       </footer>
     </div>
+  );
+}
+
+function ShoppingChecklist({
+  items,
+  onCheckItem,
+  storePreferences,
+}: {
+  items: OptimisticShoppingListItem[];
+  onCheckItem: (itemId: string) => void;
+  storePreferences?: GroceryStorePreferences;
+}) {
+  return (
+    <ul className="divide-y">
+      {items.map((item) => (
+        <li key={item.id} data-syncing={item.isSyncing} className="data-[syncing=true]:opacity-70">
+          <label className="flex min-h-12 cursor-pointer items-center gap-3 py-3">
+            <Checkbox
+              aria-label={`${item.name} erledigt markieren`}
+              className="size-5 shrink-0 rounded-full border-muted-foreground"
+              disabled={item.isSyncing}
+              checked={false}
+              onCheckedChange={() => onCheckItem(item.id)}
+            />
+            <span className="min-w-0 flex-1 break-words">{item.name}</span>
+            {storePreferences && (
+              <span className="flex gap-1">
+                {storesForItem(storePreferences, item.name).map((store) => (
+                  <StoreLogo key={store} store={store} />
+                ))}
+              </span>
+            )}
+          </label>
+        </li>
+      ))}
+    </ul>
   );
 }

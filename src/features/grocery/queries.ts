@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 
 import { getDb, schema } from "@/db";
 import {
@@ -10,11 +10,11 @@ import {
 } from "./categories";
 import { parseGroceryStores } from "./stores";
 import { formatProduct } from "./product";
+import type { ShoppingListId } from "./lists";
 import type { ShoppingListData, ShoppingListItem } from "./types";
 
-export async function getShoppingListData(): Promise<ShoppingListData> {
+export async function getShoppingListData(listId: ShoppingListId = "groceries"): Promise<ShoppingListData> {
   const db = getDb();
-  const categories = await getGroceryCategories();
 
   const items = await db
     .select({
@@ -25,7 +25,7 @@ export async function getShoppingListData(): Promise<ShoppingListData> {
       categoryId: schema.groceryItems.categoryId,
     })
     .from(schema.groceryItems)
-    .where(eq(schema.groceryItems.isChecked, false))
+    .where(and(eq(schema.groceryItems.isChecked, false), eq(schema.groceryItems.listId, listId)))
     .orderBy(asc(schema.groceryItems.createdAt));
 
   const categoryItems = new Map<string, ShoppingListItem[]>();
@@ -37,6 +37,18 @@ export async function getShoppingListData(): Promise<ShoppingListData> {
     categoryItems.set(key, existing);
   }
 
+  const uncategorized = {
+    id: UNCATEGORIZED_ID,
+    name: "Noch nicht zugeordnet",
+    icon: "🏷️",
+    quickAddItems: [],
+    items: categoryItems.get(UNCATEGORIZED_ID) ?? [],
+  };
+  if (listId !== "groceries") {
+    return { categories: [uncategorized], categoryPreferences: {}, storePreferences: {} };
+  }
+
+  const categories = await getGroceryCategories();
   const preferences = await db.select().from(schema.groceryCategoryPreferences);
 
   const storePreferences = await db.select().from(schema.groceryStorePreferences);
@@ -49,15 +61,11 @@ export async function getShoppingListData(): Promise<ShoppingListData> {
       preferences.map((preference) => [preference.normalizedName, preference.categoryId]),
     ),
     categories: [
-      ...categories,
-      { id: UNCATEGORIZED_ID, name: "Noch nicht zugeordnet", icon: "🏷️", quickAddItems: [] },
-    ].map((category) => ({
-      id: category.id,
-      name: category.name,
-      icon: category.icon,
-      quickAddItems: category.quickAddItems,
-      items: categoryItems.get(category.id) ?? [],
-    })),
+      ...categories.map(({ id, name, icon, quickAddItems }) => ({
+        id, name, icon, quickAddItems, items: categoryItems.get(id) ?? [],
+      })),
+      uncategorized,
+    ],
   };
 }
 

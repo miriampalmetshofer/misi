@@ -12,12 +12,14 @@ import type { ShoppingListCategory } from "./types";
 type Props = {
   categories: ShoppingListCategory[];
   categoryPreferences: Record<string, string>;
+  showCategories?: boolean;
   onAdd: (name: string, categoryId: string | null, rememberCategory: boolean) => void;
 };
 
 export function GroceryQuickEntry({
   categories,
   categoryPreferences,
+  showCategories = true,
   onAdd,
 }: Props) {
   const [name, setName] = useState("");
@@ -73,17 +75,19 @@ export function GroceryQuickEntry({
             <Plus aria-hidden="true" />
           </Button>
         </div>
-        <select
-          aria-label="Kategorie für neuen Artikel"
-          className="h-11 w-full rounded-md border border-input bg-background px-3 text-base text-foreground md:text-sm"
-          value={categoryId}
-          onChange={(event) => setSelection(event.target.value)}
-        >
-          <option value={UNCATEGORIZED_ID}>Kategorie wählen (optional)</option>
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>{category.icon} {category.name}</option>
-          ))}
-        </select>
+        {showCategories && (
+          <select
+            aria-label="Kategorie für neuen Artikel"
+            className="h-11 w-full rounded-md border border-input bg-background px-3 text-base text-foreground md:text-sm"
+            value={categoryId}
+            onChange={(event) => setSelection(event.target.value)}
+          >
+            <option value={UNCATEGORIZED_ID}>Kategorie wählen (optional)</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>{category.icon} {category.name}</option>
+            ))}
+          </select>
+        )}
       </form>
     </div>
   );
