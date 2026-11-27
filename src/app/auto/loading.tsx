@@ -11,7 +11,7 @@ export default function AutoLoading() {
           <span>Home</span>
         </div>
         <h1 className="page-headline">Auto</h1>
-        <Skeleton aria-hidden="true" className="mt-6 h-12 rounded-xl sm:mt-8" />
+        <Skeleton aria-hidden="true" className="mt-4 h-10 rounded-none" />
         <div aria-hidden="true" className="mt-8 flex flex-col gap-5">
           <Skeleton className="h-10 w-44 rounded-lg" />
           <Skeleton className="h-52 rounded-xl" />
